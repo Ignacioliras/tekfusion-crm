@@ -35,3 +35,4 @@
 - `db diff` no ve las filas de `storage.buckets` ni emite los grants correctos para tablas nuevas (deja los privilegios por defecto, que dan DML a `authenticated`): migración a mano y `revoke all … from authenticated` explícito.
 - Un `security definer` ve `current_user` = dueño: para saber si llama una sesión de API usar `auth.role()`.
 - Reiniciar Supabase local (`stop`/`start`) para que tome cambios de `config.toml` (contraseñas, MFA); `db reset` no basta.
+- 2026-11-04 T1: `npm run test:unit:app -- --run` pasa entero en este worktree (66 archivos, ~55 s); ya no falla por el proyecto `claude`. Las piezas que sacan la sesión de un PC compartido se limpian en `root/clearPersistedCache.ts` (lo llaman ambos `logout`).

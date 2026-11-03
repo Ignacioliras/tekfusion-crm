@@ -3,6 +3,7 @@ import { supabaseAuthProvider } from "ra-supabase-core";
 
 import { canAccess, getAccessRole } from "../commons/canAccess";
 import type { MfaApi, MfaRequirement } from "../../mfa/mfaApi";
+import { clearPersistedCache } from "../../root/clearPersistedCache";
 import { resetSigner } from "./signedUrls";
 import { getSupabaseClient } from "./supabase";
 
@@ -112,6 +113,7 @@ export const getAuthProvider = (): AuthProvider => {
       clearCache();
       // Signed URLs of the attachments belong to this session.
       resetSigner();
+      clearPersistedCache();
       return baseAuthProvider.logout(params);
     },
     checkAuth: async (params) => {

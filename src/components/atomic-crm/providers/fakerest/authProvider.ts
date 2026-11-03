@@ -1,6 +1,7 @@
 import type { AuthProvider } from "ra-core";
 
 import type { Sale } from "../../types";
+import { clearPersistedCache } from "../../root/clearPersistedCache";
 import { canAccess, getAccessRole } from "../commons/canAccess";
 import { dataProvider } from "./dataProvider";
 
@@ -55,6 +56,7 @@ export const authProvider: AuthProvider = {
   },
   logout: () => {
     localStorage.removeItem(USER_STORAGE_KEY);
+    clearPersistedCache();
     return Promise.resolve();
   },
   checkError: () => Promise.resolve(),

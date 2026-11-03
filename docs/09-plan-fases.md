@@ -44,7 +44,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Ingreso manual de lead.
 - [ ] 🔒 RF-17: "Anonimizar contacto" (gerencia) y aviso de privacidad para el formulario web.
 - [ ] 🔒 Sentry en el frontend.
-- [ ] Limpiar la caché persistida de react-query (localStorage, 24 h) al cerrar sesión: en un PC compartido el siguiente usuario ve datos del anterior hasta el refetch (viene de Atomic; hallazgo B2 de la revisión de seguridad, `docs/10`).
+- [x] Limpiar la caché persistida de react-query (localStorage, 24 h) al cerrar sesión: en un PC compartido el siguiente usuario ve datos del anterior hasta el refetch (viene de Atomic; hallazgo B2 de la revisión de seguridad, `docs/10`). — 2026-11-04: `root/clearPersistedCache.ts` vacía el `queryClient` (registrado por `CRM.tsx`) y borra `REACT_QUERY_OFFLINE_CACHE`; lo llaman los `logout` de Supabase y FakeRest. Tests en `clearPersistedCache.test.ts`.
 - [ ] Completar `offboard_sale` ("Dar de baja"): reasignar también contactos y tareas del usuario, y un suplente por línea cuando tiene varias (hoy todos los leads van al suplente de la primera línea). Hallazgos Info de la revisión, `docs/10`.
 - [ ] Tests e2e (Playwright) de: login, crear lead, mover en kanban, enviar cotización con seed.
 

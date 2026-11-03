@@ -10,6 +10,7 @@ import { Route } from "react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { setPersistedQueryClient } from "./clearPersistedCache";
 import { Admin } from "@/components/admin/admin";
 import { ForgotPasswordPage } from "@/components/supabase/forgot-password-page";
 import { SetPasswordPage } from "@/components/supabase/set-password-page";
@@ -298,6 +299,7 @@ const MobileAdmin = (
       },
     },
   });
+  setPersistedQueryClient(queryClient);
   const asyncStoragePersister = createAsyncStoragePersister({
     storage: localStorage,
   });
