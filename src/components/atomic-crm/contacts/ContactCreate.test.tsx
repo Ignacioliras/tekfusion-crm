@@ -1,6 +1,6 @@
 import { render } from "vitest-browser-react";
 
-import { ContactCreateBasic } from "./ContactCreate.stories";
+import { ContactCreateBasic } from "./ContactCreate.fixtures";
 import { page } from "vitest/browser";
 
 describe("ContactCreate", () => {

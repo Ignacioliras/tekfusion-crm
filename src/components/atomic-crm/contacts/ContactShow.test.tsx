@@ -10,7 +10,7 @@ import { createDataProvider } from "@/components/atomic-crm/providers/fakerest";
 import { buildContact, createCrmDb, StoryWrapper } from "@/test/StoryWrapper";
 import { ContactAside } from "./ContactAside";
 import { ContactShow } from "./ContactShow";
-import { MobileSuccess } from "./ContactShow.mobile.stories";
+import { MobileSuccess } from "./ContactShow.mobile.fixtures";
 
 const mockIsMobile = vi.hoisted(() => vi.fn(() => true));
 vi.mock("@/hooks/use-mobile", () => ({

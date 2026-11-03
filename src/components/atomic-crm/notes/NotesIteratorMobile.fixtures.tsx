@@ -1,4 +1,3 @@
-import type { Meta } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import { ListContextProvider } from "ra-core";
 
@@ -13,18 +12,6 @@ const singleNote = {
   status: "warm",
   text: "Only note in the list",
 };
-
-const meta = {
-  title: "Atomic CRM/Notes/NotesIteratorMobile",
-  parameters: {
-    layout: "fullscreen",
-  },
-  globals: {
-    viewport: { value: "mobile1", isRotated: false },
-  },
-} satisfies Meta;
-
-export default meta;
 
 export const SingleNote = ({
   children,

@@ -1,4 +1,3 @@
-import type { Meta } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import { Form } from "ra-core";
 import { Create } from "@/components/admin/create";
@@ -6,15 +5,6 @@ import { SaveButton } from "@/components/admin/form";
 import { FormToolbar } from "@/components/admin/simple-form";
 import { StoryWrapper, buildContact } from "@/test/StoryWrapper";
 import { DealInputs } from "./DealInputs";
-
-const meta = {
-  title: "Atomic CRM/Deals/DealInputs",
-  parameters: {
-    layout: "fullscreen",
-  },
-} satisfies Meta;
-
-export default meta;
 
 const defaultData = {
   companies: [{ id: 1, name: "Smith Corp", sales_id: 0 }],

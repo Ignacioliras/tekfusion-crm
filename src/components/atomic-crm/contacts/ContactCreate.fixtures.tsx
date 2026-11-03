@@ -1,20 +1,6 @@
-import type { Meta } from "@storybook/react-vite";
-
 import { ContactCreate } from "./ContactCreate";
 import { buildContact, StoryWrapper } from "@/test/StoryWrapper";
 import type { DataProvider } from "ra-core";
-
-const meta = {
-  title: "Atomic CRM/Contacts/Contact Create",
-  parameters: {
-    layout: "fullscreen",
-  },
-  globals: {
-    viewport: { value: "responsive", isRotated: false },
-  },
-} satisfies Meta;
-
-export default meta;
 
 export const ContactCreateBasic = ({
   dataProvider = {},

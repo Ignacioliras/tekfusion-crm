@@ -1,21 +1,8 @@
-import type { Meta } from "@storybook/react-vite";
 import { ResourceContextProvider } from "ra-core";
 
 import { ContactListMobile } from "./ContactList";
 
 import { StoryWrapper, buildContact } from "@/test/StoryWrapper";
-
-const meta = {
-  title: "Atomic CRM/Contacts/Contact List",
-  parameters: {
-    layout: "fullscreen",
-  },
-  globals: {
-    viewport: { value: "mobile1", isRotated: false },
-  },
-} satisfies Meta;
-
-export default meta;
 
 const successContacts = [
   buildContact({

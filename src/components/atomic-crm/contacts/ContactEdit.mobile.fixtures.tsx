@@ -1,21 +1,7 @@
-import type { Meta } from "@storybook/react-vite";
-
 import { ContactEdit } from "./ContactEdit";
 import { Route, Routes } from "react-router";
 import { buildContact, StoryWrapper } from "@/test/StoryWrapper";
 import type { DataProvider } from "ra-core";
-
-const meta = {
-  title: "Atomic CRM/Contacts/Contact Edit",
-  parameters: {
-    layout: "fullscreen",
-  },
-  globals: {
-    viewport: { value: "responsive", isRotated: false },
-  },
-} satisfies Meta;
-
-export default meta;
 
 export const ContactEditBasic = ({
   dataProvider = {},
@@ -25,7 +11,7 @@ export const ContactEditBasic = ({
   silent?: boolean;
 }) => (
   <StoryWrapper
-    initialEntries={["/contacts/1"]}
+    initialEntries={["/contacts/1/show"]}
     data={{
       contacts: [
         buildContact({
@@ -52,7 +38,7 @@ export const ContactEditWithEmailsAndPhones = ({
   silent?: boolean;
 }) => (
   <StoryWrapper
-    initialEntries={["/contacts/1"]}
+    initialEntries={["/contacts/1/show"]}
     data={{
       contacts: [
         buildContact({
@@ -73,7 +59,7 @@ export const ContactEditWithEmailsAndPhones = ({
 
 export const ContactEditWithError = () => (
   <StoryWrapper
-    initialEntries={["/contacts/1"]}
+    initialEntries={["/contacts/1/show"]}
     data={{
       contacts: [
         buildContact({
@@ -99,7 +85,7 @@ export const ContactEditWithError = () => (
 );
 
 export const ContactEditNotFound = () => (
-  <StoryWrapper initialEntries={["/contacts/1"]}>
+  <StoryWrapper initialEntries={["/contacts/1/show"]}>
     <Routes>
       <Route path="/contacts/:id" element={<ContactEdit />} />
     </Routes>

@@ -296,3 +296,69 @@ cross join lateral (
                          then 31 + (g.i * 13) % 59
                          else 1 + (g.i * 37) % 89 end || ' days')::interval as at
 ) as created;
+
+-- ---------------------------------------------------------------------
+-- Contactos calientes (5): 3 de Camila y 2 de Diego. El dashboard filtra
+-- por el ejecutivo conectado, así que ambos ven la tarjeta con datos.
+-- El trigger de Gravatar se apaga igual que en la carga de contactos.
+-- ---------------------------------------------------------------------
+alter table public.contacts disable trigger "20_contact_saved";
+
+with owners as (
+    select id, case email when 'camila.rojas@tekfusion-demo.cl' then 3 else 2 end as n
+    from public.sales
+    where email in ('camila.rojas@tekfusion-demo.cl', 'diego.munoz@tekfusion-demo.cl')
+),
+ranked as (
+    select c.id, row_number() over (partition by c.sales_id order by c.id) as rn, o.n
+    from public.contacts c join owners o on o.id = c.sales_id
+)
+update public.contacts set status = 'hot'
+where id in (select id from ranked where rn <= n);
+
+alter table public.contacts enable trigger "20_contact_saved";
+
+-- ---------------------------------------------------------------------
+-- Tareas pendientes (8): 4 de Camila y 4 de Diego, sobre sus propios
+-- contactos, con vencimientos repartidos (atrasada, hoy, mañana, semana,
+-- más adelante) para que se vean todos los grupos de la lista.
+-- ---------------------------------------------------------------------
+with exec_contacts as (
+    select s.email, c.id as contact_id, c.sales_id,
+           row_number() over (partition by c.sales_id order by c.id) as rn
+    from public.contacts c join public.sales s on s.id = c.sales_id
+    where s.email in ('camila.rojas@tekfusion-demo.cl', 'diego.munoz@tekfusion-demo.cl')
+)
+insert into public.tasks (contact_id, type, text, due_date, sales_id)
+select ec.contact_id, t.type, t.text, now() + (t.days || ' days')::interval, ec.sales_id
+from (values
+    ('camila.rojas@tekfusion-demo.cl', 1, 'call',      'Llamar para confirmar medidas de las válvulas mariposa', -2),
+    ('camila.rojas@tekfusion-demo.cl', 2, 'email',     'Enviar ficha técnica de tubería HDPE PE100 SDR11', 0),
+    ('camila.rojas@tekfusion-demo.cl', 3, 'follow-up', 'Seguimiento de la cotización de geoceldas', 1),
+    ('camila.rojas@tekfusion-demo.cl', 4, 'meeting',   'Reunión en faena para revisar el talud', 4),
+    ('diego.munoz@tekfusion-demo.cl',  1, 'follow-up', 'Seguimiento de cotización de válvulas de compuerta', -1),
+    ('diego.munoz@tekfusion-demo.cl',  2, 'call',      'Confirmar plazo de despacho de la matriz HDPE', 0),
+    ('diego.munoz@tekfusion-demo.cl',  3, 'email',     'Enviar certificado de calidad de las geoceldas', 3),
+    ('diego.munoz@tekfusion-demo.cl',  4, 'demo',      'Mostrar muestras de geomembrana en oficina', 12)
+) as t(email, rn, type, text, days)
+join exec_contacts ec on ec.email = t.email and ec.rn = t.rn;
+
+-- ---------------------------------------------------------------------
+-- Notas en leads (10), a nombre del ejecutivo del lead.
+-- ---------------------------------------------------------------------
+insert into public.deal_notes (deal_id, text, date, sales_id)
+select d.id, n.text, now() - (n.days || ' days')::interval, d.sales_id
+from (values
+    (1,  'Cliente pide reemplazar 12 válvulas antes de la parada de planta de diciembre.', 1),
+    (2,  'Se envió catálogo HDPE; esperan aprobación de ingeniería.', 2),
+    (3,  'Visitamos el talud: 6 m de altura, suelo arcilloso. Recomendar geocelda de 150 mm.', 3),
+    (4,  'Piden precio con y sin cámara de válvulas.', 4),
+    (5,  'Cotización enviada; competencia ofrece 8 % menos.', 5),
+    (6,  'Camino de acceso de 1,2 km; consultan plazo de entrega a Calama.', 6),
+    (7,  'Necesitan certificado de acero inoxidable 316.', 7),
+    (8,  'Ingeniero de proyecto pidió presión nominal PN16.', 8),
+    (9,  'Canal de regadío: confirmar si el relleno es hormigón o grava.', 9),
+    (10, 'Cliente dejó de responder; segundo seguimiento enviado.', 10)
+) as n(deal_rank, text, days)
+join (select id, sales_id, row_number() over (order by id) as deal_rank from public.deals) d
+  on d.deal_rank = n.deal_rank;

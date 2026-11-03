@@ -1,5 +1,5 @@
 import { render } from "vitest-browser-react";
-import { SingleNote } from "./NotesIteratorMobile.stories";
+import { SingleNote } from "./NotesIteratorMobile.fixtures";
 
 // Trigger the infinite-pagination sentinel immediately in tests so we can
 // assert whether mounting the list would request another page.

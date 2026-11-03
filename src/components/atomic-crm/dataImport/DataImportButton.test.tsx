@@ -9,7 +9,7 @@ import type { Deal } from "@/components/atomic-crm/types";
 import { createCrmDb, StoryWrapper } from "@/test/StoryWrapper";
 import type { DataProvider } from "ra-core";
 import { DataImportButton } from "./DataImportButton";
-import { AllResources, SingleResource } from "./DataImportButton.stories";
+import { AllResources, SingleResource } from "./DataImportButton.fixtures";
 import type { ImportRow, ProcessImportBatch } from "./types";
 import { useCompanyImport } from "./useCompanyImport";
 import { useDealImport } from "./useDealImport";

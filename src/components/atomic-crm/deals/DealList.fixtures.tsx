@@ -1,4 +1,3 @@
-import type { Meta } from "@storybook/react-vite";
 import { ResourceContextProvider } from "ra-core";
 
 import DealList from "./DealList";
@@ -9,15 +8,6 @@ import {
   buildDeal,
   buildSale,
 } from "@/test/StoryWrapper";
-
-const meta = {
-  title: "Atomic CRM/Deals/Deal List",
-  parameters: {
-    layout: "fullscreen",
-  },
-} satisfies Meta;
-
-export default meta;
 
 const dataForAccountManagerFilter = {
   companies: [buildCompany()],

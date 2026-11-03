@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 
-import { CreateForm } from "./DealInputs.stories";
+import { CreateForm } from "./DealInputs.fixtures";
 
 describe("DealInputs", () => {
   beforeAll(() => {
