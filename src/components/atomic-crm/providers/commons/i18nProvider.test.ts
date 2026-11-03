@@ -33,6 +33,17 @@ describe("i18nProvider", () => {
     expect(i18nProvider.translate("crm.credits.title")).toBe("Créditos");
   });
 
+  it("names deals as leads and the account manager as ejecutivo in spanish", async () => {
+    await i18nProvider.changeLocale("es");
+
+    expect(
+      i18nProvider.translate("resources.deals.name", { smart_count: 2 }),
+    ).toBe("Leads");
+    expect(i18nProvider.translate("resources.contacts.fields.sales_id")).toBe(
+      "Ejecutivo",
+    );
+  });
+
   it("falls back to english for keys without a spanish translation", async () => {
     await i18nProvider.changeLocale("es");
 
