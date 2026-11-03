@@ -157,13 +157,16 @@
         "T4"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 22:35:53"
+      "commit": "48654fed5e3e1eb15077284fd31a000b55bb631c",
+      "costo_usd": 2.9681779000000006,
+      "session_id": "e1ce492e-ef35-468e-aee2-de3be5378ef8",
+      "inicio": "2026-11-03 22:35:53",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Configuración RF-14 completa con catálogos de plantillas (validación y vista previa), respuestas rápidas y motivos de pérdida, firma editable en Usuarios y Mi perfil, y tests en verde.",
+      "fin": "2026-11-03 22:43:22"
     },
     {
       "id": "T6",
