@@ -104,7 +104,7 @@ create policy deals_insert on public.deals for insert to authenticated with chec
 create policy deals_update on public.deals for update to authenticated
     using (public.is_manager() or sales_id = public.current_sales_id())
     with check (public.is_manager() or sales_id = public.current_sales_id()); -- el ejecutivo no puede reasignar
-create policy deals_delete on public.deals for delete to authenticated using (public.is_manager()); -- decisión 3
+-- sin policy de delete en deals: nunca se borran (decisión 3; anonimizar = RF-17)
 
 -- contacts: los ve quien tiene un lead del contacto (o un lead sin asignar), su dueño, gerencia y lector
 create policy contacts_select on public.contacts for select to authenticated using (
@@ -153,7 +153,7 @@ Cada test entra como un usuario del seed (`set local role authenticated` + `requ
 
 1. **Ids `bigint` en vez de `uuid`.** `05` pide `uuid`, pero todas las tablas de Atomic usan `bigint identity` y las nuevas apuntan a ellas. *Recomiendo `bigint`:* claves foráneas homogéneas, cero cambios en el data provider; el `uuid` no aporta seguridad porque la RLS es la que protege, no lo difícil de adivinar un id.
 2. **`role` como fuente de verdad, con `administrator` sincronizado.** Alternativa: borrar `administrator` y tocar todos los lugares de Atomic que lo leen (UI de usuarios, `is_admin()`, Edge Function `users`). *Recomiendo sincronizar con trigger:* cambio mínimo y sin riesgo de que una pantalla de Atomic deje de reconocer a gerencia.
-3. **Borrado: solo gerencia, no "nadie".** `08` dice que nadie borra leads ni contactos, pero Atomic tiene botones de borrar y `merge_contacts` elimina el contacto duplicado. *Recomiendo permitirlo solo a gerencia:* conserva la fusión de duplicados (que la importación del Sheets va a necesitar) y sigue impidiendo que un ejecutivo borre.
+3. **Borrado: solo gerencia y solo en `contacts` y `companies`.** `08` dice que nadie borra, pero `merge_contacts` elimina el contacto duplicado y la importación del Sheets lo va a necesitar. `deals`, `wa_messages`, `wa_conversations` y `quotes` **nunca** se borran (sin policy de delete): se anonimizan en RF-17. *Aprobada así el 2026-11-03.*
 4. **Ejecutivo puede "tomar" un lead sin asignar** (RPC `take_deal`, queda registrado y avisa a gerencia), o solo gerencia asigna. *Recomiendo permitirlo:* `08` ya lo contempla y evita que un lead espere a que gerencia esté disponible; el registro deja trazabilidad.
 5. **Empresas visibles para todo usuario interno.** `08` no dice nada de `companies`. *Recomiendo lectura completa:* el autocompletado y la detección de duplicados necesitan ver empresas existentes, y una empresa (razón social, RUT, sector) es dato comercial, no personal; los datos personales están en `contacts`, que sí queda restringido.
 
