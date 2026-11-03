@@ -65,7 +65,7 @@ const log = (m) => {
   try {
     writeFileSync(LOG, linea + "\n", { flag: "a" });
   } catch {
-    /* el log en archivo es opcional */
+    /* el log es opcional */
   }
 };
 const sh = (cmd, cwd, opts = {}) =>
@@ -310,6 +310,7 @@ const HERRAMIENTAS = [
   "Glob",
   "Grep",
   "LSP",
+  "Bash(cd *)",
   "Bash(npm run *)",
   "Bash(npx tsc *)",
   "Bash(npx eslint *)",
@@ -417,7 +418,11 @@ const correrClaude = (t) => {
     shell: ES_WIN,
     encoding: "utf8",
     input: promptTarea(t),
-    env: { ...process.env, CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" },
+    env: {
+      ...process.env,
+      CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1",
+      ECC_GATEGUARD: "off",
+    },
     timeout: 90 * 60 * 1000,
     maxBuffer: 64 * 1024 * 1024,
     windowsHide: true,
@@ -427,7 +432,7 @@ const correrClaude = (t) => {
     const i = (r.stdout || "").lastIndexOf("\n{");
     json = JSON.parse(i >= 0 ? r.stdout.slice(i + 1) : r.stdout);
   } catch {
-    /* salida sin JSON: json queda null */
+    /* salida no parseable: se trata como fallo más abajo */
   }
   return {
     status: r.status,
@@ -590,7 +595,7 @@ persistir(`cierre (${motivoFin})`);
 try {
   copyFileSync(REPORTE, join(REPO, "docs", "nocturno", "ULTIMO-reporte.md"));
 } catch {
-  /* copia opcional */
+  /* opcional */
 }
 
 const n = (e) => estado.tareas.filter((x) => x.estado === e).length;

@@ -9,6 +9,7 @@ Estás corriendo solo, de noche, dentro de un loop que ejecuta `scripts/tekfusio
 5. **No pidas confirmación, no hagas preguntas.** Si la tarea necesita una decisión que no está en `docs/` o un dato que no existe (una clave, un acceso, una regla de negocio ambigua), no inventes: deja el código como estaba y termina con `BLOQUEADA: <qué falta>`.
 6. **Si después de 3 intentos distintos no logras que pase la verificación, para.** Termina con `BLOQUEADA: <qué probaste y qué falla>`. Quemar turnos repitiendo lo mismo no ayuda a nadie.
 7. **Datos ficticios siempre.** Nada que parezca un cliente real de TekFusion.
-8. **Respeta los hooks.** Si un comando queda bloqueado por un hook, es a propósito; busca otra forma o declara la tarea bloqueada.
-9. **Última línea de tu respuesta, exactamente:** `HECHA: <una frase>` o `BLOQUEADA: <motivo>`. El script la lee.
-10. **Aprendizajes:** si descubres algo que le serviría a la siguiente tarea (un comando que sí funciona, una trampa del código de Atomic, un test lento), agrégalo como una línea a `docs/nocturno/aprendizajes.md`. Una línea, no un ensayo.
+8. **Ya estás parado en la carpeta del worktree.** Corre los comandos tal cual (`npm run typecheck`), sin anteponer `cd "C:\..." &&`: los permisos de esta sesión se evalúan por cómo empieza el comando. Si un comando te sale "no permitido", prueba sin el `cd` antes de darte por bloqueado.
+9. **Respeta los hooks.** Si un comando queda bloqueado por un hook, es a propósito; busca otra forma o declara la tarea bloqueada.
+10. **Última línea de tu respuesta, exactamente:** `HECHA: <una frase>` o `BLOQUEADA: <motivo>`. El script la lee.
+11. **Aprendizajes:** si descubres algo que le serviría a la siguiente tarea (un comando que sí funciona, una trampa del código de Atomic, un test lento), agrégalo como una línea a `docs/nocturno/aprendizajes.md`. Una línea, no un ensayo.
