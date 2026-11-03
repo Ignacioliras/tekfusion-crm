@@ -106,13 +106,16 @@
         "T1"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 04:59:19"
+      "commit": "24a317845849548041f6ddc88e84dc94943dd0e9",
+      "costo_usd": 1.0340048,
+      "session_id": "769c23c8-a4a2-4a48-a329-40fd0cc98096",
+      "inicio": "2026-11-03 04:59:19",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Creé la página Créditos en /creditos (Libux para TekFusion, licencias de terceros y sección WhatsApp con enlace a Evolution API), registré la ruta en CRM.tsx y agregué el ítem \"Créditos\" al menú de usuario.",
+      "fin": "2026-11-03 05:01:56"
     },
     {
       "id": "T5",
