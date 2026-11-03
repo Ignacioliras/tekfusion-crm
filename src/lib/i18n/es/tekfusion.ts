@@ -39,6 +39,8 @@ export const tekfusionMessages = {
         reassigned: "Lead reasignado",
         send_quote: "Enviar cotización",
         schedule_followup: "Programar seguimiento",
+        won: "Ganado",
+        lost: "Perdido",
       },
       timeline: {
         title: "Línea de tiempo",

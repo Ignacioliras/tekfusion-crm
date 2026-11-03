@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { CompanyAvatar } from "../companies/CompanyAvatar";
 import type { Deal } from "../types";
+import { CloseDealButtons } from "./CloseDealButtons";
 import { LeadActions } from "./LeadActions";
 import { LeadDataBlock } from "./LeadDataBlock";
 import { LeadTimeline } from "./LeadTimeline";
@@ -82,7 +83,10 @@ const DealShowContent = () => {
       {record.archived_at ? null : (
         <LeadActions deal={record}>
           {ETAPAS_ABIERTAS.includes(record.stage as Etapa) ? (
-            <SendQuoteButton deal={record} />
+            <>
+              <SendQuoteButton deal={record} />
+              <CloseDealButtons deal={record} />
+            </>
           ) : null}
         </LeadActions>
       )}

@@ -3,6 +3,13 @@ import isEqual from "lodash/isEqual";
 import { useDataProvider, useListContext, type DataProvider } from "ra-core";
 import { useEffect, useState } from "react";
 
+import {
+  CLOSING_STAGES,
+  CloseDealDialog,
+  type ClosingStage,
+} from "./CloseDealDialog";
+import { useCloseDeal } from "./useCloseDeal";
+
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 import { DealColumn } from "./DealColumn";
@@ -17,6 +24,13 @@ export const DealListContent = () => {
   const [dealsByStage, setDealsByStage] = useState<DealsByStage>(
     getDealsByStage([], dealStages),
   );
+  // A drop on ganado/perdido waits for the closing dialog (amount / reason).
+  const [pendingClose, setPendingClose] = useState<{
+    deal: Deal;
+    stage: ClosingStage;
+    move: (extra: Partial<Deal>) => Promise<unknown>;
+  } | null>(null);
+  const closeDeal = useCloseDeal();
 
   useEffect(() => {
     if (unorderedDeals) {
@@ -54,34 +68,74 @@ export const DealListContent = () => {
       index: undefined, // undefined if dropped after the last item
     };
 
-    // compute local state change synchronously
-    setDealsByStage(
-      updateDealStageLocal(
+    const move = (extra: Partial<Deal> = {}) => {
+      // compute local state change synchronously
+      setDealsByStage(
+        updateDealStageLocal(
+          sourceDeal,
+          { stage: sourceStage, index: source.index },
+          { stage: destinationStage, index: destination.index },
+          dealsByStage,
+        ),
+      );
+      // persist the changes
+      return updateDealStage(
         sourceDeal,
-        { stage: sourceStage, index: source.index },
-        { stage: destinationStage, index: destination.index },
-        dealsByStage,
-      ),
-    );
+        destinationDeal,
+        dataProvider,
+        extra,
+      ).then(() => {
+        refetch();
+      });
+    };
 
-    // persist the changes
-    updateDealStage(sourceDeal, destinationDeal, dataProvider).then(() => {
-      refetch();
-    });
+    if (
+      sourceStage !== destinationStage &&
+      CLOSING_STAGES.includes(destinationStage)
+    ) {
+      setPendingClose({
+        deal: sourceDeal,
+        stage: destinationStage as ClosingStage,
+        move,
+      });
+      return;
+    }
+    move();
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4">
-        {dealStages.map((stage) => (
-          <DealColumn
-            stage={stage.value}
-            deals={dealsByStage[stage.value]}
-            key={stage.value}
-          />
-        ))}
-      </div>
-    </DragDropContext>
+    <>
+      {pendingClose ? (
+        <CloseDealDialog
+          deal={pendingClose.deal}
+          stage={pendingClose.stage}
+          isPending={closeDeal.isPending}
+          onCancel={() => setPendingClose(null)}
+          onConfirm={(values) =>
+            closeDeal.mutate(
+              {
+                deal: pendingClose.deal,
+                stage: pendingClose.stage,
+                values,
+                persist: (_deal, data) => pendingClose.move(data),
+              },
+              { onSettled: () => setPendingClose(null) },
+            )
+          }
+        />
+      ) : null}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-4">
+          {dealStages.map((stage) => (
+            <DealColumn
+              stage={stage.value}
+              deals={dealsByStage[stage.value]}
+              key={stage.value}
+            />
+          ))}
+        </div>
+      </DragDropContext>
+    </>
   );
 };
 
@@ -128,6 +182,8 @@ const updateDealStage = async (
     index?: number; // undefined if dropped after the last item
   },
   dataProvider: DataProvider,
+  // Columns written with the move: won_amount / lost_reason_id when closing.
+  extra: Partial<Deal> = {},
 ) => {
   if (source.stage === destination.stage) {
     // moving deal inside the same column
@@ -235,6 +291,7 @@ const updateDealStage = async (
       dataProvider.update("deals", {
         id: source.id,
         data: {
+          ...extra,
           index: destinationIndex,
           stage: destination.stage,
         },
