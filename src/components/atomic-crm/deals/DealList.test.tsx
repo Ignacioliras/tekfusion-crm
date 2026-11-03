@@ -14,8 +14,12 @@ describe("DealList", () => {
   it("lets an admin filter the board by account manager instead of only-mine", async () => {
     const screen = await render(<AdminAccountManagerFilter />);
 
-    await expect.element(screen.getByText("Acme - Jane deal")).toBeVisible();
-    await expect.element(screen.getByText("Acme - Marie deal")).toBeVisible();
+    await expect
+      .element(screen.getByText("Jane deal", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByText("Marie deal", { exact: true }))
+      .toBeVisible();
     await expect
       .element(screen.getByText("Only deals I manage"))
       .not.toBeInTheDocument();
@@ -24,15 +28,19 @@ describe("DealList", () => {
     await screen.getByRole("option", { name: "Marie Curie" }).click();
 
     await expect
-      .element(screen.getByText("Acme - Jane deal"))
+      .element(screen.getByText("Jane deal", { exact: true }))
       .not.toBeInTheDocument();
 
     const clearButton = screen.getByRole("button", { name: "Clear value" });
     await clearButton.element().focus();
     await userEvent.keyboard("{Enter}");
 
-    await expect.element(screen.getByText("Acme - Jane deal")).toBeVisible();
-    await expect.element(screen.getByText("Acme - Marie deal")).toBeVisible();
+    await expect
+      .element(screen.getByText("Jane deal", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByText("Marie deal", { exact: true }))
+      .toBeVisible();
   });
 
   it("keeps the only-mine switch for a user who is not an admin", async () => {
