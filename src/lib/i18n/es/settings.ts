@@ -84,11 +84,6 @@ export const settingsMessages: PartialCrmMessages = {
         "No puedes agregar más de 10 correos secundarios",
       secondary_emails_help:
         "Otras direcciones desde las que envías correos. Deja una vacía para quitarla.",
-      inbound: {
-        description:
-          "Puedes empezar a enviar correos a la dirección de entrada de tu servidor, por ejemplo agregándola en el campo %{field}. El CRM procesará los correos y agregará notas a los contactos correspondientes.",
-        title: "Correo entrante",
-      },
       mcp: {
         title: "Servidor MCP",
         description:

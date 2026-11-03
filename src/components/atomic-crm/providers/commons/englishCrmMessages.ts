@@ -594,11 +594,6 @@ export const englishCrmMessages = {
         "You cannot add more than 10 secondary email addresses",
       secondary_emails_help:
         "Other addresses you send emails from. Leave one empty to remove it.",
-      inbound: {
-        description:
-          "You can start sending emails to your server's inbound email address, e.g. by adding it to the %{field} field. CRM TekFusion will process the emails and add notes to the corresponding contacts.",
-        title: "Inbound email",
-      },
       mcp: {
         title: "MCP Server",
         description:

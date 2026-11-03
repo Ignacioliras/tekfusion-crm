@@ -43,3 +43,19 @@
 10. **Demo, FakeRest y stories** (ítems 2, 3, 4b): lo más riesgoso, porque los tests unitarios dependen de ellos. Solo después de reescribir esos tests.
 
 Cada paso en su propio PR (`fase-1/limpia-<item>`) con `npm run typecheck`, `npm run lint` y `npm run test:unit:app -- --run` en verde.
+
+## Estado (2026-11-03, rama `fase-1/limpieza`)
+
+- **Hecho:** ítem 1 (`doc/` y targets `doc-*` del `makefile`; la cita de `AGENTS.md` apunta al repo upstream), ítem 6 (función `postmark`, sus entradas en `config*.toml`, `VITE_INBOUND_EMAIL` en `vite.config.ts`, `.env.example` y `.env.development`, sección "Correo entrante" del perfil y sus claves i18n), workflows guardados (`docs/atomic/deploy.yml`, `docs/atomic/claude.yml`), `dashboard/Welcome.tsx`.
+- **No se tocó:** `demo/` y `vite.demo.config.ts` (borrarlos rompe `npm run dev:demo`, que es justo lo que usan). `supabase/functions/.env` está versionado y puede tener variables de Postmark: no se revisó porque el hook bloquea leer `.env`; que lo revise Ignacio.
+
+### Storybook: qué habría que cambiar (no se hizo)
+
+**12 tests** (no 10) importan `*.stories` como fixtures:
+`contacts/ContactCreate`, `contacts/ContactEdit`, `contacts/ContactList`, `contacts/ContactShow`, `dashboard/DashboardStepper`, `dataImport/DataImportButton`, `deals/DealInputs`, `deals/DealList`, `notes/NoteInputs`, `notes/NoteInputsMobile`, `notes/NotesIteratorMobile`, `tasks/TaskCreateSheet` (todos `*.test.tsx` bajo `src/components/atomic-crm/`).
+
+Orden propuesto:
+1. Reescribir esos 12 tests para montar los componentes con `StoryWrapper` (de `src/test/StoryWrapper.tsx`, que **no** depende de Storybook) y sus datos inline, como ya hacen `layout/Header.test.tsx` y `deals/DealTableList.test.tsx`.
+2. Borrar las 15 `*.stories.tsx`.
+3. Quitar el servidor: `.storybook/`, scripts `storybook` y `build-storybook` de `package.json`, target `storybook` del `makefile`, dependencias `storybook`, `@storybook/react-vite` y `eslint-plugin-storybook`, el import y `storybook.configs["flat/recommended"]` de `eslint.config.js`, `/storybook-static` de `.prettierignore` y `*storybook.log` de `.gitignore`.
+4. Revisar `scripts/generate-registry.mjs` (ítem 5) por si lista stories.
