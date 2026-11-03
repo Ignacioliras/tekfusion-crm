@@ -29,7 +29,6 @@ export const authMessages: PartialCrmMessages = {
 };
 
 // ra-supabase auth screens (keys from ra-supabase-language-english).
-// OAuth consent is not used by TekFusion: left in English.
 export const raSupabaseMessages = {
   "ra-supabase": {
     auth: {

@@ -164,4 +164,4 @@ Cada test entra como un usuario del seed (`set local role authenticated` + `requ
 - **Checkpoint:** ninguna policy de Atomic con `using (true)` (test `16`), CI en verde, revisión con `database-reviewer` y `security-reviewer`.
 5. Tablas de configuración + columnas de `deals`/`contacts` + seed (líneas, motivos, `business_line` por lead) → `14`.
 6. Auth: TOTP obligatorio para gerencia, contraseña mínima 12, HaveIBeenPwned (`config.toml` + interfaz). 7. Importador CSV con deduplicación. 8. Security Advisor sin errores.
-- Prerrequisito de datos reales (ítem 7 del inventario de limpieza): quitar la Edge Function `mcp` y el servidor OAuth.
+- Prerrequisito de datos reales (ítem 7 del inventario de limpieza): quitar la Edge Function `mcp` y el servidor OAuth. **Hecho el 2026-11-03 en `fase-2/datos`.**

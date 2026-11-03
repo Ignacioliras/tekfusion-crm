@@ -84,11 +84,6 @@ export const settingsMessages: PartialCrmMessages = {
         "No puedes agregar más de 10 correos secundarios",
       secondary_emails_help:
         "Otras direcciones desde las que envías correos. Deja una vacía para quitarla.",
-      mcp: {
-        title: "Servidor MCP",
-        description:
-          "Usa esta URL para conectar tu asistente de IA a los datos del CRM mediante el Model Context Protocol (MCP).",
-      },
       password: {
         change: "Cambiar contraseña",
       },

@@ -13,7 +13,6 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { Admin } from "@/components/admin/admin";
 import { ForgotPasswordPage } from "@/components/supabase/forgot-password-page";
 import { SetPasswordPage } from "@/components/supabase/set-password-page";
-import { OAuthConsentPage } from "@/components/supabase/oauth-consent-page";
 
 import companies from "../companies";
 import contacts from "../contacts";
@@ -89,7 +88,7 @@ export type CRMProps = {
  * @param {string[]} dealPipelineStatuses - The statuses of deals in the pipeline used in the application.
  * @param {DealStage[]} dealStages - The stages of deals used in the application.
  * @param {RaThemeOptions} lightTheme - The theme to use when the application is in light mode.
- * @param {string} darkModeLogo - Logo shown in dark mode and on the auth pages. Must be an imported asset, an absolute URL, or a data URI — never a route-relative path like "./logos/x.svg", which breaks on nested routes such as /oauth/consent (issue #291).
+ * @param {string} darkModeLogo - Logo shown in dark mode and on the auth pages. Must be an imported asset, an absolute URL, or a data URI — never a route-relative path like "./logos/x.svg", which breaks on nested routes (issue #291).
  * @param {string} lightModeLogo - Logo shown in light mode. Same rule as darkModeLogo: imported asset, absolute URL, or data URI only.
  * @param {NoteStatus[]} noteStatuses - The statuses of notes used in the application.
  * @param {LabeledValue[]} taskTypes - The types of tasks used in the application.
@@ -256,7 +255,6 @@ const DesktopAdmin = (
           path={ForgotPasswordPage.path}
           element={<ForgotPasswordPage />}
         />
-        <Route path={OAuthConsentPage.path} element={<OAuthConsentPage />} />
       </CustomRoutes>
 
       <CustomRoutes>
@@ -334,7 +332,6 @@ const MobileAdmin = (
             path={ForgotPasswordPage.path}
             element={<ForgotPasswordPage />}
           />
-          <Route path={OAuthConsentPage.path} element={<OAuthConsentPage />} />
         </CustomRoutes>
         <CustomRoutes>
           <Route

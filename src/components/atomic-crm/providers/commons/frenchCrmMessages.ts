@@ -604,11 +604,6 @@ export const frenchCrmMessages = {
         "Vous ne pouvez pas ajouter plus de 10 adresses e-mail secondaires",
       secondary_emails_help:
         "Autres adresses depuis lesquelles vous envoyez des e-mails. Laissez-en une vide pour la supprimer.",
-      mcp: {
-        title: "Serveur MCP",
-        description:
-          "Utilisez cette URL pour connecter votre assistant IA aux données de votre CRM via le Model Context Protocol (MCP).",
-      },
       password: {
         change: "Changer le mot de passe",
       },
