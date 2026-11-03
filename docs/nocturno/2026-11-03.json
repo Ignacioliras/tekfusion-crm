@@ -28,13 +28,16 @@
       "criterio": "Los tres comandos terminan con código 0.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 04:45:41"
+      "commit": "d7ad914c5c8471ca505f7f1cae057f7e37783c0f",
+      "costo_usd": 0.8005970000000001,
+      "session_id": "08d6c0d7-654b-4b93-86b2-19aae9cb558d",
+      "inicio": "2026-11-03 04:45:41",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: typecheck, lint y build pasan en Windows sin cambios; anotada la línea base OK y los avisos en docs/nocturno/aprendizajes.md.",
+      "fin": "2026-11-03 04:48:55"
     },
     {
       "id": "T2",
