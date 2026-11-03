@@ -18,17 +18,20 @@
       "id": "T6",
       "titulo": "Inventario de lo que Atomic trae y no usamos",
       "descripcion": "Escribir docs/atomic/inventario-limpieza.md: una tabla con cada cosa que Atomic CRM trae y que el CRM TekFusion no necesita (ver CLAUDE.md §4 último punto: doc/ sitio Astro, demo/, Storybook, registro shadcn, Postmark/correo entrante, FakeRest si no se usa en demo, el MCP de supabase/functions/mcp, deal categories, company sectors, contact gender, etc.). Para cada ítem: ruta(s), qué otros archivos dependen de él (usar grep en src/, supabase/, package.json, makefile, .github/), qué pasaría si se borra, y una recomendación (borrar en Fase 1 / dejar / decidir con Ignacio). No borrar nada: solo documentar. Terminar con una sección 'Orden sugerido de limpieza' de menor a mayor riesgo.",
-      "archivos": ["docs/atomic/inventario-limpieza.md"],
+      "archivos": [
+        "docs/atomic/inventario-limpieza.md"
+      ],
       "verificacion": "node -e \"const s=require('fs').readFileSync('docs/atomic/inventario-limpieza.md','utf8'); if(!/\\|.*Ruta/i.test(s)||s.length<2500) process.exit(1)\"",
       "criterio": "El documento existe, tiene una tabla con columna Ruta y más de 2.500 caracteres.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 05:06:52"
     },
     {
       "id": "T7",
@@ -72,7 +75,9 @@
       "id": "T9",
       "titulo": "Tests pgTAP de las políticas RLS actuales de Atomic",
       "descripcion": "Documentar con tests el punto de partida de seguridad antes de reemplazar las políticas en la Fase 2. Leer supabase/schemas/05_policies.sql y 06_grants.sql. Crear supabase/tests/05_rls_atomic_actual.test.sql con pgTAP que verifique, para las tablas deals, contacts, companies, sales, tasks, contact_notes y deal_notes: que RLS está activada (relrowsecurity), que existe al menos una política para authenticated, y que el rol anon NO tiene política de select (o documentar en un comentario si la tiene). Usar has_table, policies_are o policy_cmd_is / is() sobre pg_policies según lo que pgTAP ofrezca en esta versión; mirar supabase/tests/00_humo.test.sql para el formato (begin; select plan(N); ... select * from finish(); rollback;). Ajustar plan(N) al número exacto de aserciones. No cambiar ninguna política.",
-      "archivos": ["supabase/tests/05_rls_atomic_actual.test.sql"],
+      "archivos": [
+        "supabase/tests/05_rls_atomic_actual.test.sql"
+      ],
       "verificacion": "npx supabase test db",
       "criterio": "`supabase test db` pasa con el test nuevo y el de humo.",
       "depende_de": [],
@@ -102,6 +107,13 @@
       "commit": null,
       "costo_usd": 0,
       "session_id": null
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-03 05:06:52",
+      "modelo": "opus",
+      "simulado": false
     }
   ]
 }

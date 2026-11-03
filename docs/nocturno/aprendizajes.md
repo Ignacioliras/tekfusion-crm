@@ -1,0 +1,1 @@
+- T6: 10 tests unitarios importan `*.stories.tsx` como fixtures (vía `src/test/StoryWrapper.tsx` + FakeRest): borrar Storybook rompe `test:unit:app`. Y `.husky/pre-commit` corre `registry:gen`: quitar esa línea antes de borrar `scripts/generate-registry.mjs`.
