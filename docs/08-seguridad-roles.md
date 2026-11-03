@@ -7,7 +7,7 @@ Base: documentación oficial de Supabase (checklist de seguridad), RLS por defec
 - El rol vive en `perfiles.rol`, escrito solo por gerencia (policy). Nunca en `user_metadata` (editable por el usuario).
 - Sesiones: expiración 12 h; cierre de sesión al cambiar contraseña.
 - **2FA (TOTP) obligatorio para gerencia**, opcional para ejecutivos. Supabase Auth MFA. **[Fase 2]**
-- Contraseña mínima 12 caracteres; activar en Supabase la protección contra contraseñas filtradas (HaveIBeenPwned). **[Fase 2]**
+- Contraseña mínima 12 caracteres con letras y números: `supabase/config.toml` (`minimum_password_length = 12`, `password_requirements = "letters_digits"`), aplica en local y en los proyectos de la nube al hacer `config push`. **[Hecho, 2026-11-03]** La **protección contra contraseñas filtradas** (HaveIBeenPwned) y el **Security Advisor** no existen en local: se activan y revisan en el panel de Supabase (Authentication → Policies; Advisors) al crear cada proyecto en la nube (staging y producción). Queda en el checklist de `16-arranque.md`.
 - Baja de un usuario (checklist): desactivar en Auth, cerrar sus sesiones, rotar su clave SMTP/IMAP, reasignar sus leads y conversaciones, anotar en `audit_log`. Vive en Configuración → Usuarios → "Dar de baja". **[Hecho en Fase 2** (2026-11-03): RPC `offboard_sale` + Edge `users` DELETE; faltan SMTP/IMAP (Fase 5) y conversaciones (Fase 4)**]**
 
 ## RLS (políticas por tabla)

@@ -84,6 +84,13 @@ Para probar el mecanismo sin gastar nada: `node scripts\tekfusion\nocturno.mjs -
 - **`npm install` falla con node-gyp o permisos:** confirma Node 24 (`node -v`), cierra VS Code y vuelve a intentar.
 - **Git dice "dubious ownership":** `git config --global --add safe.directory D:/Tekfusion/tekfusion-crm` (el script ya lo hace).
 
+## Al crear un proyecto de Supabase en la nube (staging y producción)
+Lo que no existe en local y se hace en el panel de Supabase, una vez por proyecto:
+- [ ] Authentication → Policies: activar **"Leaked password protection"** (HaveIBeenPwned). La política de largo y requisitos viaja en `config.toml` con `npx supabase config push`.
+- [ ] Authentication → Multi-factor: confirmar TOTP habilitado (viaja en `config.toml`).
+- [ ] Advisors → **Security Advisor**: cero avisos de nivel error antes de cerrar la fase (`docs/09`).
+- [ ] Authentication → Sign in: desactivar el registro abierto (`enable_signup`) en producción (decisión pendiente en `docs/10`).
+
 ## Lo que NO hacer todavía
 - No conectar un número de WhatsApp real ni el Gmail de marketing.
 - No crear nada en producción ni proyectos de Supabase con datos reales.
