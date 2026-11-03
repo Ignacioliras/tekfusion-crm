@@ -1,1 +1,2 @@
 - T6: 10 tests unitarios importan `*.stories.tsx` como fixtures (vía `src/test/StoryWrapper.tsx` + FakeRest): borrar Storybook rompe `test:unit:app`. Y `.husky/pre-commit` corre `registry:gen`: quitar esa línea antes de borrar `scripts/generate-registry.mjs`.
+- T7: el proyecto vitest 'functions' solo resuelve los `npm:`/`jsr:` con alias en vitest.config.ts (no hay alias para `npm:zod`), y `npm run typecheck` no cubre supabase/functions/. Por eso leadClassification.ts valida a mano, sin zod.
