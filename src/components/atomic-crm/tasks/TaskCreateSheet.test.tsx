@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { Mobile } from "./TaskCreateSheet.stories";
+import { Mobile } from "./TaskCreateSheet.fixtures";
 import { useDataProvider, type DataProvider } from "ra-core";
 import { buildContact } from "@/test/StoryWrapper";
 

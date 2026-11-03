@@ -1,16 +1,7 @@
-import type { Meta } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { TaskCreateSheet } from "./TaskCreateSheet";
 import { StoryWrapper, buildContact } from "@/test/StoryWrapper";
-const meta = {
-  title: "Atomic CRM/Tasks/TaskCreateSheet",
-  parameters: {
-    layout: "fullscreen",
-  },
-} satisfies Meta;
-
-export default meta;
 
 const defaultData = {
   contacts: [

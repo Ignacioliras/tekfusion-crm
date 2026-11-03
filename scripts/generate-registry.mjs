@@ -27,15 +27,16 @@ const excludedLibFiles = [
 ];
 
 const testFilePattern = "**/*.{test,spec}.*";
-const storyFilePattern = "**/*.stories.*";
+// Test fixtures (former Storybook stories) stay out of the registry.
+const fixtureFilePattern = "**/*.fixtures.*";
 
 const atomicCrmComponents = globSync(
   path.join(atomicCrmComponentsPath, "**", "*.ts*"),
-  { ignore: [testFilePattern, storyFilePattern] },
+  { ignore: [testFilePattern, fixtureFilePattern] },
 );
 const supabaseComponents = globSync(
   path.join(supabaseComponentsPath, "**", "*.ts*"),
-  { ignore: [testFilePattern, storyFilePattern] },
+  { ignore: [testFilePattern, fixtureFilePattern] },
 );
 const hooks = globSync(path.join(hooksPath, "**", "*.ts*")).filter((hook) => {
   return !excludedHooks.includes(path.basename(hook));

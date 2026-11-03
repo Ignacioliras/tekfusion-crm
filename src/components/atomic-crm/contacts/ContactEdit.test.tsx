@@ -2,11 +2,11 @@ import { render } from "vitest-browser-react";
 import {
   ContactEditBasic,
   ContactEditWithEmailsAndPhones,
-} from "./ContactEdit.stories";
+} from "./ContactEdit.fixtures";
 import {
   ContactEditBasic as ContactEditMobileBasic,
   ContactEditWithEmailsAndPhones as ContactEditMobileWithEmailsAndPhones,
-} from "./ContactEdit.mobile.stories";
+} from "./ContactEdit.mobile.fixtures";
 import { page } from "vitest/browser";
 
 describe("ContactEdit", () => {

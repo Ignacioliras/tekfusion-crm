@@ -1,10 +1,10 @@
-import { composeStories } from "@storybook/react-vite";
 import { render } from "vitest-browser-react";
-import * as stories from "./NoteInputs.stories";
-import { NoteInputsStory } from "./NoteInputs.stories";
-
-const { Default, WithAttachmentDefault, WithSaveButton } =
-  composeStories(stories);
+import {
+  Default,
+  NoteInputsStory,
+  WithAttachmentDefault,
+  WithSaveButton,
+} from "./NoteInputs.fixtures";
 
 describe("NoteInputs", () => {
   it("renders the note textarea", async () => {

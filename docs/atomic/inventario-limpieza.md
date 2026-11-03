@@ -49,7 +49,9 @@ Cada paso en su propio PR (`fase-1/limpia-<item>`) con `npm run typecheck`, `npm
 - **Hecho:** ítem 1 (`doc/` y targets `doc-*` del `makefile`; la cita de `AGENTS.md` apunta al repo upstream), ítem 6 (función `postmark`, sus entradas en `config*.toml`, `VITE_INBOUND_EMAIL` en `vite.config.ts`, `.env.example` y `.env.development`, sección "Correo entrante" del perfil y sus claves i18n), workflows guardados (`docs/atomic/deploy.yml`, `docs/atomic/claude.yml`), `dashboard/Welcome.tsx`.
 - **No se tocó:** `demo/` y `vite.demo.config.ts` (borrarlos rompe `npm run dev:demo`, que es justo lo que usan). El archivo de variables de `supabase/functions` se dejó de versionar: tenía solo valores locales por defecto y quedó como `.example` (sin las variables de Postmark).
 
-### Storybook: qué habría que cambiar (no se hizo)
+### Storybook: hecho (2026-11-03, rama `fase-2/plan`)
+
+Las 13 historias que usaban los tests pasaron a módulos de datos de prueba `*.fixtures.tsx` (sin metadata de Storybook; las de notas, de `args` a componentes), `ContactShow.stories.tsx` se borró por no usarse, y se quitaron `.storybook/`, los scripts, las 3 dependencias, el plugin de ESLint, el target del `makefile` y las entradas de `.prettierignore` y `.gitignore`. `scripts/generate-registry.mjs` ahora excluye `*.fixtures.*` del registro. Plan original:
 
 **11 tests** (no 10) importan `*.stories` como fixtures (el de `DashboardStepper` se borró con el asistente):
 `contacts/ContactCreate`, `contacts/ContactEdit`, `contacts/ContactList`, `contacts/ContactShow`, `dataImport/DataImportButton`, `deals/DealInputs`, `deals/DealList`, `notes/NoteInputs`, `notes/NoteInputsMobile`, `notes/NotesIteratorMobile`, `tasks/TaskCreateSheet` (todos `*.test.tsx` bajo `src/components/atomic-crm/`).

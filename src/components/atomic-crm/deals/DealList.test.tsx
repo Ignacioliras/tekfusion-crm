@@ -4,7 +4,7 @@ import { page, userEvent } from "vitest/browser";
 import {
   AdminAccountManagerFilter,
   NonAdminAccountManagerFilter,
-} from "./DealList.stories";
+} from "./DealList.fixtures";
 
 describe("DealList", () => {
   beforeAll(() => {

@@ -9,11 +9,11 @@ import {
   DesktopError,
   BulkTagButton,
   NonAdminAccountManagerFilter,
-} from "./ContactList.stories";
+} from "./ContactList.fixtures";
 import {
   MobileSuccess,
   MobileWithNameSearch,
-} from "./ContactList.mobile.stories";
+} from "./ContactList.mobile.fixtures";
 
 afterEach(() => {
   vi.restoreAllMocks();

@@ -152,9 +152,6 @@ update-changelog: ## Update the changelog with the unreleased changes (ran autom
 	npm run update-changelog
 	npx prettier --config ./.prettierrc.json --write "CHANGELOG.md"
 
-storybook: ## start storybook
-	npm run storybook
-
 watch: ## live monitor of the most recent agent session (agents, hooks, diagnosis)
 	node scripts/harness-monitor.mjs --watch
 
