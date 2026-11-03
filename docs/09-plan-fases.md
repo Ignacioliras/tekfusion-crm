@@ -33,6 +33,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [x] 🔒 Adjuntos privados: bucket cerrado, URLs firmadas de 60 min, policy por lead/contacto visible (2026-11-03, fase-2/seguridad; adelantado de la Fase 3).
 
 ## Fase 3 · CRM (7 días)
+- [x] Esquema de la fase: `quotes`, `followups`, `templates`, `alerts`, `quick_replies` y bucket privado `quotes`, con RLS, grants, índices, tests pgTAP (`20_`–`23_`) y seed ficticio (15 cotizaciones, 20 seguimientos, 10 alertas). *Hecho (2026-11-03, fase-3/esquema); decisiones en `docs/10`.*
 - [ ] Rediseño visual: identidad TekFusion, navegación (Pipeline, Leads, WhatsApp, Dashboard, Configuración), estados vacíos y mensajes en español.
 - [ ] Pipeline kanban + lista con filtros, búsqueda global y export CSV (RF-04). Motivo de pérdida obligatorio.
 - [ ] Ficha del lead con línea de tiempo unificada (RF-05). 🔒 Correos mostrados sanitizados (DOMPurify, lista blanca); WhatsApp siempre texto plano.

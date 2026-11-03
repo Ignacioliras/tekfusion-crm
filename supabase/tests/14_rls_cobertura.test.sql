@@ -3,7 +3,7 @@
 -- una policy para anon, si una vista pierde security_invoker, o si alguien
 -- agrega una policy de delete a las tablas que nunca se borran (decisión 3).
 begin;
-select plan(13);
+select plan(14);
 
 select is(
   (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -57,5 +57,10 @@ select is(
   (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and (coalesce(qual, '') || coalesce(with_check, '')) not similar to '%(is_internal_user|current_user_role)%'),
   0::bigint, 'toda policy de storage.objects exige un usuario interno (no basta el bucket)');
 
+select is(
+  (select string_agg(table_name || ':' || privilege_type, ',' order by table_name, privilege_type) from information_schema.role_table_grants
+    where grantee = 'authenticated' and table_schema = 'public'
+      and ((table_name in ('quotes', 'followups', 'alerts') and privilege_type = 'DELETE') or (table_name = 'alerts' and privilege_type in ('INSERT', 'UPDATE')))),
+  null, 'cotizaciones, seguimientos y alertas no se borran; las alertas solo las crea el sistema y el usuario solo toca read_at');
 select * from finish();
 rollback;
