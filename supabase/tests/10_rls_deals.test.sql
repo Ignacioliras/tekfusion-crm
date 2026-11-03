@@ -3,7 +3,7 @@
 -- Las policies no lanzan error en update/delete: filtran filas. Por eso se mide
 -- cuántas filas tocó cada DML con exec_count(); los insert y los with check sí lanzan 42501.
 begin;
-select plan(24);
+select plan(25);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -65,6 +65,14 @@ select is((select count(*) from public.deals), (select total + 2 from fx), 'lect
 select throws_ok('insert into public.deals (name, stage, company_id) values (''lector'', ''nuevo'', 1)', '42501', null, 'lector no crea leads');
 select is(pg_temp.exec_count(format('update public.deals set name = %L where id = %s', 'x', (select own_deal from fx))), 0::bigint, 'lector no edita leads');
 select throws_ok(format('select public.take_deal(%s)', (select foreign_deal from fx)), '42501', null, 'lector no toma leads');
+reset role;
+-- Un lector que quedó dueño de un lead (lo bajaron de rol) tampoco lo edita.
+update public.deals set sales_id = (select id from public.sales where email = 'pablo.herrera@tekfusion-demo.cl') where id = (select foreign_deal from fx);
+select pg_temp.login_as('pablo.herrera@tekfusion-demo.cl');
+select is(pg_temp.exec_count(format('update public.deals set name = %L where id = %s', 'x', (select foreign_deal from fx))), 0::bigint, 'lector dueño de un lead no lo edita');
+reset role;
+update public.deals set sales_id = (select diego from fx) where id = (select foreign_deal from fx);
+select pg_temp.login_as('pablo.herrera@tekfusion-demo.cl');
 select is(pg_temp.exec_count('delete from public.deals'), 0::bigint, 'lector no borra leads');
 
 -- Gerencia -----------------------------------------------------------------
