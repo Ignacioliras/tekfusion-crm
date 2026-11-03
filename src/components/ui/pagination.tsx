@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslate } from "ra-core"
 import { type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
@@ -10,10 +11,11 @@ import {
 } from "lucide-react"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+  const translate = useTranslate()
   return (
     <nav
       role="navigation"
-      aria-label="pagination"
+      aria-label={translate("crm.a11y.pagination", { _: "pagination" })}
       data-slot="pagination"
       className={cn("mx-auto flex w-full justify-center", className)}
       {...props}
@@ -68,9 +70,12 @@ function PaginationPrevious({
   text = "Previous",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+  const translate = useTranslate()
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={translate("ra.navigation.previous", {
+        _: "Go to previous page",
+      })}
       size="default"
       className={cn("pl-2!", className)}
       {...props}
@@ -86,9 +91,10 @@ function PaginationNext({
   text = "Next",
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+  const translate = useTranslate()
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={translate("ra.navigation.next", { _: "Go to next page" })}
       size="default"
       className={cn("pr-2!", className)}
       {...props}
@@ -103,6 +109,7 @@ function PaginationEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
+  const translate = useTranslate()
   return (
     <span
       aria-hidden
@@ -114,7 +121,9 @@ function PaginationEllipsis({
       {...props}
     >
       <MoreHorizontalIcon />
-      <span className="sr-only">More pages</span>
+      <span className="sr-only">
+        {translate("crm.a11y.more_pages", { _: "More pages" })}
+      </span>
     </span>
   )
 }

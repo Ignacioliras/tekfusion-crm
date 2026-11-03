@@ -27,6 +27,8 @@ import { ConfirmationRequired } from "../login/ConfirmationRequired";
 import { ImportPage } from "../misc/ImportPage";
 import { ChangelogPage } from "../misc/ChangelogPage";
 import { CreditosPage } from "../creditos/CreditosPage";
+import { DealTableList } from "../deals/DealTableList";
+import { WhatsAppPage } from "../whatsapp/WhatsAppPage";
 import {
   getAuthProvider as defaultAuthProviderBuilder,
   getDataProvider as defaultDataProviderBuilder,
@@ -81,7 +83,7 @@ export type CRMProps = {
  * seeds the store with any custom prop values for backwards compatibility.
  *
  * @param {LabeledValue[]} companySectors - The list of company sectors used in the application.
- * @param {string} currency - The ISO 4217 currency code used to format monetary values (e.g. "USD", "EUR", "GBP").
+ * @param {string} currency - The ISO 4217 currency code used to format monetary values (e.g. "CLP", "USD").
  * @param {RaThemeOptions} darkTheme - The theme to use when the application is in dark mode.
  * @param {LabeledValue[]} dealCategories - The categories of deals used in the application.
  * @param {string[]} dealPipelineStatuses - The statuses of deals in the pipeline used in the application.
@@ -263,6 +265,8 @@ const DesktopAdmin = (
         <Route path={ImportPage.path} element={<ImportPage />} />
         <Route path={ChangelogPage.path} element={<ChangelogPage />} />
         <Route path={CreditosPage.path} element={<CreditosPage />} />
+        <Route path={DealTableList.path} element={<DealTableList />} />
+        <Route path={WhatsAppPage.path} element={<WhatsAppPage />} />
       </CustomRoutes>
       <Resource name="deals" {...deals} />
       <Resource name="contacts" {...contacts} />
@@ -338,7 +342,11 @@ const MobileAdmin = (
             element={<SettingsPageMobile />}
           />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
+          <Route path={DealTableList.path} element={<DealTableList />} />
+          <Route path={WhatsAppPage.path} element={<WhatsAppPage />} />
         </CustomRoutes>
+        {/* Desktop screens reused on small screens: no mobile-specific flows (CLAUDE.md rule 9). */}
+        <Resource name="deals" {...deals} />
         <Resource
           name="contacts"
           list={ContactListMobile}
@@ -347,7 +355,7 @@ const MobileAdmin = (
         >
           <Route path=":id/notes/:noteId" element={<NoteShowPage />} />
         </Resource>
-        <Resource name="companies" show={CompanyShow} />
+        <Resource name="companies" list={companies.list} show={CompanyShow} />
         <Resource name="tasks" list={MobileTasksList} />
       </Admin>
     </PersistQueryClientProvider>

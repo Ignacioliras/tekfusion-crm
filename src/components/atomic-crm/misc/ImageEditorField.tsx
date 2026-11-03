@@ -60,7 +60,7 @@ const ImageEditorField = (props: ImageEditorFieldProps) => {
           ) : (
             <img
               {...commonProps}
-              className="cursor-pointer object-cover"
+              className="cursor-pointer object-contain"
               style={{ width, height }}
               alt={translate("crm.image_editor.editable_content", {
                 _: "Editable content",
@@ -178,7 +178,11 @@ const ImageEditorDialog = (props: ImageEditorDialogProps) => {
             <Cropper
               ref={cropperRef}
               src={imageSrc}
-              aspectRatio={1}
+              aspectRatio={
+                props.type !== "avatar" && props.width && props.height
+                  ? props.width / props.height
+                  : 1
+              }
               guides={false}
               cropBoxResizable={false}
             />

@@ -98,7 +98,7 @@ supabase/
 
 ### Key Architecture Patterns
 
-For more details, check out the doc/src/content/docs/developers/architecture-choices.mdx document.
+For more details, see the architecture choices page of the upstream docs: https://github.com/marmelab/atomic-crm/blob/main/doc/src/content/docs/developers/architecture-choices.mdx
 
 #### Mutable Dependencies
 

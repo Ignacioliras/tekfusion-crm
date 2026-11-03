@@ -9,22 +9,22 @@ import lightModeLogo from "./logos/logo_atomic_crm_light.svg";
 export const defaultDarkModeLogo = darkModeLogo;
 export const defaultLightModeLogo = lightModeLogo;
 
-export const defaultCurrency = "USD";
+export const defaultCurrency = "CLP";
 
-export const defaultTitle = "Atomic CRM";
+export const defaultTitle = "CRM TekFusion";
 
 export const defaultCompanySectors = [
-  { value: "communication-services", label: "Communication Services" },
-  { value: "consumer-discretionary", label: "Consumer Discretionary" },
-  { value: "consumer-staples", label: "Consumer Staples" },
-  { value: "energy", label: "Energy" },
-  { value: "financials", label: "Financials" },
-  { value: "health-care", label: "Health Care" },
-  { value: "industrials", label: "Industrials" },
-  { value: "information-technology", label: "Information Technology" },
-  { value: "materials", label: "Materials" },
-  { value: "real-estate", label: "Real Estate" },
-  { value: "utilities", label: "Utilities" },
+  { value: "communication-services", label: "Telecomunicaciones" },
+  { value: "consumer-discretionary", label: "Consumo discrecional" },
+  { value: "consumer-staples", label: "Consumo básico" },
+  { value: "energy", label: "Energía" },
+  { value: "financials", label: "Finanzas" },
+  { value: "health-care", label: "Salud" },
+  { value: "industrials", label: "Industria" },
+  { value: "information-technology", label: "Tecnologías de la información" },
+  { value: "materials", label: "Materiales" },
+  { value: "real-estate", label: "Inmobiliario" },
+  { value: "utilities", label: "Servicios básicos" },
 ];
 
 export const defaultDealStages = ETAPAS.map(({ value, label }) => ({
@@ -43,22 +43,22 @@ export const defaultDealCategories = [
 ];
 
 export const defaultNoteStatuses = [
-  { value: "cold", label: "Cold", color: "#7dbde8" },
-  { value: "warm", label: "Warm", color: "#e8cb7d" },
-  { value: "hot", label: "Hot", color: "#e88b7d" },
-  { value: "in-contract", label: "In Contract", color: "#a4e87d" },
+  { value: "cold", label: "Frío", color: "#7dbde8" },
+  { value: "warm", label: "Tibio", color: "#e8cb7d" },
+  { value: "hot", label: "Caliente", color: "#e88b7d" },
+  { value: "in-contract", label: "En contrato", color: "#a4e87d" },
 ];
 
 export const defaultTaskTypes = [
-  { value: "none", label: "None" },
-  { value: "email", label: "Email" },
+  { value: "none", label: "Ninguno" },
+  { value: "email", label: "Correo" },
   { value: "demo", label: "Demo" },
-  { value: "lunch", label: "Lunch" },
-  { value: "meeting", label: "Meeting" },
-  { value: "follow-up", label: "Follow-up" },
-  { value: "thank-you", label: "Thank you" },
-  { value: "ship", label: "Ship" },
-  { value: "call", label: "Call" },
+  { value: "lunch", label: "Almuerzo" },
+  { value: "meeting", label: "Reunión" },
+  { value: "follow-up", label: "Seguimiento" },
+  { value: "thank-you", label: "Agradecimiento" },
+  { value: "ship", label: "Despacho" },
+  { value: "call", label: "Llamada" },
 ];
 
 export const defaultConfiguration: ConfigurationContextValue = {

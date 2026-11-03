@@ -198,6 +198,7 @@ export const frenchCrmMessages = {
         amount: "Budget",
         expected_closing_date: "Date de clôture prévue",
         stage: "Étape",
+        sales_id: "Responsable du compte",
       },
       action: {
         back_to_deal: "Retour à l'affaire",
@@ -270,9 +271,6 @@ export const frenchCrmMessages = {
         error_loading: "Erreur lors du chargement des notes",
       },
       note_for_contact: "Note pour %{name}",
-      stepper: {
-        hint: "Accédez à une page de contact et ajoutez une note",
-      },
       added: "Note ajoutée",
       inputs: {
         add_note: "Ajouter une note",
@@ -394,7 +392,7 @@ export const frenchCrmMessages = {
         creating: "Création...",
         initial_user_created: "Utilisateur initial créé avec succès",
       },
-      welcome_title: "Bienvenue sur Atomic CRM",
+      welcome_title: "Bienvenue sur CRM TekFusion",
     },
     common: {
       account_manager: "Responsable de compte",
@@ -416,6 +414,16 @@ export const frenchCrmMessages = {
     },
     changelog: {
       title: "Notes de version",
+    },
+    whatsapp: {
+      coming_soon: "Disponible en phase 4",
+    },
+    a11y: {
+      pagination: "pagination",
+      more_pages: "Plus de pages",
+      breadcrumb: "fil d'Ariane",
+      more: "Plus",
+      toggle_sidebar: "Afficher/masquer la barre latérale",
     },
     credits: {
       title: "Crédits",
@@ -450,11 +458,6 @@ export const frenchCrmMessages = {
         "Erreur lors du chargement de la dernière activité",
       latest_notes: "Mes dernières notes",
       latest_notes_added_ago: "ajouté %{timeAgo}",
-      stepper: {
-        install: "Installer Atomic CRM",
-        progress: "%{step}/3 terminé",
-        whats_next: "Et ensuite ?",
-      },
       upcoming_tasks: "Tâches à venir",
     },
     data_import: {
@@ -585,6 +588,9 @@ export const frenchCrmMessages = {
     language: "Langue",
     navigation: {
       label: "Navigation CRM",
+      pipeline: "Pipeline",
+      dashboard: "Tableau de bord",
+      whatsapp: "WhatsApp",
     },
     profile: {
       add_secondary_email: "Ajouter un e-mail",
@@ -598,11 +604,6 @@ export const frenchCrmMessages = {
         "Vous ne pouvez pas ajouter plus de 10 adresses e-mail secondaires",
       secondary_emails_help:
         "Autres adresses depuis lesquelles vous envoyez des e-mails. Laissez-en une vide pour la supprimer.",
-      inbound: {
-        description:
-          "Vous pouvez commencer à envoyer des e-mails vers l'adresse de réception de votre serveur, par exemple en l'ajoutant au champ %{field}. Atomic CRM traitera les e-mails et ajoutera des notes aux contacts correspondants.",
-        title: "E-mail entrant",
-      },
       mcp: {
         title: "Serveur MCP",
         description:

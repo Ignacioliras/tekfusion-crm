@@ -194,6 +194,7 @@ export const englishCrmMessages = {
         amount: "Budget",
         expected_closing_date: "Expected closing date",
         stage: "Stage",
+        sales_id: "Account manager",
       },
       action: {
         back_to_deal: "Back to deal",
@@ -266,9 +267,6 @@ export const englishCrmMessages = {
         error_loading: "Error loading notes",
       },
       note_for_contact: "Note for %{name}",
-      stepper: {
-        hint: "Go to a contact page and add a note",
-      },
       added: "Note added",
       inputs: {
         add_note: "Add a note",
@@ -389,7 +387,7 @@ export const englishCrmMessages = {
         creating: "Creating...",
         initial_user_created: "Initial user successfully created",
       },
-      welcome_title: "Welcome to Atomic CRM",
+      welcome_title: "Welcome to CRM TekFusion",
     },
     common: {
       account_manager: "Account manager",
@@ -411,6 +409,16 @@ export const englishCrmMessages = {
     },
     changelog: {
       title: "Changelog",
+    },
+    whatsapp: {
+      coming_soon: "Available in Phase 4",
+    },
+    a11y: {
+      pagination: "pagination",
+      more_pages: "More pages",
+      breadcrumb: "breadcrumb",
+      more: "More",
+      toggle_sidebar: "Toggle Sidebar",
     },
     credits: {
       title: "Credits",
@@ -443,11 +451,6 @@ export const englishCrmMessages = {
       latest_activity_error: "Error loading latest activity",
       latest_notes: "My Latest Notes",
       latest_notes_added_ago: "added %{timeAgo}",
-      stepper: {
-        install: "Install Atomic CRM",
-        progress: "%{step}/3 done",
-        whats_next: "What's next?",
-      },
       upcoming_tasks: "Upcoming Tasks",
     },
     data_import: {
@@ -575,6 +578,9 @@ export const englishCrmMessages = {
     language: "Language",
     navigation: {
       label: "CRM navigation",
+      pipeline: "Pipeline",
+      dashboard: "Dashboard",
+      whatsapp: "WhatsApp",
     },
     profile: {
       add_secondary_email: "Add an email",
@@ -587,11 +593,6 @@ export const englishCrmMessages = {
         "You cannot add more than 10 secondary email addresses",
       secondary_emails_help:
         "Other addresses you send emails from. Leave one empty to remove it.",
-      inbound: {
-        description:
-          "You can start sending emails to your server's inbound email address, e.g. by adding it to the %{field} field. Atomic CRM will process the emails and add notes to the corresponding contacts.",
-        title: "Inbound email",
-      },
       mcp: {
         title: "MCP Server",
         description:

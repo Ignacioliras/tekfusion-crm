@@ -1,10 +1,11 @@
 import { ResponsiveBar } from "@nivo/bar";
 import { format, startOfMonth } from "date-fns";
 import { TrendingUp } from "lucide-react";
-import { useGetList, useTranslate } from "ra-core";
+import { useGetList, useLocaleState, useTranslate } from "ra-core";
 import { memo, useMemo } from "react";
 
 import { findDealLabel } from "../deals/dealUtils";
+import { getDateFnsLocale } from "../misc/RelativeDate";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import {
   ETAPAS_ABIERTAS,
@@ -12,6 +13,7 @@ import {
   type Etapa,
 } from "../tekfusion/estados";
 import type { Deal } from "../types";
+import { formatAmount } from "../tekfusion/money";
 
 const GANADO: Etapa = "ganado";
 const PERDIDO: Etapa = "perdido";
@@ -32,14 +34,11 @@ const threeMonthsAgo = new Date(
   new Date().setMonth(new Date().getMonth() - 6),
 ).toISOString();
 
-const DEFAULT_LOCALE = "en-US";
-
 export const DealsChart = memo(() => {
   const translate = useTranslate();
   const { dealStages, currency } = useConfigurationContext();
-  const acceptedLanguages = navigator
-    ? navigator.languages || [navigator.language]
-    : [DEFAULT_LOCALE];
+  const [locale = "es"] = useLocaleState();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const wonLabel = findDealLabel(dealStages, GANADO) ?? "Won";
   const lostLabel = findDealLabel(dealStages, PERDIDO) ?? "Lost";
 
@@ -66,7 +65,7 @@ export const DealsChart = memo(() => {
 
     const amountByMonth = Object.keys(dealsByMonth).map((month) => {
       return {
-        date: format(month, "MMM"),
+        date: format(month, "MMM", { locale: dateFnsLocale }),
         won: dealsByMonth[month]
           .filter((deal: Deal) => deal.stage === GANADO)
           .reduce((acc: number, deal: Deal) => {
@@ -89,7 +88,7 @@ export const DealsChart = memo(() => {
     });
 
     return amountByMonth;
-  }, [data]);
+  }, [data, dateFnsLocale]);
 
   if (isPending) return null; // FIXME return skeleton instead
   const range = months.reduce(
@@ -130,10 +129,7 @@ export const DealsChart = memo(() => {
           tooltip={({ value, indexValue }) => (
             <div className="p-2 bg-secondary rounded shadow inline-flex items-center gap-1 text-secondary-foreground">
               <strong>{indexValue}: </strong>&nbsp;{value > 0 ? "+" : ""}
-              {value.toLocaleString(acceptedLanguages.at(0) ?? DEFAULT_LOCALE, {
-                style: "currency",
-                currency,
-              })}
+              {formatAmount(value, currency)}
             </div>
           )}
           axisTop={{
@@ -172,7 +168,8 @@ export const DealsChart = memo(() => {
           }}
           axisLeft={null}
           axisRight={{
-            format: (v: any) => `${Math.abs(v / 1000)}k`,
+            format: (v: number) =>
+              formatAmount(Math.abs(v), currency, { compact: true }),
             tickValues: 8,
             style: {
               ticks: {

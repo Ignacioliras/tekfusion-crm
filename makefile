@@ -138,23 +138,6 @@ publish:
 typecheck:
 	npm run typecheck
 
-doc-install:
-	@(cd doc && npm install)
-
-doc: doc-dev
-
-doc-dev:
-	@(cd doc && npm run dev)
-
-doc-build:
-	@(cd doc && npm run build)
-
-doc-preview: doc-build
-	@(cd doc && npm run preview)
-
-doc-deploy:
-	@(cd doc && npx gh-pages -b gh-pages -d dist -e doc -m "Deploy docs" --remove doc)
-
 registry-build: ## build the shadcn registry
 	npm run registry:build
 

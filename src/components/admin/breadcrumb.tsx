@@ -21,7 +21,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Translate } from "ra-core";
+import { Translate, useTranslate } from "ra-core";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,6 +58,7 @@ import { cn } from "@/lib/utils";
 export const Breadcrumb = ({ children, ref }: BreadcrumbProps) => {
   const breadcrumbPortal = document.getElementById("breadcrumb");
   const isMobile = useIsMobile();
+  const translate = useTranslate();
   const [open, setOpen] = React.useState(false);
   if (!breadcrumbPortal) return null;
   return createPortal(
@@ -72,7 +73,11 @@ export const Breadcrumb = ({ children, ref }: BreadcrumbProps) => {
             <React.Fragment>
               <BreadcrumbItem>
                 <Drawer open={open} onOpenChange={setOpen}>
-                  <DrawerTrigger aria-label="Toggle Menu">
+                  <DrawerTrigger
+                    aria-label={translate("ra.action.open_menu", {
+                      _: "Toggle Menu",
+                    })}
+                  >
                     <BreadcrumbEllipsis className="h-4 w-4" />
                   </DrawerTrigger>
                   <DrawerContent>

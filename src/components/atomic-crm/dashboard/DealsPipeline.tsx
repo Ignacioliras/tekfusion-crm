@@ -10,6 +10,7 @@ import { findDealLabel } from "../deals/dealUtils";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Etapa } from "../tekfusion/estados";
 import type { Deal } from "../types";
+import { formatAmount } from "../tekfusion/money";
 
 const PERDIDO: Etapa = "perdido";
 
@@ -69,13 +70,7 @@ export const DealsPipeline = () => {
           isPending={isPending}
           primaryText={(deal) => deal.name}
           secondaryText={(deal) =>
-            `${deal.amount.toLocaleString("en-US", {
-              notation: "compact",
-              style: "currency",
-              currency,
-              currencyDisplay: "narrowSymbol",
-              minimumSignificantDigits: 3,
-            })} , ${findDealLabel(dealStages, deal.stage)}`
+            `${formatAmount(deal.amount, currency)}, ${findDealLabel(dealStages, deal.stage)}`
           }
           leftAvatar={(deal) => (
             <ReferenceField

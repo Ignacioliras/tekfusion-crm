@@ -55,7 +55,7 @@ describe("NoteInputs", () => {
 
     await expect
       .element(screen.getByRole("combobox"))
-      .toMatchTextContent("Hot");
+      .toMatchTextContent("Caliente");
   });
 
   it("does not render the status selector when showStatus is false", async () => {

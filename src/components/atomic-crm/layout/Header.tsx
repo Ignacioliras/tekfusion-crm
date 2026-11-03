@@ -10,25 +10,31 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import { ImportPage } from "../misc/ImportPage";
 import { ChangelogPage } from "../misc/ChangelogPage";
 import { CreditosPage } from "../creditos/CreditosPage";
+import { DealTableList } from "../deals/DealTableList";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
+import { SettingsPage } from "../settings/SettingsPage";
+import { WhatsAppPage } from "../whatsapp/WhatsAppPage";
+
+// Paths that highlight a navigation tab ("/" only matches exactly).
+const NAV_SECTIONS: string[] = [
+  "/",
+  "/deals",
+  DealTableList.path,
+  "/contacts",
+  "/companies",
+  WhatsAppPage.path,
+  SettingsPage.path,
+];
 
 const Header = () => {
   const { darkModeLogo, lightModeLogo, title } = useConfigurationContext();
   const location = useLocation();
   const translate = useTranslate();
 
-  let currentPath: string | boolean = "/";
-  if (matchPath("/", location.pathname)) {
-    currentPath = "/";
-  } else if (matchPath("/contacts/*", location.pathname)) {
-    currentPath = "/contacts";
-  } else if (matchPath("/companies/*", location.pathname)) {
-    currentPath = "/companies";
-  } else if (matchPath("/deals/*", location.pathname)) {
-    currentPath = "/deals";
-  } else {
-    currentPath = false;
-  }
+  const currentPath =
+    NAV_SECTIONS.find((path) =>
+      matchPath(path === "/" ? "/" : `${path}/*`, location.pathname),
+    ) ?? false;
 
   return (
     <>
@@ -38,7 +44,7 @@ const Header = () => {
             <div className="flex justify-between items-center flex-1">
               <Link
                 to="/"
-                className="flex items-center gap-2 text-secondary-foreground no-underline"
+                className="flex shrink-0 items-center gap-2 text-secondary-foreground no-underline"
               >
                 <img
                   className="[.light_&]:hidden h-6"
@@ -50,14 +56,23 @@ const Header = () => {
                   src={lightModeLogo}
                   alt={title}
                 />
-                <h1 className="text-xl font-semibold">{title}</h1>
+                <h1 className="text-lg font-semibold whitespace-nowrap">
+                  {title}
+                </h1>
               </Link>
               <div>
                 <nav className="flex">
                   <NavigationTab
-                    label={translate("ra.page.dashboard")}
-                    to="/"
-                    isActive={currentPath === "/"}
+                    label={translate("crm.navigation.pipeline")}
+                    to="/deals"
+                    isActive={currentPath === "/deals"}
+                  />
+                  <NavigationTab
+                    label={translate("resources.deals.name", {
+                      smart_count: 2,
+                    })}
+                    to={DealTableList.path}
+                    isActive={currentPath === DealTableList.path}
                   />
                   <NavigationTab
                     label={translate("resources.contacts.name", {
@@ -74,15 +89,25 @@ const Header = () => {
                     isActive={currentPath === "/companies"}
                   />
                   <NavigationTab
-                    label={translate("resources.deals.name", {
-                      smart_count: 2,
-                    })}
-                    to="/deals"
-                    isActive={currentPath === "/deals"}
+                    label={translate("crm.navigation.whatsapp")}
+                    to={WhatsAppPage.path}
+                    isActive={currentPath === WhatsAppPage.path}
                   />
+                  <NavigationTab
+                    label={translate("crm.navigation.dashboard")}
+                    to="/"
+                    isActive={currentPath === "/"}
+                  />
+                  <CanAccess resource="configuration" action="edit">
+                    <NavigationTab
+                      label={translate("crm.settings.title")}
+                      to={SettingsPage.path}
+                      isActive={currentPath === SettingsPage.path}
+                    />
+                  </CanAccess>
                 </nav>
               </div>
-              <div className="flex items-center">
+              <div className="flex shrink-0 items-center">
                 <GlobalSearchButton />
                 <ThemeModeToggle />
                 <RefreshButton />
@@ -118,7 +143,7 @@ const NavigationTab = ({
 }) => (
   <Link
     to={to}
-    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+    className={`px-4 py-3 text-sm whitespace-nowrap font-medium transition-colors border-b-2 ${
       isActive
         ? "text-secondary-foreground border-secondary-foreground"
         : "text-secondary-foreground/70 border-transparent hover:text-secondary-foreground/80"

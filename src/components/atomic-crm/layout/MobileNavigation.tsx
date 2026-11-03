@@ -6,32 +6,47 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Home, ListTodo, Plus, Settings, Users } from "lucide-react";
+import {
+  Building2,
+  Home,
+  KanbanSquare,
+  List,
+  MessageCircle,
+  Plus,
+  Settings,
+  Users,
+} from "lucide-react";
 import { useTranslate } from "ra-core";
 import { Link, matchPath, useLocation, useMatch } from "react-router";
 import { ContactCreateSheet } from "../contacts/ContactCreateSheet";
 import { useState } from "react";
 import { NoteCreateSheet } from "../notes/NoteCreateSheet";
 import { TaskCreateSheet } from "../tasks/TaskCreateSheet";
+import { DealTableList } from "../deals/DealTableList";
+import { WhatsAppPage } from "../whatsapp/WhatsAppPage";
+
+// Same items and order as the desktop header (layout/Header.tsx).
+const NAV_ITEMS = [
+  { href: "/deals", Icon: KanbanSquare, labelKey: "crm.navigation.pipeline" },
+  { href: DealTableList.path, Icon: List, labelKey: "resources.deals.name" },
+  { href: "/contacts", Icon: Users, labelKey: "resources.contacts.name" },
+  { href: "/companies", Icon: Building2, labelKey: "resources.companies.name" },
+  {
+    href: WhatsAppPage.path,
+    Icon: MessageCircle,
+    labelKey: "crm.navigation.whatsapp",
+  },
+  { href: "/", Icon: Home, labelKey: "crm.navigation.dashboard" },
+  { href: "/settings", Icon: Settings, labelKey: "crm.settings.title" },
+];
 
 export const MobileNavigation = () => {
   const location = useLocation();
   const translate = useTranslate();
 
-  let currentPath: string | boolean = "/";
-  if (matchPath("/", location.pathname)) {
-    currentPath = "/";
-  } else if (matchPath("/contacts/*", location.pathname)) {
-    currentPath = "/contacts";
-  } else if (matchPath("/companies/*", location.pathname)) {
-    currentPath = "/companies";
-  } else if (matchPath("/tasks/*", location.pathname)) {
-    currentPath = "/tasks";
-  } else if (matchPath("/deals/*", location.pathname)) {
-    currentPath = "/deals";
-  } else {
-    currentPath = false;
-  }
+  const currentPath = NAV_ITEMS.find(({ href }) =>
+    matchPath(href === "/" ? "/" : `${href}/*`, location.pathname),
+  )?.href;
 
   // Check if the app is running as a PWA (standalone mode)
   const isPwa = window.matchMedia("(display-mode: standalone)").matches;
@@ -52,31 +67,18 @@ export const MobileNavigation = () => {
           "calc(var(--spacing)) * 6" + (isPwa && isWebiOS ? " + 15px" : ""),
       }}
     >
-      <div className="flex justify-center">
-        <>
+      {/* Scrolls horizontally on narrow screens instead of hiding items. */}
+      <div className="flex items-start overflow-x-auto px-1">
+        {NAV_ITEMS.map(({ href, Icon, labelKey }) => (
           <NavigationButton
-            href="/"
-            Icon={Home}
-            label={translate("ra.page.dashboard")}
-            isActive={currentPath === "/"}
+            key={href}
+            href={href}
+            Icon={Icon}
+            label={translate(labelKey, { smart_count: 2 })}
+            isActive={currentPath === href}
           />
-          <NavigationButton
-            href="/contacts"
-            Icon={Users}
-            label={translate("resources.contacts.name", {
-              smart_count: 2,
-            })}
-            isActive={currentPath === "/contacts"}
-          />
-          <CreateButton />
-          <NavigationButton
-            href="/tasks"
-            Icon={ListTodo}
-            label={translate("resources.tasks.name", { smart_count: 2 })}
-            isActive={currentPath === "/tasks"}
-          />
-          <SettingsButton />
-        </>
+        ))}
+        <CreateButton />
       </div>
     </nav>
   );
@@ -97,7 +99,7 @@ const NavigationButton = ({
     to={href}
     className={cn(
       buttonVariants({ variant: "ghost" }),
-      "flex-col gap-1 h-auto py-2 px-1 rounded-md w-16",
+      "flex-col gap-1 h-auto py-2 px-1 rounded-md w-16 shrink-0",
       isActive ? null : "text-muted-foreground",
     )}
   >
@@ -135,12 +137,12 @@ const CreateButton = () => {
             <Button
               variant="default"
               size="icon"
-              className="h-16 w-16 rounded-full -mt-3"
+              className="h-11 w-11 shrink-0 rounded-full mt-1.5"
               aria-label={translate("ra.action.create")}
             />
           }
         >
-          <Plus className="size-10" />
+          <Plus className="size-7" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center">
           <DropdownMenuItem
@@ -170,20 +172,5 @@ const CreateButton = () => {
         </DropdownMenuContent>
       </DropdownMenu>
     </>
-  );
-};
-
-const SettingsButton = () => {
-  const translate = useTranslate();
-  const location = useLocation();
-  const isActive = !!matchPath("/settings", location.pathname);
-
-  return (
-    <NavigationButton
-      href="/settings"
-      Icon={Settings}
-      label={translate("crm.settings.title")}
-      isActive={isActive}
-    />
   );
 };

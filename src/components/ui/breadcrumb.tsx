@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslate } from "ra-core"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
 import { cn } from "@/lib/utils"
@@ -6,9 +7,10 @@ import { cn } from "@/lib/utils"
 import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
+  const translate = useTranslate()
   return (
     <nav
-      aria-label="breadcrumb"
+      aria-label={translate("crm.a11y.breadcrumb", { _: "breadcrumb" })}
       data-slot="breadcrumb"
       className={cn(className)}
       {...props}
@@ -94,6 +96,7 @@ function BreadcrumbEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
+  const translate = useTranslate()
   return (
     <span
       data-slot="breadcrumb-ellipsis"
@@ -106,7 +109,9 @@ function BreadcrumbEllipsis({
       {...props}
     >
       <MoreHorizontalIcon />
-      <span className="sr-only">More</span>
+      <span className="sr-only">
+        {translate("crm.a11y.more", { _: "More" })}
+      </span>
     </span>
   )
 }

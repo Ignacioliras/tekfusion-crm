@@ -39,7 +39,6 @@ dist/
 # Shadcn Registry
 public/r/
 
-!supabase/functions/.env
 .claude/settings.local.json
 
 # Harness scratch (promotion lock, kept on purpose; worktrees cleaned at SessionEnd)
@@ -71,3 +70,6 @@ playwright-report/
 docs/nocturno/*.log
 docs/nocturno/ULTIMO-reporte.md
 # docs/nocturno/*.md y docs/handoffs/*.md SÍ se commitean: son registro del proyecto.
+
+# Vitest browser failure screenshots
+.vitest/
