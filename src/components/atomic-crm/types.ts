@@ -52,6 +52,8 @@ export type SalesFormData = {
   first_name: string;
   last_name: string;
   administrator: boolean;
+  /** Sent to the users Edge Function; `administrator` is derived from it. */
+  role?: UserRole;
   disabled: boolean;
 };
 

@@ -294,6 +294,34 @@ export const frenchCrmMessages = {
         secondary_emails: "E-mails secondaires",
         administrator: "Admin",
         disabled: "Désactivé",
+        name: "Nom complet",
+        role: "Rôle",
+        business_lines: "Lignes d'activité",
+        substitute: "Remplaçant",
+        no_substitute: "Aucun remplaçant",
+        absences: "Absences",
+        starts_on: "Du",
+        ends_on: "Au",
+        absence_reason: "Motif",
+      },
+      roles: {
+        manager: "Direction",
+        executive: "Commercial",
+        reader: "Lecture seule",
+      },
+      sections: {
+        assignment: "Lignes d'activité et absences",
+      },
+      helpers: {
+        business_lines:
+          "Les leads de ces lignes sont attribués à cet utilisateur.",
+        substitute:
+          "Reçoit les nouveaux leads pendant l'absence de cet utilisateur.",
+      },
+      validation: {
+        self_substitute:
+          "Un utilisateur ne peut pas être son propre remplaçant",
+        absence_range: "La date de fin doit être postérieure ou égale au début",
       },
       create: {
         error:

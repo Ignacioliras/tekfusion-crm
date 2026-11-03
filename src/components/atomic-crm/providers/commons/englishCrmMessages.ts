@@ -290,6 +290,32 @@ export const englishCrmMessages = {
         secondary_emails: "Secondary emails",
         administrator: "Admin",
         disabled: "Disabled",
+        name: "Name",
+        role: "Role",
+        business_lines: "Business lines",
+        substitute: "Substitute",
+        no_substitute: "No substitute",
+        absences: "Absences",
+        starts_on: "From",
+        ends_on: "To",
+        absence_reason: "Reason",
+      },
+      roles: {
+        manager: "Management",
+        executive: "Sales executive",
+        reader: "Read only",
+      },
+      sections: {
+        assignment: "Business lines and absences",
+      },
+      helpers: {
+        business_lines: "Leads of these lines are assigned to this user.",
+        substitute:
+          "Receives this user's new leads while they are away. Applies to all their lines.",
+      },
+      validation: {
+        self_substitute: "A user cannot be their own substitute",
+        absence_range: "The end date must be on or after the start date",
       },
       create: {
         error: "An error occurred while creating the user.",

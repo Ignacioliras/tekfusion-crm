@@ -11,6 +11,7 @@ import {
 } from "ra-core";
 import { useCallback, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -266,6 +267,12 @@ const SettingsFormFields = () => {
               {translate(section.label, { smart_count: 2 })}
             </button>
           ))}
+          <Link
+            to="/sales"
+            className="block w-full text-left px-3 py-1 text-sm rounded-md hover:text-foreground hover:bg-muted transition-colors"
+          >
+            {translate("resources.sales.name", { smart_count: 2 })}
+          </Link>
         </div>
       </nav>
 

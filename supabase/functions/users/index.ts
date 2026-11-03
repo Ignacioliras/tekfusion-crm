@@ -10,6 +10,7 @@ import {
   MAX_SECONDARY_EMAILS,
   normalizeSecondaryEmails,
 } from "./secondaryEmails.ts";
+import { isUserRole, roleUpdate, type UserRole } from "./role.ts";
 
 async function updateSaleDisabled(user_id: string, disabled: boolean) {
   return await supabaseAdmin
@@ -18,13 +19,25 @@ async function updateSaleDisabled(user_id: string, disabled: boolean) {
     .eq("user_id", user_id);
 }
 
-async function updateSaleAdministrator(
+// Writes the role (or, for old clients, administrator); the sync_sales_role
+// trigger keeps the other column in step.
+async function updateSaleRole(
   user_id: string,
-  administrator: boolean,
+  role: unknown,
+  administrator: unknown,
 ) {
+  const update = roleUpdate(role, administrator);
+  if (!update) {
+    const { data } = await supabaseAdmin
+      .from("sales")
+      .select("*")
+      .eq("user_id", user_id)
+      .single();
+    return data;
+  }
   const { data: sales, error: salesError } = await supabaseAdmin
     .from("sales")
-    .update({ administrator })
+    .update(update)
     .eq("user_id", user_id)
     .select("*");
 
@@ -44,6 +57,7 @@ async function createSale(
     last_name: string;
     disabled: boolean;
     administrator: boolean;
+    role?: UserRole;
   },
 ) {
   const { data: sales, error: salesError } = await supabaseAdmin
@@ -128,8 +142,15 @@ async function updateSaleAvatar(user_id: string, avatar: string) {
 }
 
 async function inviteUser(req: Request, currentUserSale: any) {
-  const { email, password, first_name, last_name, disabled, administrator } =
-    await req.json();
+  const {
+    email,
+    password,
+    first_name,
+    last_name,
+    disabled,
+    administrator,
+    role,
+  } = await req.json();
 
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
@@ -204,6 +225,7 @@ async function inviteUser(req: Request, currentUserSale: any) {
         last_name,
         disabled,
         administrator,
+        ...(isUserRole(role) && { role }),
       });
 
       return new Response(
@@ -245,7 +267,7 @@ async function inviteUser(req: Request, currentUserSale: any) {
 
   try {
     await updateSaleDisabled(user.id, disabled);
-    const sale = await updateSaleAdministrator(user.id, administrator);
+    const sale = await updateSaleRole(user.id, role, administrator);
 
     return new Response(
       JSON.stringify({
@@ -271,6 +293,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     avatar,
     administrator,
     disabled,
+    role,
   } = await req.json();
   const { data: sale } = await supabaseAdmin
     .from("sales")
@@ -410,16 +433,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     if (typeof disabled === "boolean") {
       await updateSaleDisabled(data.user.id, disabled);
     }
-    const sale =
-      typeof administrator === "boolean"
-        ? await updateSaleAdministrator(data.user.id, administrator)
-        : (
-            await supabaseAdmin
-              .from("sales")
-              .select("*")
-              .eq("user_id", data.user.id)
-              .single()
-          ).data;
+    const sale = await updateSaleRole(data.user.id, role, administrator);
     return new Response(
       JSON.stringify({
         data: sale,

@@ -15,6 +15,7 @@ import type { CrmDataProvider } from "../providers/types";
 import type { SalesFormData } from "../types";
 import { getSalesErrorNotification } from "./salesErrorNotification";
 import { SalesInputs } from "./SalesInputs";
+import { withRole } from "./roles";
 
 export function SalesCreate() {
   const dataProvider = useDataProvider<CrmDataProvider>();
@@ -47,7 +48,7 @@ export function SalesCreate() {
     },
   });
   const onSubmit: SubmitHandler<SalesFormData> = async (data) => {
-    mutate(data);
+    mutate(withRole(data));
   };
 
   return (

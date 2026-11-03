@@ -92,6 +92,14 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Otros:** siempre queda al menos un manager activo (trigger `ensure_active_manager`); `take_deal` excluye leads archivados; la puerta de los triggers de guarda es el rol de conexión, no `auth.uid()`; las policies de Storage exigen usuario interno (el bucket sigue público hasta las URLs firmadas de la Fase 3); `activity_log` ya no expone `raw_source`; las policies usan `contact_ids @> array[id]` (usa el índice GIN) y llaman los helpers como `(select fn())` para evaluarlos una vez por consulta; FKs con `on delete` explícito e índices para las policies.
 - **No se hizo (fuera de alcance):** bucket privado con URLs firmadas (Fase 3); `enable_signup = false` en producción se decide al crear el proyecto; interfaz para el rol lector (ítem "Auth: roles" de la Fase 2).
 
+## 2026-11-03 · Configuración → Usuarios: rol, línea, suplente y ausencias
+- **Decisión:** la tabla de Usuarios (`/sales`, enlazada desde Configuración) muestra nombre, correo, rol, línea a cargo, suplente y ausencias; se edita en la ficha del usuario, que solo ve gerencia (`canAccess` de `sales`, más la RLS).
+- **Rol:** el formulario manda `role` a la Edge Function `users` (validado contra el enum en `users/role.ts`), que escribe `sales.role`; el trigger `sync_sales_role` ajusta `administrator`. Se quitó el interruptor "Administrador" de Atomic. Un cliente que solo manda `administrator` sigue funcionando.
+- **Suplente:** vive en `business_lines` (uno por línea, `docs/05`). En la ficha del usuario se edita uno solo y se aplica a todas sus líneas (RF: "cada ejecutivo tiene un suplente"). Marcar una línea la quita a su dueño anterior; desmarcarla la deja sin dueño. El suplente no puede ser el mismo usuario ni un lector.
+- **Ausencias:** `sales_absences`, editadas como lista de rangos (desde, hasta, motivo); se guardan por diferencia (crear, actualizar, borrar) después de actualizar al usuario. No es atómico: si falla una escritura, lo anterior queda guardado y se avisa el error.
+- **Descartado:** una pantalla aparte de líneas de negocio (llega con el resto de Configuración en la Fase 3); RPC transaccional para guardar todo junto (pocas filas, un solo editor: gerencia).
+- **Consecuencias:** el proveedor de Supabase declara `business_lines` con llave `code`; FakeRest usa `id = code`.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

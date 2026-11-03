@@ -1,7 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useDataProvider,
   useEditController,
+  useGetList,
   useNotify,
   useRecordContext,
   useRedirect,
@@ -14,9 +15,20 @@ import { SaveButton } from "@/components/admin/form";
 import { Card, CardContent } from "@/components/ui/card";
 
 import type { CrmDataProvider } from "../providers/types";
-import type { Sale, SalesFormData } from "../types";
+import type { Sale, SalesAbsence, SalesFormData } from "../types";
+import { withRole } from "./roles";
 import { getSalesErrorNotification } from "./salesErrorNotification";
 import { SalesInputs } from "./SalesInputs";
+import { UserAssignmentInputs } from "./UserAssignmentInputs";
+import {
+  getUserAssignmentValues,
+  planUserAssignments,
+  saveUserAssignments,
+  type BusinessLineRecord,
+  type UserAssignmentValues,
+} from "./userAssignments";
+
+type SalesEditFormData = SalesFormData & UserAssignmentValues;
 
 function EditToolbar() {
   return (
@@ -27,17 +39,28 @@ function EditToolbar() {
   );
 }
 
+// ponytail: 100 is far above TekFusion's handful of users and absences.
+const ALL = { pagination: { page: 1, perPage: 100 } };
+
 export function SalesEdit() {
-  const { record } = useEditController();
+  const { record } = useEditController<Sale>();
+  const { data: lines, isPending: linesPending } =
+    useGetList<BusinessLineRecord>("business_lines", ALL);
+  const { data: absences, isPending: absencesPending } =
+    useGetList<SalesAbsence>("sales_absences", {
+      ...ALL,
+      filter: record ? { sales_id: record.id } : {},
+    });
 
   const dataProvider = useDataProvider<CrmDataProvider>();
+  const queryClient = useQueryClient();
   const notify = useNotify();
   const redirect = useRedirect();
   const translate = useTranslate();
 
   const { mutate } = useMutation({
     mutationKey: ["signup"],
-    mutationFn: async (data: SalesFormData) => {
+    mutationFn: async (data: SalesEditFormData) => {
       if (!record) {
         throw new Error(
           translate("resources.sales.edit.record_not_found", {
@@ -45,9 +68,27 @@ export function SalesEdit() {
           }),
         );
       }
-      return dataProvider.salesUpdate(record.id, data);
+      const {
+        line_codes,
+        substitute_sales_id,
+        absences: submitted,
+        ...sale
+      } = data;
+      const updated = await dataProvider.salesUpdate(record.id, withRole(sale));
+      await saveUserAssignments(
+        dataProvider,
+        planUserAssignments(
+          record.id,
+          { line_codes, substitute_sales_id, absences: submitted ?? [] },
+          lines ?? [],
+          absences ?? [],
+        ),
+      );
+      return updated;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["business_lines"] });
+      queryClient.invalidateQueries({ queryKey: ["sales_absences"] });
       redirect("/sales");
       notify("resources.sales.edit.success", {
         messageArgs: {
@@ -67,21 +108,29 @@ export function SalesEdit() {
     },
   });
 
-  const onSubmit: SubmitHandler<SalesFormData> = async (data) => {
+  const onSubmit: SubmitHandler<SalesEditFormData> = async (data) => {
     mutate(data);
   };
 
+  if (!record || linesPending || absencesPending) return null;
+
+  const formRecord = {
+    ...record,
+    ...getUserAssignmentValues(record.id, lines ?? [], absences ?? []),
+  };
+
   return (
-    <div className="max-w-lg w-full mx-auto mt-8">
+    <div className="max-w-2xl w-full mx-auto mt-8">
       <Card>
         <CardContent>
           <SimpleForm
             toolbar={<EditToolbar />}
             onSubmit={onSubmit as SubmitHandler<any>}
-            record={record}
+            record={formRecord}
           >
             <SaleEditTitle />
             <SalesInputs />
+            <UserAssignmentInputs />
           </SimpleForm>
         </CardContent>
       </Card>

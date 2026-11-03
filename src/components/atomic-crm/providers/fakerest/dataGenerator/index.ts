@@ -8,6 +8,7 @@ import { generateSales } from "./sales";
 import { generateTags } from "./tags";
 import { generateTasks } from "./tasks";
 import type { Db } from "./types";
+import { LINEAS_NEGOCIO, LINEA_INDETERMINADA } from "../../../tekfusion/lineas";
 
 export default (): Db => {
   const db = {} as Db;
@@ -19,6 +20,18 @@ export default (): Db => {
   db.deals = generateDeals(db);
   db.deal_notes = generateDealNotes(db);
   db.tasks = generateTasks(db);
+  // Lines owned by the first two generated executives, each the other's substitute.
+  db.business_lines = LINEAS_NEGOCIO.filter(
+    (linea) => linea.value !== LINEA_INDETERMINADA,
+  ).map((linea, index) => ({
+    id: linea.value,
+    code: linea.value,
+    name: linea.label,
+    owner_sales_id: (index % 2) + 1,
+    substitute_sales_id: ((index + 1) % 2) + 1,
+    keywords: [...linea.keywords],
+  }));
+  db.sales_absences = [];
   db.configuration = [
     {
       id: 1,
