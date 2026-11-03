@@ -36,3 +36,4 @@
 - Un `security definer` ve `current_user` = dueño: para saber si llama una sesión de API usar `auth.role()`.
 - Reiniciar Supabase local (`stop`/`start`) para que tome cambios de `config.toml` (contraseñas, MFA); `db reset` no basta.
 - 2026-11-04-b T1: en pgTAP, `sum(bigint)` devuelve `numeric` y `is(numeric, bigint)` no existe: castear `sum(...)::bigint` al comparar con `count(*)`. Una vista nueva necesita `revoke all … from authenticated` antes del `grant select` (los privilegios por defecto le darían TRIGGER y rompen el test 14).
+- 2026-11-04-b T2: pgTAP `results_eq(sql1, sql2)` compara fila a fila dos consultas ordenadas y sirve para validar una vista entera contra una tabla temporal (`grant select on expected to authenticated` para que la vea el rol de prueba). Vista solo-gerencia: filtro `where (select public.is_manager())` dentro de la vista con security_invoker; ejecutivo y lector reciben 0 filas sin tocar RLS.

@@ -50,3 +50,48 @@ group by 1, 2, 3;
 -- authenticated everything (TRIGGER included) and anon has no business here.
 revoke all on table public.dashboard_monthly from anon, public, authenticated;
 grant select on table public.dashboard_monthly to authenticated, service_role;
+
+--
+-- Executive ranking (RF-11). "vista_ranking_ejecutivos" of docs/05.
+-- Managers only: the RLS of deals lets a reader see everything, so the view
+-- itself filters on is_manager() and executives / readers get zero rows.
+-- security_invoker so the subqueries still go through RLS for the caller.
+--
+-- One row per (month, sales_id) over the deals that have an owner. Metrics:
+--   month                    first day of the month of created_at in America/Santiago
+--   sales_id                 the executive (owner of the lead)
+--   leads                    count of deals
+--   leads_attended           first_response_at not null
+--   avg_first_response_hours avg(first_response_at - created_at) in hours, 2 decimals
+--                            (null if none attended)
+--   quotes_sent              quotes of those leads that were sent: sent_channels not
+--                            empty or a row in send_queue
+--   won / lost               stage = 'ganado' / 'perdido'
+--   won_amount               sum of deals.won_amount, CLP
+--
+create or replace view public.sales_ranking with (security_invoker = on) as
+with sent_quotes as (
+    select q.deal_id, count(*) as sent_count
+    from public.quotes q
+    where cardinality(q.sent_channels) > 0
+       or exists (select 1 from public.send_queue sq where sq.quote_id = q.id)
+    group by q.deal_id
+)
+select
+    (date_trunc('month', d.created_at at time zone 'America/Santiago'))::date as month,
+    d.sales_id,
+    count(*) as leads,
+    count(*) filter (where d.first_response_at is not null) as leads_attended,
+    (avg(extract(epoch from d.first_response_at - d.created_at) / 3600))::numeric(10, 2) as avg_first_response_hours,
+    coalesce(sum(sq.sent_count), 0)::bigint as quotes_sent,
+    count(*) filter (where d.stage = 'ganado') as won,
+    coalesce(sum(d.won_amount), 0)::bigint as won_amount,
+    count(*) filter (where d.stage = 'perdido') as lost
+from public.deals d
+    left join sent_quotes sq on sq.deal_id = d.id
+where (select public.is_manager())
+  and d.sales_id is not null
+group by 1, 2;
+
+revoke all on table public.sales_ranking from anon, public, authenticated;
+grant select on table public.sales_ranking to authenticated, service_role;
