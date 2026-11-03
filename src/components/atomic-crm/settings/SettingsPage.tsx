@@ -28,6 +28,18 @@ import {
   type ConfigurationContextValue,
 } from "../root/ConfigurationContext";
 import { defaultConfiguration } from "../root/defaultConfiguration";
+import {
+  FollowupSettings,
+  followupFromForm,
+  followupToForm,
+  type FollowupFormValues,
+} from "./FollowupSettings";
+import {
+  ReportSettings,
+  reportFromForm,
+  reportToForm,
+  type ReportFormValues,
+} from "./ReportSettings";
 import { SettingsTags } from "./SettingsTags";
 
 const SECTIONS = [
@@ -129,7 +141,25 @@ const transformFormValues = (data: Record<string, any>) => ({
     dealStages: ensureValues(data.dealStages),
     dealPipelineStatuses: data.dealPipelineStatuses,
     noteStatuses: ensureValues(data.noteStatuses),
+    ...followupFromForm(data as FollowupFormValues),
+    ...reportFromForm(data as ReportFormValues),
   } as ConfigurationContextValue,
+});
+
+/** Config → form values: shared by the initial values and "reset defaults". */
+const toFormValues = (config: ConfigurationContextValue) => ({
+  title: config.title,
+  lightModeLogo: { src: config.lightModeLogo },
+  darkModeLogo: { src: config.darkModeLogo },
+  currency: config.currency,
+  companySectors: config.companySectors,
+  dealCategories: config.dealCategories,
+  taskTypes: config.taskTypes,
+  dealStages: config.dealStages,
+  dealPipelineStatuses: config.dealPipelineStatuses,
+  noteStatuses: config.noteStatuses,
+  ...followupToForm(config),
+  ...reportToForm(config),
 });
 
 export const SettingsPage = () => {
@@ -165,21 +195,7 @@ SettingsPage.path = "/settings";
 const SettingsForm = () => {
   const config = useConfigurationContext();
 
-  const defaultValues = useMemo(
-    () => ({
-      title: config.title,
-      lightModeLogo: { src: config.lightModeLogo },
-      darkModeLogo: { src: config.darkModeLogo },
-      currency: config.currency,
-      companySectors: config.companySectors,
-      dealCategories: config.dealCategories,
-      taskTypes: config.taskTypes,
-      dealStages: config.dealStages,
-      dealPipelineStatuses: config.dealPipelineStatuses,
-      noteStatuses: config.noteStatuses,
-    }),
-    [config],
-  );
+  const defaultValues = useMemo(() => toFormValues(config), [config]);
 
   return (
     <Form defaultValues={defaultValues}>
@@ -472,6 +488,10 @@ const SettingsFormFields = () => {
 
         {/* Tags */}
         <SettingsTags />
+
+        {/* TekFusion parameters (RF-14), management only */}
+        <FollowupSettings />
+        <ReportSettings />
       </div>
 
       {/* Sticky save button */}
@@ -482,15 +502,7 @@ const SettingsFormFields = () => {
             <Button
               type="button"
               variant="ghost"
-              onClick={() =>
-                reset({
-                  ...defaultConfiguration,
-                  lightModeLogo: {
-                    src: defaultConfiguration.lightModeLogo,
-                  },
-                  darkModeLogo: { src: defaultConfiguration.darkModeLogo },
-                })
-              }
+              onClick={() => reset(toFormValues(defaultConfiguration))}
             >
               <RotateCcw className="h-4 w-4 mr-1" />
               {translate("crm.settings.reset_defaults")}

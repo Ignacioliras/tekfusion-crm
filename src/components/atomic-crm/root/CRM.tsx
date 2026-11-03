@@ -165,7 +165,8 @@ export const CRM = ({
         title,
         darkModeLogo,
         lightModeLogo,
-      } satisfies ConfigurationContextValue);
+        // TekFusion keys have no CRM prop: useConfigurationContext fills them in.
+      } satisfies Partial<ConfigurationContextValue>);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store]);

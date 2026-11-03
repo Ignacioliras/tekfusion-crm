@@ -1,5 +1,7 @@
 # Aprendizajes de las sesiones nocturnas
 
+- 2026-11-04 T4: en tests, `testI18nProvider` es inglés para las claves de Atomic (`ra.action.save` = "Save") y español solo para `tekfusion.*`. Un `<Form>` dentro de `EditBase` se resetea cuando llega el record (borra lo que el test ya escribió): esperar un valor marcador de primer nivel en el record antes de editar. ra-core `Form` no pone `noValidate`: un `type="email"` inválido lo frena el navegador y el mensaje propio no aparece.
+
 - 2026-11-03 T1: línea base OK en Windows — `npm run typecheck`, `npm run lint` y `npm run build` terminan con código 0 sin cambios.
 - Los comandos npm corren con la herramienta Bash (Git Bash); en la herramienta PowerShell el permiso los rechaza en sesión nocturna.
 - Avisos que no rompen la verificación (no tocarlos sin tarea): ESLint avisa que `.eslintignore` está obsoleto (migrar a `ignores` en `eslint.config.js`); Vite avisa por `__dirname` en `vite.config.ts:72`; chunk principal de ~2,5 MB.

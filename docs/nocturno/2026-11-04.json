@@ -117,12 +117,13 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (gerencia guarda; ejecutivo no ve; validaciones); los defaults coinciden con send_quote ([2, 5, 10]); docs/09 anota avance parcial de 'Configuración completa (RF-14)'.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 22:24:01"
     },
     {
       "id": "T5",
