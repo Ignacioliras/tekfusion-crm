@@ -71,7 +71,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 
 ## Fase 6 · Dashboard de gerencia (3 días)
 - [x] Vistas SQL (`vista_dashboard_mensual`, `vista_ranking_ejecutivos`). Hechas `dashboard_monthly` y `sales_ranking` (2026-11-04, `13_tekfusion_dashboard.sql`, tests `25_dashboard_monthly` y `26_sales_ranking`).
-- [ ] Dashboard con filtros de fecha; versión sin ranking para ejecutivo/lector.
+- [ ] Dashboard con filtros de fecha; versión sin ranking para ejecutivo/lector. Hechas las métricas (2026-11-04, `management-dashboard/ManagementDashboard.tsx` + `metrics.ts`, arriba del dashboard de Atomic para todos los roles, filtro desde/hasta por mes vs período anterior); falta el ranking de gerencia sobre `sales_ranking`.
 - [ ] Verificar números contra los datos semilla a mano.
 
 ## Fase 7 · Pruebas, marcha blanca y entrega (6 días)

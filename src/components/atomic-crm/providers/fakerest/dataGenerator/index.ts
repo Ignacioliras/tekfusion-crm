@@ -49,6 +49,7 @@ export default (): Db => {
   db.alerts = [];
   db.audit_log = [];
   db.send_queue = [];
+  db.dashboard_monthly = [];
   db.configuration = [
     {
       id: 1,

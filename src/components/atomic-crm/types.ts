@@ -16,6 +16,26 @@ export type UserRole = "manager" | "executive" | "reader";
 export type OriginChannel =
   "correo" | "formulario" | "bot" | "whatsapp" | "manual" | "migracion";
 
+// One row of the dashboard_monthly view (13_tekfusion_dashboard.sql): one per
+// (month, business_line, origin_channel). month is "YYYY-MM-01".
+export type DashboardMonthlyRow = {
+  id: Identifier;
+  month: string;
+  business_line: LineaNegocio;
+  origin_channel: OriginChannel;
+  leads: number;
+  contacted: number;
+  quoted: number;
+  won: number;
+  lost: number;
+  archived: number;
+  responded: number;
+  first_response_within_24h: number;
+  avg_first_response_hours: number | null;
+  quoted_amount: number;
+  won_amount: number;
+};
+
 export type BusinessLineConfig = {
   code: Exclude<LineaNegocio, "indeterminada">;
   name: string;
