@@ -18,11 +18,9 @@ describe("Ficha del lead", () => {
     const items = timeline.getByRole("listitem");
     await expect
       .element(
-        items
-          .nth(0)
-          .getByText("Alerta · El cliente respondió por correo", {
-            exact: false,
-          }),
+        items.nth(0).getByText("Alerta · El cliente respondió por correo", {
+          exact: false,
+        }),
       )
       .toBeVisible();
     await expect
@@ -54,11 +52,9 @@ describe("Ficha del lead", () => {
       .toBeVisible();
     await expect
       .element(
-        items
-          .nth(4)
-          .getByText("Cliente pide plazo de entrega a Calama.", {
-            exact: false,
-          }),
+        items.nth(4).getByText("Cliente pide plazo de entrega a Calama.", {
+          exact: false,
+        }),
       )
       .toBeVisible();
     await expect

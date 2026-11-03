@@ -23,6 +23,9 @@ import type { Deal } from "../types";
 import { LeadActions } from "./LeadActions";
 import { LeadDataBlock } from "./LeadDataBlock";
 import { LeadTimeline } from "./LeadTimeline";
+import { QuoteHistory } from "../quotes/QuoteHistory";
+import { SendQuoteButton } from "../quotes/SendQuoteButton";
+import { ETAPAS_ABIERTAS, type Etapa } from "../tekfusion/estados";
 
 export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
   const redirect = useRedirect();
@@ -76,7 +79,13 @@ const DealShowContent = () => {
         </div>
       </div>
 
-      {record.archived_at ? null : <LeadActions deal={record} />}
+      {record.archived_at ? null : (
+        <LeadActions deal={record}>
+          {ETAPAS_ABIERTAS.includes(record.stage as Etapa) ? (
+            <SendQuoteButton deal={record} />
+          ) : null}
+        </LeadActions>
+      )}
 
       {record.description ? (
         <p className="text-sm leading-6 whitespace-pre-line">
@@ -87,6 +96,7 @@ const DealShowContent = () => {
       <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
         <aside className="flex flex-col gap-6">
           <LeadDataBlock deal={record} />
+          <QuoteHistory deal={record} />
         </aside>
         <div className="min-w-0">
           <Separator className="mb-4 lg:hidden" />
