@@ -1,5 +1,5 @@
 import { Plus, Users } from "lucide-react";
-import { useGetIdentity, useGetList, useTranslate } from "ra-core";
+import { useGetIdentity, useGetList, useTranslate, CanAccess } from "ra-core";
 import { Link } from "react-router";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -41,27 +41,29 @@ export const HotContacts = () => {
         <h2 className="text-xl font-semibold text-muted-foreground">
           {translate("resources.contacts.hot.title")}
         </h2>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Link
-                  to="/contacts/create"
-                  aria-label={translate("resources.contacts.action.create")}
-                  className={cn(
-                    buttonVariants({ variant: "ghost", size: "sm" }),
-                    "ml-auto text-muted-foreground",
-                  )}
-                />
-              }
-            >
-              <Plus className="w-4 h-4 text-primary" />
-            </TooltipTrigger>
-            <TooltipContent>
-              {translate("resources.contacts.action.create")}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <CanAccess resource="contacts" action="create">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Link
+                    to="/contacts/create"
+                    aria-label={translate("resources.contacts.action.create")}
+                    className={cn(
+                      buttonVariants({ variant: "ghost", size: "sm" }),
+                      "ml-auto text-muted-foreground",
+                    )}
+                  />
+                }
+              >
+                <Plus className="w-4 h-4 text-primary" />
+              </TooltipTrigger>
+              <TooltipContent>
+                {translate("resources.contacts.action.create")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </CanAccess>
       </div>
       <Card className="py-0">
         <SimpleList<Contact>

@@ -8,6 +8,7 @@ import {
   useGetRecordRepresentation,
   useGetResourceLabel,
   useRecordContext,
+  useCanAccess,
   useResourceContext,
   useResourceTranslation,
 } from "ra-core";
@@ -66,6 +67,9 @@ export const EditButton = (props: EditButtonProps) => {
     },
     userText: labelProp,
   });
+  // Hidden when the user may not edit (e.g. the TekFusion reader role).
+  const { canAccess } = useCanAccess({ resource, action: "edit", record });
+  if (!canAccess) return null;
   return (
     <LinkBase
       className={cn(buttonVariants({ variant: "outline" }))}

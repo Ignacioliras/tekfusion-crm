@@ -16,7 +16,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
-import { useTranslate } from "ra-core";
+import { CanAccess, useTranslate } from "ra-core";
 import { Link, matchPath, useLocation, useMatch } from "react-router";
 import { ContactCreateSheet } from "../contacts/ContactCreateSheet";
 import { useState } from "react";
@@ -78,7 +78,9 @@ export const MobileNavigation = () => {
             isActive={currentPath === href}
           />
         ))}
-        <CreateButton />
+        <CanAccess resource="contacts" action="create">
+          <CreateButton />
+        </CanAccess>
       </div>
     </nav>
   );

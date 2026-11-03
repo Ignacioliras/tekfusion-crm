@@ -1,7 +1,7 @@
 import type { AuthProvider } from "ra-core";
 import { supabaseAuthProvider } from "ra-supabase-core";
 
-import { canAccess } from "../commons/canAccess";
+import { canAccess, getAccessRole } from "../commons/canAccess";
 import { getSupabaseClient } from "./supabase";
 
 const getBaseAuthProvider = () =>
@@ -69,7 +69,7 @@ const getSale = async () => {
 
   const { data: dataSale, error: errorSale } = await getSupabaseClient()
     .from("sales")
-    .select("id, first_name, last_name, avatar, administrator")
+    .select("id, first_name, last_name, avatar, administrator, role")
     .match({ user_id: dataSession?.session?.user.id })
     .single();
 
@@ -152,8 +152,7 @@ export const getAuthProvider = (): AuthProvider => {
       if (sale == null) return false;
 
       // Compute access rights from the sale role
-      const role = sale.administrator ? "admin" : "user";
-      return canAccess(role, params);
+      return canAccess(getAccessRole(sale), params);
     },
     getAuthorizationDetails(authorizationId: string) {
       return getSupabaseClient().auth.oauth.getAuthorizationDetails(

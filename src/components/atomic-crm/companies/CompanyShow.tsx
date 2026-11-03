@@ -12,6 +12,7 @@ import {
   useRecordContext,
   useShowContext,
   useTranslate,
+  useCanAccess,
 } from "ra-core";
 import {
   Link,
@@ -248,6 +249,11 @@ const ContactsIterator = () => {
 const CreateRelatedContactButton = () => {
   const translate = useTranslate();
   const company = useRecordContext<Company>();
+  const { canAccess } = useCanAccess({
+    resource: "contacts",
+    action: "create",
+  });
+  if (!canAccess) return null;
   return (
     <RouterLink
       to="/contacts/create"

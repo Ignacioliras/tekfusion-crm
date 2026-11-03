@@ -5,6 +5,7 @@ import type { RaRecord, UseBulkDeleteControllerParams } from "ra-core";
 import {
   useBulkDeleteController,
   useGetResourceLabel,
+  useCanAccess,
   useResourceContext,
   useResourceTranslation,
 } from "ra-core";
@@ -59,6 +60,9 @@ export const BulkDeleteButton = <
     },
     userText: labelProp,
   });
+  // Hidden when the user may not delete (e.g. the TekFusion reader role).
+  const { canAccess } = useCanAccess({ resource, action: "delete" });
+  if (!canAccess) return null;
 
   return (
     <Button

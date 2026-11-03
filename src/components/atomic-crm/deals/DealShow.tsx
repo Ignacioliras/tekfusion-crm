@@ -12,6 +12,7 @@ import {
   useRefresh,
   useTranslate,
   useUpdate,
+  CanAccess,
 } from "ra-core";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { EditButton } from "@/components/admin/edit-button";
@@ -80,12 +81,16 @@ const DealShowContent = () => {
             <div className={`flex gap-2 ${record.archived_at ? "" : "pr-12"}`}>
               {record.archived_at ? (
                 <>
-                  <UnarchiveButton record={record} />
+                  <CanAccess resource="deals" action="edit" record={record}>
+                    <UnarchiveButton record={record} />
+                  </CanAccess>
                   <DeleteButton />
                 </>
               ) : (
                 <>
-                  <ArchiveButton record={record} />
+                  <CanAccess resource="deals" action="edit" record={record}>
+                    <ArchiveButton record={record} />
+                  </CanAccess>
                   <EditButton />
                 </>
               )}

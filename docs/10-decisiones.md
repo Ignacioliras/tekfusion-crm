@@ -100,6 +100,12 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Descartado:** una pantalla aparte de líneas de negocio (llega con el resto de Configuración en la Fase 3); RPC transaccional para guardar todo junto (pocas filas, un solo editor: gerencia).
 - **Consecuencias:** el proveedor de Supabase declara `business_lines` con llave `code`; FakeRest usa `id = code`.
 
+## 2026-11-03 · El lector no ve acciones de escritura
+- **Decisión:** `canAccess` (`providers/commons/canAccess.ts`) da al rol `reader` solo `list`, `show` y `export`. El rol sale de `sales.role` (`getAccessRole`, ambos authProvider). La RLS sigue siendo la barrera real; esto evita que la interfaz ofrezca lo que la base va a rechazar.
+- **Dónde:** los botones base de shadcn-admin-kit (`CreateButton`, `EditButton`, `DeleteButton`, `BulkDeleteButton`) consultan `useCanAccess` y no se dibujan sin permiso, así toda pantalla nueva queda cubierta. Los controles propios de Atomic usan `<CanAccess>`/`useCanAccess`: importar CSV/JSON, archivar, notas, etiquetas, tareas, fusionar contactos, crear desde el panel de empresa, contactos calientes y menú móvil; el kanban no deja arrastrar.
+- **"Tomar":** todavía no hay botón en la interfaz (la RPC `take_deal` existe). Cuando se construya (leads sin asignar, Fase 3; bandeja, Fase 4) debe ir dentro de `<CanAccess resource="deals" action="edit">`.
+- **Descartado:** un `<CanWrite>` propio: `<CanAccess>` de ra-core ya lo hace.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

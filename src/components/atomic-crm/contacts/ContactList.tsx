@@ -7,6 +7,7 @@ import {
   useListContext,
   useTranslate,
   type Exporter,
+  CanAccess,
 } from "ra-core";
 import { BulkActionsToolbar } from "@/components/admin/bulk-actions-toolbar";
 import { BulkDeleteButton } from "@/components/admin/bulk-delete-button";
@@ -80,7 +81,9 @@ const ContactListLayoutDesktop = () => {
 const ContactBulkActionButtons = () => (
   <>
     <SelectAllButton />
-    <BulkTagButton />
+    <CanAccess resource="contacts" action="edit">
+      <BulkTagButton />
+    </CanAccess>
     <BulkExportButton />
     <BulkDeleteButton />
   </>

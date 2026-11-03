@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRecordContext, useTranslate } from "ra-core";
+import { useRecordContext, useTranslate, CanAccess } from "ra-core";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
@@ -28,9 +28,11 @@ export const ContactTasksList = () => {
             <p className="text-muted-foreground mb-4">
               {translate("resources.tasks.empty")}
             </p>
-            <Button variant="outline" onClick={() => setTaskCreateOpen(true)}>
-              {translate("resources.tasks.action.add")}
-            </Button>
+            <CanAccess resource="tasks" action="create">
+              <Button variant="outline" onClick={() => setTaskCreateOpen(true)}>
+                {translate("resources.tasks.action.add")}
+              </Button>
+            </CanAccess>
           </div>
         </>
       }

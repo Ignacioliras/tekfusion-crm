@@ -1,5 +1,5 @@
 import { Draggable } from "@hello-pangea/dnd";
-import { useRedirect, RecordContextProvider } from "ra-core";
+import { useCanAccess, useRedirect, RecordContextProvider } from "ra-core";
 import { ReferenceField } from "@/components/admin/reference-field";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -10,10 +10,16 @@ import { formatDealCategories } from "./dealUtils";
 import { formatAmount } from "../tekfusion/money";
 
 export const DealCard = ({ deal, index }: { deal: Deal; index: number }) => {
+  // Moving a card changes its stage: not for the reader role.
+  const { canAccess } = useCanAccess({ resource: "deals", action: "edit" });
   if (!deal) return null;
 
   return (
-    <Draggable draggableId={String(deal.id)} index={index}>
+    <Draggable
+      draggableId={String(deal.id)}
+      index={index}
+      isDragDisabled={!canAccess}
+    >
       {(provided, snapshot) => (
         <DealCardContent provided={provided} snapshot={snapshot} deal={deal} />
       )}
