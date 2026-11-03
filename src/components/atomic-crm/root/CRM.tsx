@@ -27,6 +27,8 @@ import { ConfirmationRequired } from "../login/ConfirmationRequired";
 import { ImportPage } from "../misc/ImportPage";
 import { ChangelogPage } from "../misc/ChangelogPage";
 import { CreditosPage } from "../creditos/CreditosPage";
+import { DealTableList } from "../deals/DealTableList";
+import { WhatsAppPage } from "../whatsapp/WhatsAppPage";
 import {
   getAuthProvider as defaultAuthProviderBuilder,
   getDataProvider as defaultDataProviderBuilder,
@@ -263,6 +265,8 @@ const DesktopAdmin = (
         <Route path={ImportPage.path} element={<ImportPage />} />
         <Route path={ChangelogPage.path} element={<ChangelogPage />} />
         <Route path={CreditosPage.path} element={<CreditosPage />} />
+        <Route path={DealTableList.path} element={<DealTableList />} />
+        <Route path={WhatsAppPage.path} element={<WhatsAppPage />} />
       </CustomRoutes>
       <Resource name="deals" {...deals} />
       <Resource name="contacts" {...contacts} />

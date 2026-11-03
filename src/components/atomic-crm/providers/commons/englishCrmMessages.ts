@@ -194,6 +194,7 @@ export const englishCrmMessages = {
         amount: "Budget",
         expected_closing_date: "Expected closing date",
         stage: "Stage",
+        sales_id: "Account manager",
       },
       action: {
         back_to_deal: "Back to deal",
@@ -412,6 +413,9 @@ export const englishCrmMessages = {
     changelog: {
       title: "Changelog",
     },
+    whatsapp: {
+      coming_soon: "Available in Phase 4",
+    },
     credits: {
       title: "Credits",
       developed_by: "This system was developed by %{developer} for %{client}.",
@@ -575,6 +579,9 @@ export const englishCrmMessages = {
     language: "Language",
     navigation: {
       label: "CRM navigation",
+      pipeline: "Pipeline",
+      dashboard: "Dashboard",
+      whatsapp: "WhatsApp",
     },
     profile: {
       add_secondary_email: "Add an email",

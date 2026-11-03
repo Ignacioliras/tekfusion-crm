@@ -198,6 +198,7 @@ export const frenchCrmMessages = {
         amount: "Budget",
         expected_closing_date: "Date de clôture prévue",
         stage: "Étape",
+        sales_id: "Responsable du compte",
       },
       action: {
         back_to_deal: "Retour à l'affaire",
@@ -417,6 +418,9 @@ export const frenchCrmMessages = {
     changelog: {
       title: "Notes de version",
     },
+    whatsapp: {
+      coming_soon: "Disponible en phase 4",
+    },
     credits: {
       title: "Crédits",
       developed_by:
@@ -585,6 +589,9 @@ export const frenchCrmMessages = {
     language: "Langue",
     navigation: {
       label: "Navigation CRM",
+      pipeline: "Pipeline",
+      dashboard: "Tableau de bord",
+      whatsapp: "WhatsApp",
     },
     profile: {
       add_secondary_email: "Ajouter un e-mail",

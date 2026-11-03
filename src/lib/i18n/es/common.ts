@@ -36,6 +36,12 @@ export const commonMessages: PartialCrmMessages = {
     },
     navigation: {
       label: "Navegación del CRM",
+      pipeline: "Pipeline",
+      dashboard: "Dashboard",
+      whatsapp: "WhatsApp",
+    },
+    whatsapp: {
+      coming_soon: "Disponible en la Fase 4",
     },
     credits: {
       title: "Créditos",

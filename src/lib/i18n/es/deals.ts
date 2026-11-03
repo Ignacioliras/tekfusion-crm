@@ -14,6 +14,7 @@ export const dealsMessages: PartialCrmMessages = {
         amount: "Monto",
         expected_closing_date: "Fecha estimada de cierre",
         stage: "Etapa",
+        sales_id: "Ejecutivo",
       },
       action: {
         back_to_deal: "Volver al lead",
