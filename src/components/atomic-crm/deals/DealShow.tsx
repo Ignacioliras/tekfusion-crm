@@ -24,6 +24,10 @@ import { CloseDealButtons } from "./CloseDealButtons";
 import { LeadActions } from "./LeadActions";
 import { LeadDataBlock } from "./LeadDataBlock";
 import { LeadTimeline } from "./LeadTimeline";
+import {
+  FollowupScheduler,
+  ScheduleFollowupButton,
+} from "../followups/FollowupScheduler";
 import { QuoteHistory } from "../quotes/QuoteHistory";
 import { SendQuoteButton } from "../quotes/SendQuoteButton";
 import { ETAPAS_ABIERTAS, type Etapa } from "../tekfusion/estados";
@@ -85,6 +89,7 @@ const DealShowContent = () => {
           {ETAPAS_ABIERTAS.includes(record.stage as Etapa) ? (
             <>
               <SendQuoteButton deal={record} />
+              <ScheduleFollowupButton deal={record} />
               <CloseDealButtons deal={record} />
             </>
           ) : null}
@@ -100,6 +105,7 @@ const DealShowContent = () => {
       <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
         <aside className="flex flex-col gap-6">
           <LeadDataBlock deal={record} />
+          <FollowupScheduler deal={record} />
           <QuoteHistory deal={record} />
         </aside>
         <div className="min-w-0">

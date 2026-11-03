@@ -174,6 +174,13 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Acciones:** todas dentro de `CanAccess action="edit"` (el lector no ve ninguna); "Tomar" llama `take_deal` (método `takeDeal` del data provider).
 - **Textos:** las pantallas nuevas de TekFusion usan el catálogo `tekfusion.*` (`src/lib/i18n/es/tekfusion.ts`), solo en español, mezclado en los tres idiomas; las claves de Atomic siguen con sus traducciones. Evita mantener inglés y francés de pantallas que solo se usan en español.
 
+## 2026-11-04 · Cotización, cierre y seguimientos (pantallas)
+- **Cotización:** módulo `quotes/`: `SendQuoteButton` sube el PDF (`uploadQuotePdf`), crea la versión y llama `send_quote`; `QuoteHistory` lista las versiones y abre el PDF con URL firmada al hacer clic. Validación de los formularios a nivel de formulario cuando hay un `ReferenceInput` (un validador de campo dentro de él puede registrarse tarde y dejar pasar un envío).
+- **Ganado/perdido:** `CloseDealDialog` + `useCloseDeal`, usados por la ficha (botones "Ganado"/"Perdido") y por el kanban: soltar una tarjeta en esas columnas abre el diálogo y la tarjeta solo se mueve al confirmar. El formulario de edición ya no ofrece esas dos etapas salvo que el lead esté en ellas. La nota del perdido es una nota del lead.
+- **Seguimientos:** módulo `followups/`: `FollowupScheduler` (próximo, resto e historial) y `FollowupDialog` (programar/ajustar). Ajustar uno vencido lo devuelve a `pendiente`. Vista previa con `renderTemplate`: `{{nombre}}` = primer contacto, `{{empresa}}`, `{{producto}}` = nombre del lead, `{{ejecutivo}}` = firma del ejecutivo (o su nombre); un valor faltante queda visible como `{{…}}`. Fechas mostradas en `America/Santiago`.
+- **Arreglo en shadcn-admin-kit:** `SelectInput` no mostraba el mensaje de error en su rama principal (solo en la de carga): se agregó `<FormError />`.
+- **Kanban:** cada columna es una `section` con `aria-label` (accesible y localizable en tests).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
