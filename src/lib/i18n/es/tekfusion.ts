@@ -27,6 +27,13 @@ export const tekfusionMessages = {
         won_amount: "Monto final",
         lost_reason: "Motivo de pérdida",
       },
+      filters: {
+        business_line: "Línea de negocio",
+        origin_channel: "Canal de origen",
+        stage: "Etapa",
+        created_from: "Creado desde",
+        created_to: "Creado hasta",
+      },
       actions: {
         take: "Tomar",
         taken: "Tomaste el lead",

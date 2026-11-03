@@ -10,7 +10,7 @@ type CanAccessParams<
 // Actions that only read: the TekFusion reader role (sales.role = 'reader')
 // gets these and nothing else. The database enforces the same rule (RLS);
 // this keeps the interface from offering what the database would refuse.
-const READ_ACTIONS = ["list", "show", "export"];
+const READ_ACTIONS = ["list", "show"];
 
 export type AccessRole = "admin" | "user" | "reader";
 
@@ -29,6 +29,11 @@ export const canAccess = <
 ) => {
   if (role === "admin") {
     return true;
+  }
+
+  // Exporting a CSV takes the data out of the CRM: managers only (docs/08).
+  if (params.action === "export") {
+    return false;
   }
 
   if (role === "reader" && !READ_ACTIONS.includes(params.action)) {

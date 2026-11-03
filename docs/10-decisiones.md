@@ -181,6 +181,13 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Arreglo en shadcn-admin-kit:** `SelectInput` no mostraba el mensaje de error en su rama principal (solo en la de carga): se agregó `<FormError />`.
 - **Kanban:** cada columna es una `section` con `aria-label` (accesible y localizable en tests).
 
+## 2026-11-03 · Pipeline: filtros y export CSV solo gerencia
+- **Decisión:** el export CSV es solo de gerencia en todo recurso, según `docs/08-seguridad-roles.md`: `canAccess` niega `export` a ejecutivo y lector (`READ_ACTIONS` queda en `list`/`show`). Reemplaza lo decidido en la Fase 2, que dejaba exportar al lector. En el pipeline (kanban y tabla `/leads`) el botón Exportar va dentro de `CanAccess action="export"`.
+- **Filtros (RF-04):** `deals/DealFilters.tsx`, siempre visibles y aplicados al instante: línea de negocio, canal de origen, rango de fecha de creación (`created_at@gte`/`@lte`, límites del día en UTC) y, solo en la tabla, etapa (en el kanban las columnas ya son etapas). El de ejecutivo es el de Atomic (`AccountManagerInput` para gerencia, `OnlyMineInput` para el resto), ahora también en la tabla.
+- **Búsqueda global:** sin cambios: encuentra el lead por su nombre (con la empresa como subtítulo) y abre la ficha; el nombre de la empresa encuentra la empresa, no sus leads (`global_search` busca en los campos propios de cada registro).
+- **Pendiente (cola siguiente):** registrar cada export con su autor en `audit_log`.
+- **Consecuencias:** el `ExportButton` de shadcn-admin-kit no consulta `canAccess`: en contactos y empresas todavía se ve para el ejecutivo (la regla de `canAccess` ya lo niega, falta envolver esos botones).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

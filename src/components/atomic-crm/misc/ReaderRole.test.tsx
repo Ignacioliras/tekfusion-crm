@@ -12,7 +12,8 @@ import { canAccess, type AccessRole } from "../providers/commons/canAccess";
 // interface offers no create, edit or delete action. The database refuses
 // them anyway (RLS); this checks the interface does not offer them. Each
 // screen is also rendered for an executive, so a missing control means
-// "hidden for the reader", not "never rendered".
+// "hidden for the reader", not "never rendered". CSV export is no read action
+// any more: it is for managers only (deals/DealFilters.test.tsx).
 const data = {
   companies: [buildCompany({ id: 1, name: "Minera Ficticia" })],
   contacts: [
@@ -110,5 +111,15 @@ describe("reader role", () => {
         expect(screen.getByRole(role, { name }).elements()).toHaveLength(0);
       }
     });
+  });
+
+  it("does not offer the pipeline's CSV export to a reader", async () => {
+    const screen = await renderAs("reader", "/deals");
+    await expect
+      .element(screen.getByText("Válvulas para relave").first())
+      .toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Export" }).elements(),
+    ).toHaveLength(0);
   });
 });

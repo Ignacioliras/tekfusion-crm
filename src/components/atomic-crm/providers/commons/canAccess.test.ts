@@ -1,11 +1,11 @@
 import { canAccess, getAccessRole } from "./canAccess";
 
 describe("canAccess", () => {
-  it("lets the reader role list, show and export, and nothing else", () => {
-    for (const action of ["list", "show", "export"]) {
+  it("lets the reader role list and show, and nothing else", () => {
+    for (const action of ["list", "show"]) {
       expect(canAccess("reader", { resource: "deals", action })).toBe(true);
     }
-    for (const action of ["create", "edit", "delete"]) {
+    for (const action of ["create", "edit", "delete", "export"]) {
       expect(canAccess("reader", { resource: "deals", action })).toBe(false);
       expect(canAccess("reader", { resource: "contacts", action })).toBe(false);
     }
@@ -23,6 +23,14 @@ describe("canAccess", () => {
       true,
     );
   });
+});
+
+it("lets only managers export, on every resource", () => {
+  for (const resource of ["deals", "contacts", "companies"]) {
+    expect(canAccess("admin", { resource, action: "export" })).toBe(true);
+    expect(canAccess("user", { resource, action: "export" })).toBe(false);
+    expect(canAccess("reader", { resource, action: "export" })).toBe(false);
+  }
 });
 
 describe("getAccessRole", () => {

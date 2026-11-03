@@ -189,12 +189,13 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (filtros, export solo gerencia, búsqueda global) y los tests de roles ajustados; ítem 'Pipeline kanban + lista…' de la Fase 3 en docs/09 marcado [x] (con lo ya hecho de ganado/perdido); decisión en docs/10.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 22:43:22"
     }
   ],
   "corridas": [

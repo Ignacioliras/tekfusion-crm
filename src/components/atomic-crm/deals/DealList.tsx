@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { InputProps } from "ra-core";
 import {
+  CanAccess,
   useCanAccess,
   useGetIdentity,
   useListContext,
@@ -24,6 +25,7 @@ import { DealArchivedList } from "./DealArchivedList";
 import { DealCreate } from "./DealCreate";
 import { DealEdit } from "./DealEdit";
 import { DealEmpty } from "./DealEmpty";
+import { leadFilters } from "./DealFilters";
 import { DealListContent } from "./DealListContent";
 import { DealShow } from "./DealShow";
 import { OnlyMineInput } from "./OnlyMineInput";
@@ -76,6 +78,7 @@ const DealList = () => {
             <OnlyMineInput source="sales_id" alwaysOn />
           ),
         ]),
+    ...leadFilters(),
   ];
 
   return (
@@ -128,7 +131,9 @@ const DealActions = () => (
   <TopToolbar>
     <FilterButton />
     <DataImportButton resource="deals" />
-    <ExportButton />
+    <CanAccess action="export" resource="deals">
+      <ExportButton />
+    </CanAccess>
     <CreateButton label="resources.deals.action.new" />
   </TopToolbar>
 );
