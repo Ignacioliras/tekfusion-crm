@@ -16,9 +16,8 @@ create or replace trigger set_contact_notes_sales_id_trigger
     before insert on public.contact_notes
     for each row execute function public.set_sales_id_default();
 
-create or replace trigger set_deal_sales_id_trigger
-    before insert on public.deals
-    for each row execute function public.set_sales_id_default();
+-- deals: set_deal_sales_id_trigger lives in 11_tekfusion_policies.sql (it
+-- needs is_manager(), defined there).
 
 create or replace trigger set_deal_notes_sales_id_trigger
     before insert on public.deal_notes

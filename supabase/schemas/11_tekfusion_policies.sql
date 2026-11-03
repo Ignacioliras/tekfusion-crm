@@ -104,6 +104,17 @@ $$;
 -- (migrations, seed) and other backend roles pass. The gate is the connection
 -- role, not auth.uid(), so an API session without a `sub` claim is not exempt.
 
+-- A lead inserted without owner goes to the caller (Atomic's default), except
+-- when the caller is a manager: managers may leave it unassigned, as the CSV
+-- importer does for a row with no executive and no line owner (docs/10,
+-- 2026-11-03). Executives still get it (their insert policy requires it); the
+-- service role (n8n, Edge Functions) has no caller and leaves it null.
+create or replace trigger set_deal_sales_id_trigger
+    before insert on public.deals
+    for each row
+    when (not public.is_manager())
+    execute function public.set_sales_id_default();
+
 -- role, administrator and disabled are changed only by managers.
 CREATE OR REPLACE FUNCTION "public"."protect_sales_columns"() RETURNS "trigger"
     LANGUAGE "plpgsql"
