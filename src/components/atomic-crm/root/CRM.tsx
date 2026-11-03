@@ -342,7 +342,11 @@ const MobileAdmin = (
             element={<SettingsPageMobile />}
           />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
+          <Route path={DealTableList.path} element={<DealTableList />} />
+          <Route path={WhatsAppPage.path} element={<WhatsAppPage />} />
         </CustomRoutes>
+        {/* Desktop screens reused on small screens: no mobile-specific flows (CLAUDE.md rule 9). */}
+        <Resource name="deals" {...deals} />
         <Resource
           name="contacts"
           list={ContactListMobile}
@@ -351,7 +355,7 @@ const MobileAdmin = (
         >
           <Route path=":id/notes/:noteId" element={<NoteShowPage />} />
         </Resource>
-        <Resource name="companies" show={CompanyShow} />
+        <Resource name="companies" list={companies.list} show={CompanyShow} />
         <Resource name="tasks" list={MobileTasksList} />
       </Admin>
     </PersistQueryClientProvider>

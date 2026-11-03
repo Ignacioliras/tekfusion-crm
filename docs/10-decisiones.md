@@ -70,6 +70,11 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Gitleaks:** el dato de prueba `secreto-de-prueba-123` del test del webhook (T8) es un falso positivo de la regla `generic-api-key`. Se marca con `gitleaks:allow` en la línea y su huella histórica (commit 986ba13) se registra en `.gitleaksignore`.
 - **Tests del harness:** el proyecto vitest `claude` (tests de los hooks del harness de Atomic) fallaba entero, también en `main`, porque prueba un sistema que está desactivado. **Decisión:** los tests del harness quedan fuera junto con el harness: se quita el proyecto `claude` de `vitest.config.ts` y el script `test:unit:claude`. `test:unit:app` corre solo `app` y `functions`. Si algún día se reactiva el harness, se reactivan sus tests.
 
+## 2026-11-03 · Menú móvil igual al de escritorio
+- **Decisión:** la barra inferior móvil tiene los mismos 7 ítems y el mismo orden que el header (Pipeline, Leads, Contactos, Empresas, WhatsApp, Dashboard, Configuración), con scroll horizontal en vez de esconder ítems; el botón "+" (crear contacto, nota o tarea) queda al final.
+- **Regla dura 9:** no se construyen flujos móviles: en pantalla chica se reutilizan las pantallas de escritorio (kanban, lista de leads, lista de empresas, WhatsApp).
+- **Consecuencias:** "Tareas" ya no está en la barra móvil (no está en el menú de escritorio); la ruta `/tasks` sigue existiendo en móvil.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
