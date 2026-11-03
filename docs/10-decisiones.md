@@ -68,7 +68,7 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **T3 · Idioma:** el español como idioma por defecto se adelanta a la Fase 1 (la decisión anterior lo ubicaba en Fase 3) y **queda**. Por ahora solo traduce las claves `ra.*`; el resto de los textos se traduce en el rediseño de la Fase 3.
 - **T5 · Seed:** mientras `sales` no tenga `role`, "lector" y "ejecutivo" solo se distinguen por `administrator=false`; se resuelve con la RLS de la Fase 2. Contraseña local de los 4 usuarios ficticios: `demo-tekfusion` (solo local/staging). El trigger `20_contact_saved` (Gravatar por HTTP) se desactiva durante la carga para no llamar a servicios externos.
 - **Gitleaks:** el dato de prueba `secreto-de-prueba-123` del test del webhook (T8) es un falso positivo de la regla `generic-api-key`. Se marca con `gitleaks:allow` en la línea y su huella histórica (commit 986ba13) se registra en `.gitleaksignore`.
-- **Consecuencias:** `test:unit:app` incluye el proyecto vitest `claude` (tests de los hooks del harness de Atomic, desactivado), que falla entero también en `main`. Se verifica la app con `--project app --project functions` hasta decidir qué hacer con esos tests en la limpieza de la Fase 1.
+- **Tests del harness:** el proyecto vitest `claude` (tests de los hooks del harness de Atomic) fallaba entero, también en `main`, porque prueba un sistema que está desactivado. **Decisión:** los tests del harness quedan fuera junto con el harness: se quita el proyecto `claude` de `vitest.config.ts` y el script `test:unit:claude`. `test:unit:app` corre solo `app` y `functions`. Si algún día se reactiva el harness, se reactivan sus tests.
 
 ## Plantilla para nuevas decisiones
 ```
