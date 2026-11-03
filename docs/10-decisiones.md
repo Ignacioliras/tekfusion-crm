@@ -136,6 +136,12 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Descartado:** firmar al subir y guardar la URL firmada (vence); un bucket aparte por tipo (los archivos de Atomic ya están todos en `attachments`); mover a Storage los avatares de contactos (vienen de Gravatar, URL externa, no se tocan).
 - **Aprendizaje:** en un script de Node, `String.replace` con reemplazo de texto convierte `$$` en `$` (rompe los cuerpos de funciones SQL); pasar una función como reemplazo.
 
+## 2026-11-03 · Verificación en dos pasos (TOTP)
+- **Decisión:** Supabase Auth MFA con TOTP (`config.toml`: `[auth.mfa.totp] enroll_enabled/verify_enabled`). Enrolamiento con QR y clave manual en Configuración → Mi perfil (`mfa/MfaSection`) y, para gerencia, forzado antes de entrar (`/mfa/enroll`); verificación del código al iniciar sesión (`/mfa/verify`). La puerta es `MfaGate`, en los dos layouts: lee el nivel de la sesión (`getAuthenticatorAssuranceLevel`, sin red) y el rol cacheado; un ejecutivo o lector con factor también debe verificar; sin factor, solo gerencia es enviada a enrolar. Gerencia no puede desactivarlo; el resto sí.
+- **Pruebas:** doble en memoria de `auth.mfa` (`src/test/fakeMfaApi.ts`) inyectado por el `authProvider` (`getMfaApi`); tests `mfa/Mfa.test.tsx`. Manual con Andrea en local: `docs/capturas/mfa-enrolar.png`, `mfa-verificar.png` (la clave de la captura es de un factor local de prueba que `db reset` borra).
+- **Límite conocido (pendiente):** la obligación vive en el frontend. Un JWT de gerencia en `aal1` (sin verificar) sigue siendo válido contra PostgREST. Para cerrarlo hace falta exigir `auth.jwt()->>'aal' = 'aal2'` a los managers en `current_user_role()` (o una policy aparte), cuidando que el enrolamiento no necesite la base. Se propone en la revisión de seguridad; no se hizo en esta tarea.
+- **Descartado:** interceptar en `checkAuth` del authProvider (ra-core cierra la sesión cuando `checkAuth` lanza); WebAuthn/SMS (Evolution no es canal de OTP y el alcance dice TOTP).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

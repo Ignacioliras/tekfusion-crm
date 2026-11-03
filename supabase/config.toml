@@ -106,6 +106,15 @@ content_path = "./supabase/templates/invite.html"
 subject = "Reset your Atomic CRM Password"
 content_path = "./supabase/templates/recovery.html"
 
+[auth.mfa]
+# TOTP (docs/08): mandatory for managers, optional for the rest. The app
+# enforces it (MfaGate); Auth only offers the factor.
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
 enable_signup = true

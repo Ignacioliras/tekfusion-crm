@@ -1,4 +1,5 @@
 import { Error } from "@/components/admin/error";
+import { MfaGate } from "../mfa/MfaGate";
 import { Notification } from "@/components/admin/notification";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense, type ReactNode } from "react";
@@ -16,7 +17,7 @@ export const MobileLayout = ({ children }: { children: ReactNode }) => {
       <PullToRefresh />
       <ErrorBoundary FallbackComponent={Error}>
         <Suspense fallback={<Skeleton className="h-12 w-12 rounded-full" />}>
-          {children}
+          <MfaGate>{children}</MfaGate>
         </Suspense>
       </ErrorBoundary>
       <MobileNavigation />

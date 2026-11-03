@@ -2,6 +2,7 @@ import type { AuthProvider } from "ra-core";
 import { supabaseAuthProvider } from "ra-supabase-core";
 
 import { canAccess, getAccessRole } from "../commons/canAccess";
+import type { MfaApi, MfaRequirement } from "../../mfa/mfaApi";
 import { getSupabaseClient } from "./supabase";
 
 const getBaseAuthProvider = () =>
@@ -17,6 +18,8 @@ const getBaseAuthProvider = () =>
         id: sale.id,
         fullName: `${sale.first_name} ${sale.last_name}`,
         avatar: sale.avatar?.src,
+        // MfaSection: managers cannot turn two-step verification off.
+        role: sale.role,
       };
     },
   });
@@ -153,6 +156,25 @@ export const getAuthProvider = (): AuthProvider => {
 
       // Compute access rights from the sale role
       return canAccess(getAccessRole(sale), params);
+    },
+    // Two-step verification (TOTP, docs/08). The MFA screens talk to supabase-js
+    // directly; MfaGate asks what the session still needs.
+    getMfaApi: (): MfaApi => getSupabaseClient().auth.mfa,
+    getMfaRequirement: async (): Promise<MfaRequirement> => {
+      // Read from the session's JWT: no request.
+      const { data, error } =
+        await getSupabaseClient().auth.mfa.getAuthenticatorAssuranceLevel();
+      if (error || !data) return null;
+      // A verified factor exists and this session has not used it yet.
+      if (data.nextLevel === "aal2" && data.currentLevel !== "aal2") {
+        return "verify";
+      }
+      // No factor: mandatory for managers, optional for the rest.
+      if (data.nextLevel === "aal1") {
+        const sale = await getSale();
+        if (sale?.role === "manager") return "enroll";
+      }
+      return null;
     },
     getAuthorizationDetails(authorizationId: string) {
       return getSupabaseClient().auth.oauth.getAuthorizationDetails(

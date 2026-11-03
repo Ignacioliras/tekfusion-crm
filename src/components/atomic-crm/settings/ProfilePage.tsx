@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { MfaSection } from "../mfa/MfaSection";
 import ImageEditorField from "../misc/ImageEditorField";
 import type { CrmDataProvider } from "../providers/types";
 import { getSalesErrorNotification } from "../sales/salesErrorNotification";
@@ -83,10 +84,12 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-8">
+    <div className="max-w-lg mx-auto mt-8 space-y-4">
       <Form onSubmit={handleOnSubmit} record={data}>
         <ProfileForm isEditMode={isEditMode} setEditMode={setEditMode} />
       </Form>
+      {/* Outside the profile <Form>: it holds a form of its own. */}
+      <MfaSection />
     </div>
   );
 };
