@@ -412,6 +412,15 @@ export const englishCrmMessages = {
     changelog: {
       title: "Changelog",
     },
+    credits: {
+      title: "Credits",
+      developed_by: "This system was developed by %{developer} for %{client}.",
+      whatsapp_uses: "This system's WhatsApp messaging uses",
+      whatsapp_license:
+        ", distributed under the Apache 2.0 license with an attribution requirement.",
+      third_party: "Third-party components",
+      evolution_license: "Apache 2.0 (with attribution)",
+    },
     activity: {
       added_company: "%{name} added company",
       you_added_company: "You added company",

@@ -1,4 +1,23 @@
 import type { TranslationMessages } from "ra-core";
+import type { PartialCrmMessages } from "@/components/atomic-crm/providers/commons/englishCrmMessages";
+
+// Spanish (Chile) translation of Atomic's own keys (englishCrmMessages.ts).
+// Typed against the English catalog, so a misspelled key fails typecheck;
+// missing keys fall back to English.
+export const spanishCrmMessages: PartialCrmMessages = {
+  crm: {
+    language: "Idioma",
+    credits: {
+      title: "Créditos",
+      developed_by: "Este sistema fue desarrollado por %{developer} para %{client}.",
+      whatsapp_uses: "La mensajería de WhatsApp de este sistema usa",
+      whatsapp_license:
+        ", distribuida bajo licencia Apache 2.0 con condición de atribución.",
+      third_party: "Componentes de terceros",
+      evolution_license: "Apache 2.0 (con atribución)",
+    },
+  },
+};
 
 // Spanish (Chile) translation of ra-language-english (same key structure).
 export const spanishMessages: TranslationMessages = {
