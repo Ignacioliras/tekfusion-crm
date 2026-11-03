@@ -170,13 +170,16 @@
         "T4"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 23:10:50"
+      "commit": "5221e64d8420dcd5ce03124a2e7b9c44c387d516",
+      "costo_usd": 2.3426015999999996,
+      "session_id": "15ba5a94-5c4c-4607-94b0-76fea2074067",
+      "inicio": "2026-11-03 23:10:50",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: ranking de ejecutivos solo para gerencia en el dashboard (SalesRanking + rankSales con tests), FakeRest e i18n actualizados y Fase 6 marcada en docs/09.",
+      "fin": "2026-11-03 23:17:58"
     }
   ],
   "corridas": [
