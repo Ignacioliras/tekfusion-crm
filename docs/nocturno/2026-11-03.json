@@ -130,13 +130,16 @@
         "T2"
       ],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 05:02:00"
+      "commit": "356134bf8c450949fc1894136f0ada05f6baefa2",
+      "costo_usd": 1.4337566999999998,
+      "session_id": "d8a834a1-4bfd-4a3e-84b1-476da9679f27",
+      "inicio": "2026-11-03 05:02:00",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: seed.sql carga 4 usuarios, 12 empresas, 20 contactos y 60 leads ficticios de TekFusion, y `npx supabase db reset --local` termina sin error.",
+      "fin": "2026-11-03 05:06:12"
     }
   ],
   "corridas": [
