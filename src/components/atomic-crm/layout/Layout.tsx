@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { MfaGate } from "../mfa/MfaGate";
 import { ErrorBoundary } from "react-error-boundary";
 import { Notification } from "@/components/admin/notification";
 import { Error } from "@/components/admin/error";
@@ -16,7 +17,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
       <main className="max-w-screen-xl mx-auto p-4" id="main-content">
         <ErrorBoundary FallbackComponent={Error}>
           <Suspense fallback={<Skeleton className="h-12 w-12 rounded-full" />}>
-            {children}
+            <MfaGate>{children}</MfaGate>
           </Suspense>
         </ErrorBoundary>
       </main>

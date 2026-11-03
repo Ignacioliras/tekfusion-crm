@@ -318,6 +318,14 @@ export const frenchCrmMessages = {
         substitute:
           "Reçoit les nouveaux leads pendant l'absence de cet utilisateur.",
       },
+      offboard: {
+        button: "Désactiver l'utilisateur",
+        title: "Désactiver %{name} ?",
+        content:
+          "Son accès est désactivé et ses sessions fermées ; ses leads ouverts et ses lignes passent à son remplaçant, ou restent non attribués. Le compte peut être réactivé ensuite.",
+        success: "Utilisateur désactivé",
+        error: "L'utilisateur n'a pas pu être désactivé. Veuillez réessayer.",
+      },
       validation: {
         self_substitute:
           "Un utilisateur ne peut pas être son propre remplaçant",
@@ -532,6 +540,31 @@ export const frenchCrmMessages = {
           refused: "La base de données a refusé la ligne",
         },
       },
+    },
+    mfa: {
+      title: "Validation en deux étapes",
+      enabled: "Activée",
+      disabled: "Non activée",
+      required_hint: "Obligatoire pour la direction.",
+      enable: "Activer",
+      disable: "Désactiver",
+      enroll_title: "Activer la validation en deux étapes",
+      enroll_intro:
+        "Scannez le code avec Google Authenticator, Microsoft Authenticator ou 1Password, puis saisissez le code à 6 chiffres affiché.",
+      secret: "Si vous ne pouvez pas scanner, saisissez cette clé :",
+      code: "Code à 6 chiffres",
+      confirm: "Confirmer",
+      verify_title: "Validation en deux étapes",
+      verify_intro:
+        "Saisissez le code de votre application d'authentification.",
+      verify: "Se connecter",
+      invalid_code: "Code incorrect. Réessayez.",
+      enrolled: "Validation en deux étapes activée",
+      unenrolled: "Validation en deux étapes désactivée",
+      enroll_error:
+        "La validation en deux étapes n'a pas pu être activée. Réessayez.",
+      qr_alt: "QR code",
+      logout: "Se déconnecter",
     },
     header: {
       import_data: "Importer depuis JSON",

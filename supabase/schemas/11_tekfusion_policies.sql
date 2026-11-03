@@ -12,19 +12,33 @@
 
 -- Helpers ------------------------------------------------------------------
 
--- The sales row of the logged-in user, or null when disabled / not a user.
+-- The sales row of the logged-in user, or null when disabled / not a user /
+-- not verified by TOTP when it must be (docs/08: mandatory for managers, and
+-- for anyone who enrolled a factor). The JWT carries the session's level
+-- (aal); a manager without a factor sees nothing until enrolling, which only
+-- talks to Auth. Only the own sales row stays readable (sales_select).
 CREATE OR REPLACE FUNCTION "public"."current_sales_id"() RETURNS bigint
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-  select id from public.sales where user_id = auth.uid() and not disabled
+  select s.id from public.sales s
+  where s.user_id = auth.uid() and not s.disabled
+    and (coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+         or (s.role <> 'manager' and not exists (
+               select 1 from auth.mfa_factors f
+               where f.user_id = s.user_id and f.status = 'verified')))
 $$;
 
 CREATE OR REPLACE FUNCTION "public"."current_user_role"() RETURNS "public"."user_role"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-  select role from public.sales where user_id = auth.uid() and not disabled
+  select s.role from public.sales s
+  where s.user_id = auth.uid() and not s.disabled
+    and (coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+         or (s.role <> 'manager' and not exists (
+               select 1 from auth.mfa_factors f
+               where f.user_id = s.user_id and f.status = 'verified')))
 $$;
 
 CREATE OR REPLACE FUNCTION "public"."is_manager"() RETURNS boolean
@@ -99,6 +113,86 @@ begin
 end;
 $$;
 
+-- "Dar de baja" a user (docs/08 checklist, Fase 2). Only the users Edge
+-- Function calls it (service role), after banning the user in Auth; it passes
+-- the manager doing it as actor_id. Disables the user, hands their open leads
+-- and their business lines to their substitute (or leaves them unassigned),
+-- closes every session and writes the audit trail. Reactivation: Atomic's
+-- "disabled" switch, also through the Edge Function.
+-- Not here yet: SMTP/IMAP keys (Fase 5) and WhatsApp conversations (Fase 4).
+CREATE OR REPLACE FUNCTION "public"."offboard_sale"("sale_id" bigint, "actor_id" bigint) RETURNS "public"."audit_log"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  target public.sales;
+  substitute bigint;
+  reassigned bigint[];
+  entry public.audit_log;
+begin
+  -- auth.role(), not current_user: inside a security definer function
+  -- current_user is the owner. Allowed list: the service role (Edge Function)
+  -- and backend roles (no JWT); never an API session.
+  if auth.role() is not null and auth.role() <> 'service_role' then
+    raise exception 'offboard_sale is called through the users Edge Function' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.sales a where a.id = actor_id and a.role = 'manager' and not a.disabled) then
+    raise exception 'actor % is not an active manager', actor_id using errcode = '42501';
+  end if;
+  -- Serializes with ensure_active_manager: two managers offboarding each other
+  -- at once must not leave the system without one.
+  perform pg_advisory_xact_lock(hashtext('active_manager'));
+
+  select * into target from public.sales where id = sale_id for update;
+  if not found then
+    raise exception 'user % does not exist', sale_id using errcode = 'P0002';
+  end if;
+  if target.id = actor_id then
+    raise exception 'a user cannot offboard itself' using errcode = '42501';
+  end if;
+  if target.disabled then
+    raise exception 'user % is already disabled', sale_id using errcode = 'P0001';
+  end if;
+
+  -- The substitute of the lines the user owns (one per user, Configuración →
+  -- Usuarios); only an active executive or manager can receive leads.
+  select l.substitute_sales_id into substitute
+    from public.business_lines l
+    join public.sales s on s.id = l.substitute_sales_id
+   where l.owner_sales_id = target.id and not s.disabled and s.role <> 'reader'
+   order by l.code limit 1;
+
+  -- Open leads (ETAPAS_ABIERTAS of estados.ts); closed and archived ones keep their owner.
+  with moved as (
+    update public.deals
+       set sales_id = substitute, updated_at = now(), last_activity_at = now()
+     where sales_id = target.id and archived_at is null
+       and stage in ('nuevo', 'contactado', 'cotizado')
+    returning id
+  )
+  select coalesce(array_agg(id order by id), '{}') into reassigned from moved;
+
+  update public.business_lines set owner_sales_id = substitute, substitute_sales_id = null
+   where owner_sales_id = target.id;
+  update public.business_lines set substitute_sales_id = null
+   where substitute_sales_id = target.id;
+
+  -- ensure_active_manager_trigger refuses to disable the last active manager.
+  update public.sales set disabled = true where id = target.id;
+  delete from auth.sessions where user_id = target.user_id;
+
+  insert into public.audit_log (actor_sales_id, action, target_sales_id, deal_id, details)
+  select actor_id, 'deal.reassigned', target.id, d,
+         jsonb_build_object('from', target.id, 'to', substitute, 'reason', 'offboarding')
+    from unnest(reassigned) as d;
+  insert into public.audit_log (actor_sales_id, action, target_sales_id, details)
+  values (actor_id, 'sale.offboarded', target.id,
+          jsonb_build_object('substitute_sales_id', substitute, 'reassigned_deal_ids', to_jsonb(reassigned)))
+  returning * into entry;
+  return entry;
+end;
+$$;
+
 -- Guard triggers -----------------------------------------------------------
 -- They run for API sessions only: service role (Edge Functions), postgres
 -- (migrations, seed) and other backend roles pass. The gate is the connection
@@ -146,6 +240,8 @@ CREATE OR REPLACE FUNCTION "public"."ensure_active_manager"() RETURNS "trigger"
     SET "search_path" TO ''
     AS $$
 begin
+  -- Two concurrent demotions would each still see the other manager active.
+  perform pg_advisory_xact_lock(hashtext('active_manager'));
   if old.role = 'manager' and not old.disabled
      and (new.role <> 'manager' or new.disabled)
      and not exists (
@@ -293,8 +389,11 @@ create policy tasks_delete on public.tasks for delete to authenticated
 -- guards role/administrator/disabled and 06_grants.sql limits the columns
 -- PostgREST can write); managers edit anyone. No insert/delete: users are
 -- created and disabled through the "users" Edge Function.
+-- Everyone internal reads the users; a session that still has to verify its
+-- second factor reads only its own row (the app needs the role to send it to
+-- the MFA pages).
 create policy sales_select on public.sales for select to authenticated
-    using ((select public.is_internal_user()));
+    using ((select public.is_internal_user()) or (user_id = (select auth.uid()) and not disabled));
 create policy sales_update on public.sales for update to authenticated
     using ((select public.is_manager()) or id = (select public.current_sales_id()))
     with check ((select public.is_manager()) or id = (select public.current_sales_id()));
@@ -311,8 +410,11 @@ create policy tags_delete on public.tags for delete to authenticated
     using ((select public.current_user_role()) in ('manager', 'executive'));
 
 -- configuration tables: everyone reads, managers write -------------------
+-- Branding and pipeline settings: also readable by a session that still has
+-- to verify its second factor (the MFA pages render the logo and title).
 create policy configuration_select on public.configuration for select to authenticated
-    using ((select public.is_internal_user()));
+    using ((select public.is_internal_user())
+        or exists (select 1 from public.sales s where s.user_id = (select auth.uid()) and not s.disabled));
 create policy configuration_insert on public.configuration for insert to authenticated
     with check ((select public.is_manager()));
 create policy configuration_update on public.configuration for update to authenticated
@@ -333,16 +435,86 @@ create policy sales_absences_select on public.sales_absences for select to authe
 create policy sales_absences_write on public.sales_absences for all to authenticated
     using ((select public.is_manager())) with check ((select public.is_manager()));
 
+-- audit_log: managers read it; only the system writes (offboard_sale, service role).
+create policy audit_log_select on public.audit_log for select to authenticated
+    using ((select public.is_manager()));
+
 -- Lookup table used by the favicon trigger; harmless, but never for outsiders.
 create policy favicons_excluded_domains_all on public.favicons_excluded_domains for all to authenticated
     using ((select public.is_internal_user())) with check ((select public.is_internal_user()));
 
--- storage: attachments only for internal users; managers and executives
--- upload and delete (docs/08). The bucket is still public (Atomic builds
--- public URLs): signed URLs come in Fase 3.
+-- storage: the attachments bucket is private; a user signs (reads) only the
+-- files of the leads and contacts it can see. Files are stored under the folder
+-- of their owner (uploadToBucket in the supabase dataProvider):
+--   deals/<deal_id>/…        the lead must be visible (deals RLS)
+--   contacts/<contact_id>/…  the contact must be visible (contacts RLS)
+--   companies/…, sales/…, config/…  any internal user (logos, avatars)
+--   anything else (files Atomic left at the root)  managers only
+-- Security invoker on purpose: the subselects run under the caller's RLS.
+CREATE OR REPLACE FUNCTION "public"."can_read_attachment"("object_name" text) RETURNS boolean
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+declare
+  parts text[] := string_to_array(object_name, '/');
+  owner_id bigint;
+begin
+  if not public.is_internal_user() then
+    return false;
+  end if;
+  if coalesce(array_length(parts, 1), 0) < 2 then
+    return public.is_manager();
+  end if;
+  if parts[1] in ('companies', 'sales', 'config') then
+    return true;
+  end if;
+  -- length <= 15: a longer run of digits would overflow bigint and make every
+  -- listing of the bucket fail for everyone.
+  if parts[1] in ('deals', 'contacts') and array_length(parts, 1) >= 3
+     and parts[2] ~ '^[0-9]+$' and length(parts[2]) <= 15 then
+    owner_id := parts[2]::bigint;
+    if parts[1] = 'deals' then
+      return exists (select 1 from public.deals d where d.id = owner_id);
+    end if;
+    return exists (select 1 from public.contacts c where c.id = owner_id);
+  end if;
+  return public.is_manager();
+end;
+$$;
+
+-- Upload and delete: the lead or contact must be editable by the caller
+-- (can_edit_deal / can_edit_contact, under RLS); logos, avatars and the
+-- configuration logos belong to managers and executives.
+CREATE OR REPLACE FUNCTION "public"."can_write_attachment"("object_name" text) RETURNS boolean
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+declare
+  parts text[] := string_to_array(object_name, '/');
+begin
+  if public.current_user_role() not in ('manager', 'executive') then
+    return false;
+  end if;
+  if coalesce(array_length(parts, 1), 0) < 2 then
+    return false;
+  end if;
+  if parts[1] in ('companies', 'sales', 'config') then
+    return true;
+  end if;
+  if parts[1] in ('deals', 'contacts') and array_length(parts, 1) >= 3
+     and parts[2] ~ '^[0-9]+$' and length(parts[2]) <= 15 then
+    if parts[1] = 'deals' then
+      return public.can_edit_deal(parts[2]::bigint);
+    end if;
+    return public.can_edit_contact(parts[2]::bigint);
+  end if;
+  return false;
+end;
+$$;
+
 create policy attachments_select on storage.objects for select to authenticated
-    using (bucket_id = 'attachments' and (select public.is_internal_user()));
+    using (bucket_id = 'attachments' and (select public.is_internal_user()) and public.can_read_attachment(name));
 create policy attachments_insert on storage.objects for insert to authenticated
-    with check (bucket_id = 'attachments' and (select public.current_user_role()) in ('manager', 'executive'));
+    with check (bucket_id = 'attachments' and (select public.is_internal_user()) and public.can_write_attachment(name));
 create policy attachments_delete on storage.objects for delete to authenticated
-    using (bucket_id = 'attachments' and (select public.current_user_role()) in ('manager', 'executive'));
+    using (bucket_id = 'attachments' and (select public.is_internal_user()) and public.can_write_attachment(name));

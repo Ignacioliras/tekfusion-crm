@@ -29,6 +29,9 @@ function verifySupabaseJWT(jwt: string) {
   });
 }
 
+/** Claims of the (already verified) JWT, e.g. its assurance level (aal). */
+export const getJwtClaims = (req: Request) => jose.decodeJwt(getAuthToken(req));
+
 /**
  * Validates the Authorization header to ensure that a user is authenticated.
  */

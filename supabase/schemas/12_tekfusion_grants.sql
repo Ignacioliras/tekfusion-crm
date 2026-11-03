@@ -18,6 +18,11 @@ grant select, insert, update, delete on table public.lost_reasons to authenticat
 grant all on table public.lost_reasons to service_role;
 grant select, insert, update, delete on table public.sales_absences to authenticated;
 grant all on table public.sales_absences to service_role;
+-- Only the system writes the audit trail (default privileges would grant DML).
+revoke all on table public.audit_log from authenticated;
+grant select on table public.audit_log to authenticated;
+grant all on table public.audit_log to service_role;
+grant all on sequence public.audit_log_id_seq to service_role;
 grant all on sequence public.lost_reasons_id_seq to authenticated, service_role;
 grant all on sequence public.sales_absences_id_seq to authenticated, service_role;
 
@@ -26,11 +31,19 @@ grant all on sequence public.sales_absences_id_seq to authenticated, service_rol
 -- columns plus the three the protect_sales_columns trigger guards; email,
 -- user_id and secondary_emails stay out of reach.
 revoke update on table public.sales from authenticated;
-grant update (first_name, last_name, avatar, signature, whatsapp_phone, role, administrator, disabled)
+-- disabled is not here: deactivation ("Dar de baja") and reactivation go
+-- through the users Edge Function, which bans/unbans in Auth and writes audit_log.
+grant update (first_name, last_name, avatar, signature, whatsapp_phone, role, administrator)
     on table public.sales to authenticated;
 
 -- Helpers and RPCs: never for anon or PUBLIC.
 revoke execute on function public.take_deal(bigint) from public, anon;
+revoke execute on function public.offboard_sale(bigint, bigint) from public, anon, authenticated;
+grant execute on function public.offboard_sale(bigint, bigint) to service_role;
+revoke execute on function public.can_read_attachment(text) from public, anon;
+grant execute on function public.can_read_attachment(text) to authenticated, service_role;
+revoke execute on function public.can_write_attachment(text) from public, anon;
+grant execute on function public.can_write_attachment(text) to authenticated, service_role;
 revoke execute on function public.current_sales_id() from public, anon;
 revoke execute on function public.current_user_role() from public, anon;
 revoke execute on function public.is_manager() from public, anon;

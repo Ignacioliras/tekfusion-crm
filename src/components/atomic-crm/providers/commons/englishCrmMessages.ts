@@ -313,6 +313,14 @@ export const englishCrmMessages = {
         substitute:
           "Receives this user's new leads while they are away. Applies to all their lines.",
       },
+      offboard: {
+        button: "Offboard user",
+        title: "Offboard %{name}?",
+        content:
+          "Their access is disabled and their sessions closed; their open leads and business lines go to their substitute, or stay unassigned. The account can be reactivated later.",
+        success: "User offboarded",
+        error: "The user could not be offboarded. Please try again.",
+      },
       validation: {
         self_substitute: "A user cannot be their own substitute",
         absence_range: "The end date must be on or after the start date",
@@ -522,6 +530,30 @@ export const englishCrmMessages = {
           refused: "The database refused the row",
         },
       },
+    },
+    mfa: {
+      title: "Two-step verification",
+      enabled: "Enabled",
+      disabled: "Not enabled",
+      required_hint: "Required for management.",
+      enable: "Enable",
+      disable: "Disable",
+      enroll_title: "Enable two-step verification",
+      enroll_intro:
+        "Scan the code with Google Authenticator, Microsoft Authenticator or 1Password, then type the 6-digit code it shows.",
+      secret: "If you cannot scan, enter this key by hand:",
+      code: "6-digit code",
+      confirm: "Confirm",
+      verify_title: "Two-step verification",
+      verify_intro: "Type the code from your authenticator app.",
+      verify: "Sign in",
+      invalid_code: "Wrong code. Try again.",
+      enrolled: "Two-step verification enabled",
+      unenrolled: "Two-step verification disabled",
+      enroll_error:
+        "Two-step verification could not be set up. Please try again.",
+      qr_alt: "QR code",
+      logout: "Sign out",
     },
     header: {
       import_data: "Import from JSON",

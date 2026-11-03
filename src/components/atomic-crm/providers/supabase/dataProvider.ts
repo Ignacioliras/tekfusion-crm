@@ -21,7 +21,15 @@ import type { ConfigurationContextValue } from "../../root/ConfigurationContext"
 import { ATTACHMENTS_BUCKET } from "../commons/attachments";
 import { getIsInitialized } from "./authProvider";
 import { searchDealCategories } from "./searchDealCategories";
+import {
+  getSigner as getSignerFor,
+  signRecordFiles,
+  signUrl,
+} from "./signedUrls";
 import { getSupabaseClient } from "./supabase";
+
+// The app's signer: remembers the signed URLs for an hour, reset on logout.
+const getSigner = () => getSignerFor(getSupabaseClient());
 
 const getBaseDataProvider = () =>
   supabaseDataProvider({
@@ -37,7 +45,7 @@ const processCompanyLogo = async (params: any) => {
   const logo = params.data.logo;
 
   if (logo?.rawFile instanceof File) {
-    await uploadToBucket(logo);
+    await uploadToBucket(logo, "companies");
   }
 
   return {
@@ -66,15 +74,29 @@ const getDataProviderWithCustomMethods = () => {
           "activity_log",
           params,
         );
-        // Rename snake_case view columns to camelCase to match Activity type
+        // Rename snake_case view columns to camelCase to match Activity type;
+        // the embedded records carry files of the (private) bucket.
+        const sign = getSigner();
         return {
-          data: data.map((row: any) => ({
-            ...row,
-            contactNote: row.contact_note ?? undefined,
-            dealNote: row.deal_note ?? undefined,
-            contact_note: undefined,
-            deal_note: undefined,
-          })),
+          data: await Promise.all(
+            data.map(async (row: any) => ({
+              ...row,
+              company: row.company
+                ? await signRecordFiles(row.company, ["logo"], sign)
+                : row.company,
+              contact: row.contact
+                ? await signRecordFiles(row.contact, ["avatar"], sign)
+                : row.contact,
+              contactNote: row.contact_note
+                ? await signRecordFiles(row.contact_note, ["attachments"], sign)
+                : undefined,
+              dealNote: row.deal_note
+                ? await signRecordFiles(row.deal_note, ["attachments"], sign)
+                : undefined,
+              contact_note: undefined,
+              deal_note: undefined,
+            })),
+          ),
           total,
         };
       }
@@ -195,6 +217,21 @@ const getDataProviderWithCustomMethods = () => {
 
       return updatedData.data;
     },
+    /** "Dar de baja": disables the user through the users Edge Function (docs/08). */
+    async salesOffboard(id: Identifier): Promise<void> {
+      const { error } = await getSupabaseClient().functions.invoke("users", {
+        method: "DELETE",
+        body: { sales_id: id },
+      });
+      if (error) {
+        console.error("salesOffboard.error", error);
+        const details = await error?.context?.json?.().catch(() => ({}));
+        throw Object.assign(
+          new Error(details?.message || "Failed to offboard the user"),
+          { code: details?.code },
+        );
+      }
+    },
     async updatePassword(id: Identifier) {
       const { data: passwordUpdated, error } =
         await getSupabaseClient().functions.invoke<boolean>("update_password", {
@@ -275,7 +312,14 @@ const getDataProviderWithCustomMethods = () => {
       const { data } = await baseDataProvider.getOne("configuration", {
         id: 1,
       });
-      return (data?.config as ConfigurationContextValue) ?? {};
+      const config = data.config as ConfigurationContextValue;
+      // Uploaded logos live in the private bucket; the default ones are assets.
+      const sign = getSigner();
+      return {
+        ...config,
+        lightModeLogo: await signUrl(config.lightModeLogo, sign),
+        darkModeLogo: await signUrl(config.darkModeLogo, sign),
+      };
     },
     async updateConfiguration(
       config: ConfigurationContextValue,
@@ -297,7 +341,7 @@ export type CrmDataProvider = ReturnType<
 const processConfigLogo = async (logo: any): Promise<string> => {
   if (typeof logo === "string") return logo;
   if (logo?.rawFile instanceof File) {
-    await uploadToBucket(logo);
+    await uploadToBucket(logo, "config");
     return logo.src;
   }
   return logo?.src ?? "";
@@ -315,27 +359,37 @@ const lifeCycleCallbacks: ResourceCallbacks[] = [
       return params;
     },
   },
+  // Files are stored under the folder of their owner: the attachments_select
+  // policy reads the lead or contact id out of the path.
   {
     resource: "contact_notes",
     beforeSave: async (data: ContactNote, _, __) => {
       if (data.attachments) {
         data.attachments = await Promise.all(
-          data.attachments.map((fi) => uploadToBucket(fi)),
+          data.attachments.map((fi) =>
+            uploadToBucket(fi, `contacts/${data.contact_id}`),
+          ),
         );
       }
       return data;
     },
+    afterRead: (note: ContactNote) =>
+      signRecordFiles(note, ["attachments"], getSigner()),
   },
   {
     resource: "deal_notes",
     beforeSave: async (data: DealNote, _, __) => {
       if (data.attachments) {
         data.attachments = await Promise.all(
-          data.attachments.map((fi) => uploadToBucket(fi)),
+          data.attachments.map((fi) =>
+            uploadToBucket(fi, `deals/${data.deal_id}`),
+          ),
         );
       }
       return data;
     },
+    afterRead: (note: DealNote) =>
+      signRecordFiles(note, ["attachments"], getSigner()),
   },
   {
     resource: "sales",
@@ -344,10 +398,11 @@ const lifeCycleCallbacks: ResourceCallbacks[] = [
     },
     beforeSave: async (data: Sale, _, __) => {
       if (data.avatar) {
-        await uploadToBucket(data.avatar);
+        await uploadToBucket(data.avatar, "sales");
       }
       return data;
     },
+    afterRead: (sale: Sale) => signRecordFiles(sale, ["avatar"], getSigner()),
   },
   {
     resource: "contacts",
@@ -362,6 +417,8 @@ const lifeCycleCallbacks: ResourceCallbacks[] = [
         "background",
       ])(params);
     },
+    afterRead: (contact: Record<string, any>) =>
+      signRecordFiles(contact, ["avatar"], getSigner()),
   },
   {
     resource: "companies",
@@ -389,6 +446,8 @@ const lifeCycleCallbacks: ResourceCallbacks[] = [
     beforeUpdate: async (params) => {
       return await processCompanyLogo(params);
     },
+    afterRead: (company: Record<string, any>) =>
+      signRecordFiles(company, ["logo"], getSigner()),
   },
   {
     resource: "contacts_summary",
@@ -453,7 +512,9 @@ const applyFullTextSearch = (columns: string[]) => (params: GetListParams) => {
   };
 };
 
-const uploadToBucket = async (fi: RAFile) => {
+// Every file lives under a folder naming its owner (deals/<id>, contacts/<id>,
+// companies, sales, config): the storage policy decides who may sign it.
+const uploadToBucket = async (fi: RAFile, folder: string) => {
   if (!fi.src.startsWith("blob:") && !fi.src.startsWith("data:")) {
     // Sign URL check if path exists in the bucket
     if (fi.path) {
@@ -462,7 +523,12 @@ const uploadToBucket = async (fi: RAFile) => {
         .createSignedUrl(fi.path, 60);
 
       if (!error) {
-        return fi;
+        // The record may carry the signed URL it was read with: store the
+        // stable public reference, never a token.
+        const { data } = getSupabaseClient()
+          .storage.from(ATTACHMENTS_BUCKET)
+          .getPublicUrl(fi.path);
+        return { ...fi, src: data.publicUrl };
       }
     }
   }
@@ -490,7 +556,7 @@ const uploadToBucket = async (fi: RAFile) => {
   const fileParts = file.name.split(".");
   const fileExt = fileParts.length > 1 ? `.${file.name.split(".").pop()}` : "";
   const fileName = `${Math.random()}${fileExt}`;
-  const filePath = `${fileName}`;
+  const filePath = `${folder}/${fileName}`;
   const { error: uploadError } = await getSupabaseClient()
     .storage.from(ATTACHMENTS_BUCKET)
     .upload(filePath, dataContent);
@@ -500,6 +566,8 @@ const uploadToBucket = async (fi: RAFile) => {
     throw new Error("Failed to upload attachment");
   }
 
+  // The bucket is private: this URL is the stable reference stored in the
+  // database, and every read swaps it for a signed one (signedUrls.ts).
   const { data } = getSupabaseClient()
     .storage.from(ATTACHMENTS_BUCKET)
     .getPublicUrl(filePath);

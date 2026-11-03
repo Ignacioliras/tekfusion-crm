@@ -9,7 +9,7 @@ declare uid uuid;
 begin
   select user_id into uid from public.sales where email = p_email;
   if uid is null then raise exception 'no existe el usuario %', p_email; end if;
-  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated', 'aal', 'aal2')::text, true);
   perform set_config('role', 'authenticated', true);
 end $$;
 

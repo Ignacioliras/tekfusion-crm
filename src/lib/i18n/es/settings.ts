@@ -36,6 +36,14 @@ export const settingsMessages: PartialCrmMessages = {
         substitute:
           "Recibe los leads nuevos mientras este usuario está ausente. Vale para todas sus líneas.",
       },
+      offboard: {
+        button: "Dar de baja",
+        title: "¿Dar de baja a %{name}?",
+        content:
+          "Se desactiva su acceso y se cierran sus sesiones; sus leads abiertos y sus líneas pasan a su suplente, o quedan sin asignar. La cuenta se puede reactivar después.",
+        success: "Usuario dado de baja",
+        error: "No se pudo dar de baja al usuario. Inténtalo de nuevo.",
+      },
       validation: {
         self_substitute: "Un usuario no puede ser su propio suplente",
         absence_range: "La fecha de término debe ser igual o posterior a la de inicio",
@@ -98,6 +106,28 @@ export const settingsMessages: PartialCrmMessages = {
           stages: "etapas",
         },
       },
+    },
+    mfa: {
+      title: "Verificación en dos pasos",
+      enabled: "Activada",
+      disabled: "No activada",
+      required_hint: "Obligatoria para gerencia.",
+      enable: "Activar",
+      disable: "Desactivar",
+      enroll_title: "Activa la verificación en dos pasos",
+      enroll_intro: "Escanea el código con Google Authenticator, Microsoft Authenticator o 1Password y escribe el código de 6 dígitos que muestra.",
+      secret: "Si no puedes escanear, ingresa esta clave a mano:",
+      code: "Código de 6 dígitos",
+      confirm: "Confirmar",
+      verify_title: "Verificación en dos pasos",
+      verify_intro: "Escribe el código de tu aplicación de autenticación.",
+      verify: "Entrar",
+      invalid_code: "Código incorrecto. Inténtalo de nuevo.",
+      enrolled: "Verificación en dos pasos activada",
+      unenrolled: "Verificación en dos pasos desactivada",
+      enroll_error: "No se pudo activar la verificación en dos pasos. Inténtalo de nuevo.",
+      qr_alt: "Código QR",
+      logout: "Cerrar sesión",
     },
     profile: {
       add_secondary_email: "Agregar un correo",

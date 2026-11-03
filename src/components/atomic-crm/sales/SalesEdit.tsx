@@ -18,6 +18,7 @@ import type { CrmDataProvider } from "../providers/types";
 import type { Sale, SalesAbsence, SalesFormData } from "../types";
 import { withRole } from "./roles";
 import { getSalesErrorNotification } from "./salesErrorNotification";
+import { OffboardButton } from "./OffboardButton";
 import { SalesInputs } from "./SalesInputs";
 import { UserAssignmentInputs } from "./UserAssignmentInputs";
 import {
@@ -32,9 +33,12 @@ type SalesEditFormData = SalesFormData & UserAssignmentValues;
 
 function EditToolbar() {
   return (
-    <div className="flex justify-end gap-4">
-      <CancelButton />
-      <SaveButton />
+    <div className="flex justify-between gap-4">
+      <OffboardButton />
+      <div className="flex gap-4">
+        <CancelButton />
+        <SaveButton />
+      </div>
     </div>
   );
 }

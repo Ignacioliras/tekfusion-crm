@@ -6,9 +6,9 @@ Base: documentación oficial de Supabase (checklist de seguridad), RLS por defec
 - Supabase Auth con correo + contraseña. Recuperación por correo. Sin registro público: los usuarios los crea gerencia (o Libux) desde Configuración.
 - El rol vive en `perfiles.rol`, escrito solo por gerencia (policy). Nunca en `user_metadata` (editable por el usuario).
 - Sesiones: expiración 12 h; cierre de sesión al cambiar contraseña.
-- **2FA (TOTP) obligatorio para gerencia**, opcional para ejecutivos. Supabase Auth MFA. **[Fase 2]**
-- Contraseña mínima 12 caracteres; activar en Supabase la protección contra contraseñas filtradas (HaveIBeenPwned). **[Fase 2]**
-- Baja de un usuario (checklist): desactivar en Auth, cerrar sus sesiones, rotar su clave SMTP/IMAP, reasignar sus leads y conversaciones, anotar en `actividades`. Vive en Configuración → Usuarios → "Dar de baja". **[Fase 3]**
+- **2FA (TOTP) obligatorio para gerencia**, opcional para ejecutivos. Supabase Auth MFA. **[Hecho en Fase 2** (2026-11-03): `MfaGate` + páginas `/mfa/enroll` y `/mfa/verify`; y `aal2` exigido también en la base y en la Edge `users` tras la revisión de seguridad, ver `docs/10`**]**
+- Contraseña mínima 12 caracteres con letras y números: `supabase/config.toml` (`minimum_password_length = 12`, `password_requirements = "letters_digits"`), aplica en local y en los proyectos de la nube al hacer `config push`. **[Hecho, 2026-11-03]** La **protección contra contraseñas filtradas** (HaveIBeenPwned) y el **Security Advisor** no existen en local: se activan y revisan en el panel de Supabase (Authentication → Policies; Advisors) al crear cada proyecto en la nube (staging y producción). Queda en el checklist de `16-arranque.md`.
+- Baja de un usuario (checklist): desactivar en Auth, cerrar sus sesiones, rotar su clave SMTP/IMAP, reasignar sus leads y conversaciones, anotar en `audit_log`. Vive en Configuración → Usuarios → "Dar de baja". **[Hecho en Fase 2** (2026-11-03): RPC `offboard_sale` + Edge `users` DELETE; faltan SMTP/IMAP (Fase 5) y conversaciones (Fase 4)**]**
 
 ## RLS (políticas por tabla)
 Función auxiliar: `fn_rol()` devuelve el rol del `auth.uid()`; `fn_es_gerencia()`.
@@ -32,7 +32,7 @@ Función auxiliar: `fn_rol()` devuelve el rol del `auth.uid()`; `fn_es_gerencia(
 - **Correos y mensajes de WhatsApp son HTML/texto de desconocidos.** Nunca se renderizan crudos. Correos: convertir a texto o sanitizar con DOMPurify (lista blanca: p, br, b, i, a sin javascript:, ul/li). WhatsApp: siempre texto plano. **[Fase 3]**
 - **Clasificador (Haiku):** el texto del correo puede intentar manipular al modelo. La salida se valida contra el esquema JSON exacto (zod); cualquier otra cosa → `indeterminada`. El resultado solo clasifica y asigna; nunca ejecuta acciones, envía mensajes ni cambia configuración. **[Fase 5]**
 - **Formulario web:** Cloudflare Turnstile (gratis) para que los bots no llenen el CRM. **[Fase 1]**
-- **Adjuntos:** tipos permitidos (PDF, JPG, PNG, XLSX, DOCX), tamaño máximo 15 MB, nombre de archivo regenerado (UUID) al guardar en Storage. **[Fase 3]**
+- **Adjuntos:** tipos permitidos (PDF, JPG, PNG, XLSX, DOCX), tamaño máximo 15 MB, nombre de archivo regenerado (UUID) al guardar en Storage. **[Fase 3]** Bucket privado, URLs firmadas de 60 minutos y policy por lead/contacto visible: **hecho en Fase 2** (2026-11-03, `can_read_attachment`, test `18_storage_adjuntos`).
 - **Edge Functions:** validación de entrada con zod; respuesta 401 sin `apikey`; límite de tamaño del body; rate limit básico por IP (Supabase lo trae en Edge Functions). **[Fase 4]**
 
 ## Storage

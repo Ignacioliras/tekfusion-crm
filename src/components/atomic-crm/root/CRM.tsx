@@ -13,6 +13,7 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { Admin } from "@/components/admin/admin";
 import { ForgotPasswordPage } from "@/components/supabase/forgot-password-page";
 import { SetPasswordPage } from "@/components/supabase/set-password-page";
+import { MfaEnrollPage, MfaVerifyPage } from "../mfa/MfaPages";
 
 import companies from "../companies";
 import contacts from "../contacts";
@@ -251,6 +252,8 @@ const DesktopAdmin = (
           element={<ConfirmationRequired />}
         />
         <Route path={SetPasswordPage.path} element={<SetPasswordPage />} />
+        <Route path={MfaEnrollPage.path} element={<MfaEnrollPage />} />
+        <Route path={MfaVerifyPage.path} element={<MfaVerifyPage />} />
         <Route
           path={ForgotPasswordPage.path}
           element={<ForgotPasswordPage />}
@@ -328,6 +331,8 @@ const MobileAdmin = (
             element={<ConfirmationRequired />}
           />
           <Route path={SetPasswordPage.path} element={<SetPasswordPage />} />
+          <Route path={MfaEnrollPage.path} element={<MfaEnrollPage />} />
+          <Route path={MfaVerifyPage.path} element={<MfaVerifyPage />} />
           <Route
             path={ForgotPasswordPage.path}
             element={<ForgotPasswordPage />}

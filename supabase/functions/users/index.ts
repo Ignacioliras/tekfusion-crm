@@ -2,7 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
+import {
+  AuthMiddleware,
+  getJwtClaims,
+  UserMiddleware,
+} from "../_shared/authentication.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { isActiveSale, resolveDisabled } from "../_shared/activeSale.ts";
 import {
@@ -432,11 +436,20 @@ async function patchUser(req: Request, currentUserSale: any) {
   try {
     if (typeof disabled === "boolean") {
       await updateSaleDisabled(data.user.id, disabled);
+      if (sale.disabled && !disabled) {
+        // Deactivation goes through offboard_sale (DELETE); reactivation is
+        // written here so the trail shows both ends.
+        await supabaseAdmin.from("audit_log").insert({
+          actor_sales_id: currentUserSale.id,
+          action: "sale.reactivated",
+          target_sales_id: sale.id,
+        });
+      }
     }
-    const sale = await updateSaleRole(data.user.id, role, administrator);
+    const updated = await updateSaleRole(data.user.id, role, administrator);
     return new Response(
       JSON.stringify({
-        data: sale,
+        data: updated,
       }),
       {
         headers: {
@@ -451,6 +464,80 @@ async function patchUser(req: Request, currentUserSale: any) {
   }
 }
 
+/**
+ * "Dar de baja" (docs/08 checklist): bans the user in Auth, then offboard_sale()
+ * disables the sales row, hands open leads and lines to the substitute, closes
+ * sessions and writes audit_log. The ban comes first because it is the only
+ * step not in the database transaction: if the RPC refuses, the ban is lifted.
+ */
+async function offboardUser(req: Request, currentUserSale: any) {
+  const { sales_id } = await req.json();
+  if (!currentUserSale.administrator) {
+    return createErrorResponse(401, "Not Authorized");
+  }
+  if (!Number.isInteger(sales_id)) {
+    return createErrorResponse(400, "sales_id must be an integer", {
+      code: "invalid_sales_id",
+    });
+  }
+  const { data: sale } = await supabaseAdmin
+    .from("sales")
+    .select("id, user_id, disabled")
+    .eq("id", sales_id)
+    .single();
+  if (!sale) {
+    return createErrorResponse(404, "Not Found");
+  }
+  if (sale.id === currentUserSale.id) {
+    return createErrorResponse(400, "A user cannot offboard itself", {
+      code: "offboard_self",
+    });
+  }
+  if (sale.disabled) {
+    return createErrorResponse(409, "User is already disabled", {
+      code: "already_disabled",
+    });
+  }
+
+  const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(
+    sale.user_id,
+    { ban_duration: "87600h" },
+  );
+  if (banError) {
+    console.error("Error banning user:", banError);
+    return createErrorResponse(500, "Internal Server Error");
+  }
+
+  const { data, error } = await supabaseAdmin.rpc("offboard_sale", {
+    sale_id: sale.id,
+    actor_id: currentUserSale.id,
+  });
+  if (error) {
+    console.error("Error offboarding user:", error);
+    // P0001: another request offboarded the user first; the ban stays.
+    if (error.code !== "P0001") {
+      const { error: unbanError } =
+        await supabaseAdmin.auth.admin.updateUserById(sale.user_id, {
+          ban_duration: "none",
+        });
+      if (unbanError) console.error("Error lifting the ban:", unbanError);
+    }
+    // Fixed messages: SQL errors stay in the logs.
+    if (error.code === "42501") {
+      return createErrorResponse(401, "Not Authorized");
+    }
+    if (error.code === "P0001") {
+      return createErrorResponse(409, "User is already disabled", {
+        code: "already_disabled",
+      });
+    }
+    return createErrorResponse(500, "Internal Server Error");
+  }
+  return new Response(JSON.stringify({ data }), {
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
+
 Deno.serve(async (req: Request) =>
   OptionsMiddleware(req, async (req) =>
     AuthMiddleware(req, async (req) =>
@@ -460,6 +547,20 @@ Deno.serve(async (req: Request) =>
         if (!isActiveSale(currentUserSale)) {
           return createErrorResponse(401, "Unauthorized");
         }
+        // Two-step verification (docs/08): a manager, or anyone who enrolled a
+        // factor, acts only from a session verified by TOTP (aal2), as the RLS
+        // of the database already demands.
+        const hasVerifiedFactor = (user?.factors ?? []).some(
+          (factor) => factor.status === "verified",
+        );
+        if (
+          (currentUserSale.role === "manager" || hasVerifiedFactor) &&
+          getJwtClaims(req).aal !== "aal2"
+        ) {
+          return createErrorResponse(401, "Two-step verification required", {
+            code: "mfa_required",
+          });
+        }
 
         try {
           if (req.method === "POST") {
@@ -468,6 +569,11 @@ Deno.serve(async (req: Request) =>
 
           if (req.method === "PATCH") {
             return await patchUser(req, currentUserSale);
+          }
+
+          // DELETE never deletes a user (Atomic disables, AGENTS.md): it offboards.
+          if (req.method === "DELETE") {
+            return await offboardUser(req, currentUserSale);
           }
         } catch (e) {
           console.error("Unhandled error in the users function:", e);

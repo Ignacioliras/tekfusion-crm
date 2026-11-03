@@ -28,3 +28,10 @@
 - Los validadores de ra-core reciben la ruta completa del input en `props.finalSource` (`absences.0.ends_on`), no en `props.source`.
 - Cualquier lectura del `formState` de react-hook-form (aunque sea el de `useFormState` local) marca esa clave como rastreada en el formulario raíz. Leer `validatingFields` + un input que se registra tarde = setState en el render de otro componente.
 - React avisa "Cannot update a component while rendering…" una sola vez por par de componentes y por página: en un archivo de tests, solo el primer caso que lo provoca falla.
+
+## 2026-11-03 · fase-2/seguridad
+- Un componente con `<form>` propio no puede ir dentro del `<Form>` de ra-core (que renderiza otro `<form>`): el navegador descarta el interno, el botón envía el externo y, en los tests de navegador, recarga el iframe ("Cannot connect to the iframe"). Montarlo al lado, no adentro (`ProfilePage` + `MfaSection`).
+- Lanzar desde `checkAuth` del authProvider cierra la sesión (ra-core hace logout cuando `checkAuth` rechaza): para una redirección sin cerrar sesión (MFA) va una puerta en el layout (`MfaGate`), no en el authProvider.
+- `db diff` no ve las filas de `storage.buckets` ni emite los grants correctos para tablas nuevas (deja los privilegios por defecto, que dan DML a `authenticated`): migración a mano y `revoke all … from authenticated` explícito.
+- Un `security definer` ve `current_user` = dueño: para saber si llama una sesión de API usar `auth.role()`.
+- Reiniciar Supabase local (`stop`/`start`) para que tome cambios de `config.toml` (contraseñas, MFA); `db reset` no basta.
