@@ -37,7 +37,7 @@ import type { Sale, SalesFormData } from "../types";
 export const ProfilePage = () => {
   const [isEditMode, setEditMode] = useState(false);
   const { identity, refetch: refetchIdentity } = useGetIdentity();
-  const { data, refetch: refetchUser } = useGetOne("sales", {
+  const { data, refetch: refetchUser } = useGetOne<Sale>("sales", {
     id: identity?.id,
   });
   const translate = useTranslate();
@@ -46,15 +46,28 @@ export const ProfilePage = () => {
 
   const { mutate } = useMutation({
     mutationKey: ["signup"],
-    mutationFn: async (data: SalesFormData) => {
-      if (!identity) {
+    mutationFn: async ({
+      signature,
+      ...values
+    }: SalesFormData & { signature?: string | null }) => {
+      if (!identity || !data) {
         throw new Error(
           translate("crm.profile.record_not_found", {
             _: "Record not found",
           }),
         );
       }
-      return dataProvider.salesUpdate(identity.id, data);
+      const updated = await dataProvider.salesUpdate(identity.id, values);
+      // The users Edge Function does not carry the signature; the column is
+      // directly updatable by its owner (12_tekfusion_grants.sql).
+      if ((signature || null) !== (data.signature || null)) {
+        await dataProvider.update<Sale>("sales", {
+          id: identity.id,
+          data: { signature: signature || null },
+          previousData: data,
+        });
+      }
+      return updated;
     },
     onSuccess: () => {
       refetchIdentity();
@@ -196,6 +209,7 @@ const ProfileForm = ({
             </div>
             <TextRender source="email" isEditMode={isEditMode} />
             <SecondaryEmailsRender isEditMode={isEditMode} />
+            <SignatureRender isEditMode={isEditMode} />
             <LanguageSelector />
           </div>
 
@@ -337,5 +351,21 @@ const SecondaryEmailsRender = ({ isEditMode }: { isEditMode: boolean }) => {
     />
   );
 };
+
+const SignatureRender = ({ isEditMode }: { isEditMode: boolean }) =>
+  isEditMode ? (
+    <TextInput
+      source="signature"
+      label="tekfusion.settings.signature"
+      helperText="tekfusion.settings.signature_help"
+      multiline
+    />
+  ) : (
+    <RecordField
+      source="signature"
+      label="tekfusion.settings.signature"
+      className="whitespace-pre-wrap"
+    />
+  );
 
 ProfilePage.path = "/profile";

@@ -41,6 +41,9 @@ import {
   type ReportFormValues,
 } from "./ReportSettings";
 import { SettingsTags } from "./SettingsTags";
+import { TemplatesSettings } from "./TemplatesSettings";
+import { QuickRepliesSettings } from "./QuickRepliesSettings";
+import { LostReasonsSettings } from "./LostReasonsSettings";
 
 const SECTIONS = [
   {
@@ -492,6 +495,10 @@ const SettingsFormFields = () => {
         {/* TekFusion parameters (RF-14), management only */}
         <FollowupSettings />
         <ReportSettings />
+        {/* Catalogs save on their own, not with the Save button below. */}
+        <TemplatesSettings />
+        <QuickRepliesSettings />
+        <LostReasonsSettings />
       </div>
 
       {/* Sticky save button */}
