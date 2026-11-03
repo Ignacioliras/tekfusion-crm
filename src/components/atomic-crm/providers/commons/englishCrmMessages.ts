@@ -416,6 +416,13 @@ export const englishCrmMessages = {
     whatsapp: {
       coming_soon: "Available in Phase 4",
     },
+    a11y: {
+      pagination: "pagination",
+      more_pages: "More pages",
+      breadcrumb: "breadcrumb",
+      more: "More",
+      toggle_sidebar: "Toggle Sidebar",
+    },
     credits: {
       title: "Credits",
       developed_by: "This system was developed by %{developer} for %{client}.",

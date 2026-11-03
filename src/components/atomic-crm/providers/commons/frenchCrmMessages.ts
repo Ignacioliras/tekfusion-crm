@@ -421,6 +421,13 @@ export const frenchCrmMessages = {
     whatsapp: {
       coming_soon: "Disponible en phase 4",
     },
+    a11y: {
+      pagination: "pagination",
+      more_pages: "Plus de pages",
+      breadcrumb: "fil d'Ariane",
+      more: "Plus",
+      toggle_sidebar: "Afficher/masquer la barre latérale",
+    },
     credits: {
       title: "Crédits",
       developed_by:

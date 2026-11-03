@@ -311,7 +311,7 @@ export const GlobalSearchDialog = ({
               {searchInput}
               <DialogClose render={<Button variant="ghost" size="icon-lg" />}>
                 <XIcon className="size-5" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">{translate("ra.action.close")}</span>
               </DialogClose>
             </div>
           ) : (

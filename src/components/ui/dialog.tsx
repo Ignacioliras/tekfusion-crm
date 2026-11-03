@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslate } from "ra-core"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/utils"
 
@@ -47,6 +48,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  const translate = useTranslate()
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -71,7 +73,9 @@ function DialogContent({
             }
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">
+              {translate("ra.action.close", { _: "Close" })}
+            </span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

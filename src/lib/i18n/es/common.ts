@@ -43,6 +43,13 @@ export const commonMessages: PartialCrmMessages = {
     whatsapp: {
       coming_soon: "Disponible en la Fase 4",
     },
+    a11y: {
+      pagination: "paginación",
+      more_pages: "Más páginas",
+      breadcrumb: "ruta de navegación",
+      more: "Más",
+      toggle_sidebar: "Mostrar u ocultar la barra lateral",
+    },
     credits: {
       title: "Créditos",
       developed_by: "Este sistema fue desarrollado por %{developer} para %{client}.",
