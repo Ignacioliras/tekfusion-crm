@@ -4,3 +4,7 @@
 - Los comandos npm corren con la herramienta Bash (Git Bash); en la herramienta PowerShell el permiso los rechaza en sesión nocturna.
 - Avisos que no rompen la verificación (no tocarlos sin tarea): ESLint avisa que `.eslintignore` está obsoleto (migrar a `ignores` en `eslint.config.js`); Vite avisa por `__dirname` en `vite.config.ts:72`; chunk principal de ~2,5 MB.
 - `npm run build` tarda ~30 s (el plugin PWA se lleva ~22 s en `closeBundle`).
+- 2026-11-03 T2: en Bash nocturno se rechazan `sed -i` y comandos con varias operaciones (`; echo $?`); edita con Edit y encadena solo con `&&`.
+- Los tests del proyecto vitest `app` necesitan Chromium de Playwright (no instalado: falla `npx playwright install`); los tests puros corren con una config node temporal en el scratchpad (`environment: "node"` + alias `@`).
+- PENDIENTE: `src/components/atomic-crm/dataImport/deals_sample.csv` todavía usa etapas de Atomic ("Opportunity", "Proposal Sent"); al importarlo caen a `nuevo`. Además el comentario de `parseCell.ts:55` cita "proposal-sent".
+- PENDIENTE: el gráfico `DealsChart.tsx` pondera los leads abiertos con multiplicadores heredados de Atomic (nuevo 0,2 / contactado 0,5 / cotizado 0,8) y cuenta `archivado` como perdido; falta que gerencia confirme ese criterio.

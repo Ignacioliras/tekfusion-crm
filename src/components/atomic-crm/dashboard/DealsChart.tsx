@@ -6,14 +6,27 @@ import { memo, useMemo } from "react";
 
 import { findDealLabel } from "../deals/dealUtils";
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import {
+  ETAPAS_ABIERTAS,
+  ETAPAS_CERRADAS,
+  type Etapa,
+} from "../tekfusion/estados";
 import type { Deal } from "../types";
 
-const multiplier = {
-  opportunity: 0.2,
-  "proposal-sent": 0.5,
-  "in-negociation": 0.8,
-  delayed: 0.3,
+const GANADO: Etapa = "ganado";
+const PERDIDO: Etapa = "perdido";
+
+// Weight of open deals in the "pending" bar (same ramp Atomic used for its stages).
+const multiplier: Record<string, number> = {
+  nuevo: 0.2,
+  contactado: 0.5,
+  cotizado: 0.8,
 };
+
+const isOpen = (stage: string) => ETAPAS_ABIERTAS.some((e) => e === stage);
+// Lost bar = every closed stage except won (perdido + archivado).
+const isLost = (stage: string) =>
+  stage !== GANADO && ETAPAS_CERRADAS.some((e) => e === stage);
 
 const threeMonthsAgo = new Date(
   new Date().setMonth(new Date().getMonth() - 6),
@@ -27,8 +40,8 @@ export const DealsChart = memo(() => {
   const acceptedLanguages = navigator
     ? navigator.languages || [navigator.language]
     : [DEFAULT_LOCALE];
-  const wonLabel = findDealLabel(dealStages, "won") ?? "Won";
-  const lostLabel = findDealLabel(dealStages, "lost") ?? "Lost";
+  const wonLabel = findDealLabel(dealStages, GANADO) ?? "Won";
+  const lostLabel = findDealLabel(dealStages, PERDIDO) ?? "Lost";
 
   const { data, isPending } = useGetList<Deal>("deals", {
     pagination: { perPage: 100, page: 1 },
@@ -55,20 +68,19 @@ export const DealsChart = memo(() => {
       return {
         date: format(month, "MMM"),
         won: dealsByMonth[month]
-          .filter((deal: Deal) => deal.stage === "won")
+          .filter((deal: Deal) => deal.stage === GANADO)
           .reduce((acc: number, deal: Deal) => {
             acc += deal.amount;
             return acc;
           }, 0),
         pending: dealsByMonth[month]
-          .filter((deal: Deal) => !["won", "lost"].includes(deal.stage))
+          .filter((deal: Deal) => isOpen(deal.stage))
           .reduce((acc: number, deal: Deal) => {
-            // @ts-expect-error - multiplier type issue
             acc += deal.amount * multiplier[deal.stage];
             return acc;
           }, 0),
         lost: dealsByMonth[month]
-          .filter((deal: Deal) => deal.stage === "lost")
+          .filter((deal: Deal) => isLost(deal.stage))
           .reduce((acc: number, deal: Deal) => {
             acc -= deal.amount;
             return acc;

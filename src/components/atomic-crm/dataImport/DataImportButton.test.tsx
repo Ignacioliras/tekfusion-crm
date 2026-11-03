@@ -199,7 +199,7 @@ describe("DataImportButton", () => {
         name: "New website",
         company: "Acme",
         categories: "Website design; Copywriting",
-        stage: "Proposal Sent",
+        stage: "Cotizado",
         amount: "12000",
         expected_closing_date: "2026-09-30",
       },
@@ -220,26 +220,26 @@ describe("DataImportButton", () => {
       categories: ["website-design", "copywriting"],
       company_id: companies[0].id,
       name: "New website",
-      stage: "proposal-sent",
+      stage: "cotizado",
     });
     expect(deals[0].expected_closing_date).toBe("2026-09-30T00:00:00.000Z");
     // Both rows name the same company, which is created once and shared
     expect(deals[1].company_id).toBe(companies[0].id);
     // stage is required, so an empty cell falls back to the first stage
-    expect(deals[1].stage).toBe("opportunity");
+    expect(deals[1].stage).toBe("nuevo");
   });
 
   it("appends imported deals below the deals already in their stage", async () => {
     const { dataProvider, screen } = await renderImport(
       useDealImport,
       [
-        { name: "First", stage: "Opportunity" },
-        { name: "Second", stage: "Opportunity" },
-        { name: "Other column", stage: "Proposal Sent" },
+        { name: "First", stage: "Nuevo" },
+        { name: "Second", stage: "Nuevo" },
+        { name: "Other column", stage: "Cotizado" },
       ],
       {
         deals: [
-          { id: 1, name: "Already there", stage: "opportunity", index: 0 },
+          { id: 1, name: "Already there", stage: "nuevo", index: 0 },
         ] as Deal[],
       },
     );
@@ -254,10 +254,10 @@ describe("DataImportButton", () => {
     expect(
       deals.map(({ name, stage, index }) => ({ name, stage, index })),
     ).toEqual([
-      { name: "Already there", stage: "opportunity", index: 0 },
-      { name: "First", stage: "opportunity", index: 1 },
-      { name: "Second", stage: "opportunity", index: 2 },
-      { name: "Other column", stage: "proposal-sent", index: 0 },
+      { name: "Already there", stage: "nuevo", index: 0 },
+      { name: "First", stage: "nuevo", index: 1 },
+      { name: "Second", stage: "nuevo", index: 2 },
+      { name: "Other column", stage: "cotizado", index: 0 },
     ]);
   });
 
@@ -282,7 +282,7 @@ describe("DataImportButton", () => {
       .upload(
         csvFile("deals.csv", [
           "name,company,stage,amount,expected_closing_date",
-          "New website,Acme,Proposal Sent,4500.50,2026-09-30",
+          "New website,Acme,Cotizado,4500.50,2026-09-30",
         ]),
       );
     await screen.getByRole("button", { name: "Start import" }).click();
@@ -298,7 +298,7 @@ describe("DataImportButton", () => {
       // A fractional amount would make the bigint column reject the row
       amount: 4501,
       sales_id: DEFAULT_USER.id,
-      stage: "proposal-sent",
+      stage: "cotizado",
     });
     expect(deals[0].expected_closing_date).toBe("2026-09-30T00:00:00.000Z");
   });

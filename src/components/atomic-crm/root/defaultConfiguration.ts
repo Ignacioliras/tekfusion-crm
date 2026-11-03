@@ -1,3 +1,4 @@
+import { ETAPAS, ETAPAS_CERRADAS } from "../tekfusion/estados";
 import type { ConfigurationContextValue } from "./ConfigurationContext";
 // Import the logos as module assets so Vite resolves their URL relative to the
 // JS chunk (import.meta.url), not the current route. A plain "./logos/..." path
@@ -26,16 +27,12 @@ export const defaultCompanySectors = [
   { value: "utilities", label: "Utilities" },
 ];
 
-export const defaultDealStages = [
-  { value: "opportunity", label: "Opportunity" },
-  { value: "proposal-sent", label: "Proposal Sent" },
-  { value: "in-negociation", label: "In Negotiation" },
-  { value: "won", label: "Won" },
-  { value: "lost", label: "Lost" },
-  { value: "delayed", label: "Delayed" },
-];
+export const defaultDealStages = ETAPAS.map(({ value, label }) => ({
+  value,
+  label,
+}));
 
-export const defaultDealPipelineStatuses = ["won"];
+export const defaultDealPipelineStatuses: string[] = [...ETAPAS_CERRADAS];
 
 export const defaultDealCategories = [
   { value: "other", label: "Other" },
