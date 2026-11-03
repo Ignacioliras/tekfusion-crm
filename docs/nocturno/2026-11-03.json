@@ -28,12 +28,16 @@
       "criterio": "Los tres comandos terminan con código 0.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "d7ad914c5c8471ca505f7f1cae057f7e37783c0f",
+      "costo_usd": 0.8005970000000001,
+      "session_id": "08d6c0d7-654b-4b93-86b2-19aae9cb558d",
+      "inicio": "2026-11-03 04:45:41",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: typecheck, lint y build pasan en Windows sin cambios; anotada la línea base OK y los avisos en docs/nocturno/aprendizajes.md.",
+      "fin": "2026-11-03 04:48:55"
     },
     {
       "id": "T2",
@@ -47,30 +51,45 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run build",
       "criterio": "Compila, lint limpio, no quedan referencias a las etapas viejas de Atomic en src/ (grep -rn \"proposal-sent\\|opportunity\" src/ no devuelve nada fuera de comentarios).",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "6fc855605e5366b2563adf90171f2b2e49295182",
+      "costo_usd": 2.0185110000000006,
+      "session_id": "5eb1d372-08dc-4c2f-8ad5-80d365b8bba4",
+      "inicio": "2026-11-03 04:48:55",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé estados.ts con las seis etapas TekFusion, las conecté a la configuración por defecto, el gráfico, el pipeline y el formulario de leads, y actualicé los tests; typecheck, lint y build pasan.",
+      "fin": "2026-11-03 04:56:44"
     },
     {
       "id": "T3",
       "titulo": "Español como idioma por defecto",
       "descripcion": "Crear src/lib/i18n/es.ts con la traducción al español de Chile de TODOS los mensajes de ra-language-english (los de ra-core: ra.action.*, ra.boolean.*, ra.page.*, ra.input.*, ra.message.*, ra.navigation.*, ra.auth.*, ra.notification.*, ra.validation.*, ra.saved_queries.*, ra.configurable.*), tomando como base la estructura del paquete ra-language-english que está en node_modules (leerlo, no inventarlo). Usar tuteo cercano y claro, sin tecnicismos ('Guardar', 'Cancelar', 'No hay resultados', etc.). Luego modificar src/lib/i18nProvider.ts para que el proveedor devuelva los mensajes en español cuando el locale es 'es', que 'es' sea el locale por defecto, y que la lista de idiomas disponibles sea solo [{ name: 'es', value: 'Español' }, { name: 'en', value: 'English' }]. Mantener allowMissing: true.",
-      "archivos": ["src/lib/i18n/es.ts", "src/lib/i18nProvider.ts"],
+      "archivos": [
+        "src/lib/i18n/es.ts",
+        "src/lib/i18nProvider.ts"
+      ],
       "verificacion": "npm run typecheck && npm run lint && npm run build",
       "criterio": "Compila y al abrir la app (no hace falta probarlo esta noche) la interfaz base de react-admin aparece en español.",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "becfa7033bdc89265427e3bc5c91ff0f5375a1ba",
+      "costo_usd": 1.0334501999999999,
+      "session_id": "198b050b-f99f-4e47-811b-f879d50d0f5b",
+      "inicio": "2026-11-03 04:56:44",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé src/lib/i18n/es.ts con todos los mensajes ra.* en español de Chile y dejé el i18nProvider con 'es' por defecto y la lista Español/English, con typecheck, lint y build pasando.",
+      "fin": "2026-11-03 04:59:19"
     },
     {
       "id": "T4",
@@ -83,30 +102,53 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run build",
       "criterio": "Compila; existe la ruta /creditos; la página menciona Evolution API con enlace.",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "24a317845849548041f6ddc88e84dc94943dd0e9",
+      "costo_usd": 1.0340048,
+      "session_id": "769c23c8-a4a2-4a48-a329-40fd0cc98096",
+      "inicio": "2026-11-03 04:59:19",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Creé la página Créditos en /creditos (Libux para TekFusion, licencias de terceros y sección WhatsApp con enlace a Evolution API), registré la ruta en CRM.tsx y agregué el ítem \"Créditos\" al menú de usuario.",
+      "fin": "2026-11-03 05:01:56"
     },
     {
       "id": "T5",
       "titulo": "Seed ficticio de TekFusion",
       "descripcion": "Reemplazar el contenido de supabase/seed.sql por datos ficticios de TekFusion que respeten el esquema actual de Atomic (leer supabase/schemas/01_tables.sql y el seed actual para los nombres de columnas y el formato de sales/auth): 4 usuarios en sales (Camila Rojas y Diego Muñoz como ejecutivos, Andrea Soto gerencia, Pablo Herrera lector; correos @tekfusion-demo.cl), 12 companies (empresas chilenas inventadas de minería, construcción, agua y agro), 20 contacts, 60 deals repartidos entre las etapas nuevo/contactado/cotizado/ganado/perdido/archivado (usar los values de src/components/atomic-crm/tekfusion/estados.ts si existe; si no, esos seis strings), con fechas en los últimos 90 días, montos en CLP enteros y descripciones que mencionen válvulas, tuberías HDPE o geoceldas. Nada que parezca una empresa o persona real. Si el seed actual de Atomic crea usuarios en auth.users con una función o formato especial, seguir exactamente ese patrón.",
-      "archivos": ["supabase/seed.sql"],
+      "archivos": [
+        "supabase/seed.sql"
+      ],
       "verificacion": "npx supabase db reset --local",
       "criterio": "db reset termina sin error (si el SQL falla, el comando falla).",
-      "depende_de": ["T2"],
+      "depende_de": [
+        "T2"
+      ],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "356134bf8c450949fc1894136f0ada05f6baefa2",
+      "costo_usd": 1.4337566999999998,
+      "session_id": "d8a834a1-4bfd-4a3e-84b1-476da9679f27",
+      "inicio": "2026-11-03 05:02:00",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: seed.sql carga 4 usuarios, 12 empresas, 20 contactos y 60 leads ficticios de TekFusion, y `npx supabase db reset --local` termina sin error.",
+      "fin": "2026-11-03 05:06:12"
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-03 04:45:41",
+      "modelo": "opus",
+      "simulado": false,
+      "fin": "2026-11-03 05:06:12",
+      "motivo": "cola terminada"
     }
   ]
 }

@@ -4,9 +4,9 @@ import { validateItemsInUse } from "./SettingsPage";
 
 describe("validateItemsInUse", () => {
   const deals: RaRecord[] = [
-    { id: 1, stage: "won", categories: ["ui-design"] },
-    { id: 2, stage: "lost", categories: ["copywriting", "ui-design"] },
-    { id: 3, stage: "opportunity", categories: ["ui-design"] },
+    { id: 1, stage: "ganado", categories: ["ui-design"] },
+    { id: 2, stage: "perdido", categories: ["copywriting", "ui-design"] },
+    { id: 3, stage: "nuevo", categories: ["ui-design"] },
   ];
 
   it("returns undefined when items is undefined", () => {
@@ -17,56 +17,56 @@ describe("validateItemsInUse", () => {
 
   it("returns undefined when all in-use values are present", () => {
     const items = [
-      { value: "won", label: "Won" },
-      { value: "lost", label: "Lost" },
-      { value: "opportunity", label: "Opportunity" },
+      { value: "ganado", label: "Ganado" },
+      { value: "perdido", label: "Perdido" },
+      { value: "nuevo", label: "Nuevo" },
     ];
     expect(validateItemsInUse(items, deals, "stage", "stages")).toBe(undefined);
   });
 
   it("returns an error when an in-use value is removed", () => {
     const items = [
-      { value: "won", label: "Won" },
-      { value: "opportunity", label: "Opportunity" },
+      { value: "ganado", label: "Ganado" },
+      { value: "nuevo", label: "Nuevo" },
     ];
     expect(validateItemsInUse(items, deals, "stage", "stages")).toBe(
-      "Cannot remove stages that are still used by deals: lost",
+      "Cannot remove stages that are still used by deals: perdido",
     );
   });
 
   it("lists all missing in-use values", () => {
-    const items = [{ value: "opportunity", label: "Opportunity" }];
+    const items = [{ value: "nuevo", label: "Nuevo" }];
     const result = validateItemsInUse(items, deals, "stage", "stages");
-    expect(result).toContain("won");
-    expect(result).toContain("lost");
+    expect(result).toContain("ganado");
+    expect(result).toContain("perdido");
   });
 
   it("returns an error when there are duplicate slugs", () => {
     const items = [
-      { value: "won", label: "Won" },
-      { value: "won", label: "Won again" },
-      { value: "lost", label: "Lost" },
-      { value: "opportunity", label: "Opportunity" },
+      { value: "ganado", label: "Ganado" },
+      { value: "ganado", label: "Ganado otra vez" },
+      { value: "perdido", label: "Perdido" },
+      { value: "nuevo", label: "Nuevo" },
     ];
     expect(validateItemsInUse(items, deals, "stage", "stages")).toBe(
-      "Duplicate stages: won",
+      "Duplicate stages: ganado",
     );
   });
 
   it("detects duplicates via slug fallback when value is empty", () => {
     const items = [
-      { value: "", label: "Won" },
-      { value: "won", label: "Already won" },
-      { value: "lost", label: "Lost" },
-      { value: "opportunity", label: "Opportunity" },
+      { value: "", label: "Ganado" },
+      { value: "ganado", label: "Ya ganado" },
+      { value: "perdido", label: "Perdido" },
+      { value: "nuevo", label: "Nuevo" },
     ];
     expect(validateItemsInUse(items, deals, "stage", "stages")).toBe(
-      "Duplicate stages: won",
+      "Duplicate stages: ganado",
     );
   });
 
   it("returns 'Validating…' when deals have not loaded yet", () => {
-    const items = [{ value: "won", label: "Won" }];
+    const items = [{ value: "ganado", label: "Ganado" }];
     expect(validateItemsInUse(items, undefined, "stage", "stages")).toBe(
       "Validating…",
     );
@@ -74,8 +74,8 @@ describe("validateItemsInUse", () => {
 
   it("ignores deals with a falsy value for the checked field", () => {
     const dealsWithEmpty: RaRecord[] = [
-      { id: 1, stage: "won", categories: [] },
-      { id: 2, stage: "won", categories: null },
+      { id: 1, stage: "ganado", categories: [] },
+      { id: 2, stage: "ganado", categories: null },
     ];
     const items = [{ value: "other", label: "Other" }];
     expect(

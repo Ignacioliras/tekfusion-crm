@@ -101,3 +101,198 @@ INSERT INTO favicons_excluded_domains (domain) VALUES
     ('bigpond.net.au'),
     ('online.de'),
     ('apple.com');
+
+-- =====================================================================
+-- Seed ficticio de TekFusion (solo local / staging). Ningún dato es real:
+-- empresas, personas, RUT y teléfonos son inventados; dominios .example.
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- Usuarios: auth.users -> trigger handle_new_user crea la fila en sales.
+-- El primer usuario queda como administrator; los siguientes necesitan
+-- una fila en user_invitations o el trigger rechaza el alta.
+-- Contraseña local de todos: demo-tekfusion
+-- ponytail: sales aún no tiene columna role; "lector" y "ejecutivo" se
+-- distinguen solo por administrator=false hasta la Fase 2.
+-- ---------------------------------------------------------------------
+do $$
+declare
+    u record;
+begin
+    for u in
+        select * from (values
+            ('a0000000-0000-4000-8000-000000000001'::uuid, 'andrea.soto@tekfusion-demo.cl',   'Andrea', 'Soto',    1),
+            ('a0000000-0000-4000-8000-000000000002'::uuid, 'camila.rojas@tekfusion-demo.cl',  'Camila', 'Rojas',   2),
+            ('a0000000-0000-4000-8000-000000000003'::uuid, 'diego.munoz@tekfusion-demo.cl',   'Diego',  'Muñoz',   3),
+            ('a0000000-0000-4000-8000-000000000004'::uuid, 'pablo.herrera@tekfusion-demo.cl', 'Pablo',  'Herrera', 4)
+        ) as t(id, email, first_name, last_name, ord)
+        order by ord
+    loop
+        if u.ord > 1 then
+            insert into public.user_invitations (user_id) values (u.id);
+        end if;
+
+        insert into auth.users (
+            instance_id, id, aud, role, email, encrypted_password,
+            email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+            created_at, updated_at,
+            confirmation_token, recovery_token, email_change_token_new, email_change
+        ) values (
+            '00000000-0000-0000-0000-000000000000', u.id, 'authenticated', 'authenticated',
+            u.email, extensions.crypt('demo-tekfusion', extensions.gen_salt('bf')),
+            now(), '{"provider":"email","providers":["email"]}'::jsonb,
+            jsonb_build_object('first_name', u.first_name, 'last_name', u.last_name),
+            now(), now(), '', '', '', ''
+        );
+
+        insert into auth.identities (
+            id, user_id, provider_id, identity_data, provider,
+            last_sign_in_at, created_at, updated_at
+        ) values (
+            gen_random_uuid(), u.id, u.id::text,
+            jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+            'email', now(), now(), now()
+        );
+    end loop;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- Empresas (12): minería, construcción, agua y agro. Todas inventadas.
+-- ---------------------------------------------------------------------
+insert into public.companies (name, sector, size, website, phone_number, address, city, state_abbr, country, description, tax_identifier, sales_id, created_at)
+select c.name, c.sector, c.size, c.website, c.phone, c.address, c.city, c.region, 'Chile', c.description, c.rut,
+       (select id from public.sales where email = c.owner), now() - (c.days_ago || ' days')::interval
+from (values
+    ('Minera Cerro Cobrizo SpA',        'Minería',      250, 'cerrocobrizo.example',    '+56 55 2000 0101', 'Camino Interior 1200',     'Antofagasta',  'AN', 'Faena ficticia de cobre; recambio de válvulas en planta de flotación.', '76.000.001-1', 'camila.rojas@tekfusion-demo.cl', 88),
+    ('Compañía Minera Quebrada Ocre',   'Minería',      500, 'quebradaocre.example',    '+56 52 2000 0102', 'Ruta C-17 km 40',          'Copiapó',      'AT', 'Minera inventada; relaves y conducción de agua en HDPE.',             '76.000.002-K', 'diego.munoz@tekfusion-demo.cl',  85),
+    ('Sulfuros del Desierto Ltda.',     'Minería',       50, 'sulfurosdesierto.example','+56 57 2000 0103', 'Av. Ficticia 455',         'Iquique',      'TA', 'Contratista minero de ejemplo.',                                     '76.000.003-8', 'camila.rojas@tekfusion-demo.cl', 80),
+    ('Constructora Los Arrayanes SpA',  'Construcción', 120, 'losarrayanes.example',    '+56 2 2000 0104',  'Calle Inventada 890',      'Santiago',     'RM', 'Constructora de ejemplo; obras viales con geoceldas.',               '76.000.004-6', 'diego.munoz@tekfusion-demo.cl',  78),
+    ('Ingeniería y Obras Patagua Ltda.','Construcción',  45, 'patagua-obras.example',   '+56 41 2000 0105', 'Pasaje Demo 12',           'Concepción',   'BI', 'Empresa ficticia de obras civiles y taludes.',                       '76.000.005-4', 'camila.rojas@tekfusion-demo.cl', 70),
+    ('Edificaciones Cordillera Sur SpA','Construcción',  90, 'cordillerasur.example',   '+56 65 2000 0106', 'Av. Imaginaria 3300',      'Puerto Montt', 'LL', 'Constructora inventada del sur.',                                    '76.000.006-2', 'diego.munoz@tekfusion-demo.cl',  65),
+    ('Aguas del Valle Escondido S.A.',  'Agua',         300, 'valleescondido.example',  '+56 51 2000 0107', 'Camino Sanitario 77',      'La Serena',    'CO', 'Sanitaria ficticia; redes de agua potable en HDPE.',                 '76.000.007-0', 'camila.rojas@tekfusion-demo.cl', 60),
+    ('Cooperativa de Agua Rural Laurel','Agua',          15, 'apr-laurel.example',      '+56 72 2000 0108', 'Sector Rural s/n',         'Rancagua',     'LI', 'APR de ejemplo; ampliación de matriz y válvulas de corte.',          '76.000.008-9', 'diego.munoz@tekfusion-demo.cl',  55),
+    ('Hidrosur Tratamientos SpA',       'Agua',          60, 'hidrosur-trat.example',   '+56 63 2000 0109', 'Parque Industrial Demo 5', 'Valdivia',     'LR', 'Planta inventada de tratamiento de aguas.',                          '76.000.009-7', 'camila.rojas@tekfusion-demo.cl', 45),
+    ('Agrícola Nogal Dorado Ltda.',     'Agro',          80, 'nogaldorado.example',     '+56 75 2000 0110', 'Fundo Ficticio km 8',      'Curicó',       'ML', 'Agrícola de ejemplo; riego tecnificado y tranques.',                 '76.000.010-0', 'diego.munoz@tekfusion-demo.cl',  40),
+    ('Viñedos Altos de Quillay SpA',    'Agro',          35, 'altosquillay.example',    '+56 72 2000 0111', 'Camino Viñas 220',         'San Fernando', 'LI', 'Viña inventada; conducción de riego.',                               '76.000.011-9', 'camila.rojas@tekfusion-demo.cl', 30),
+    ('Frutícola Las Pataguas SpA',      'Agro',         150, 'fruticolapataguas.example','+56 73 2000 0112','Ruta 5 Sur km 300 (ficticio)','Linares',   'ML', 'Exportadora de fruta ficticia.',                                     '76.000.012-7', 'diego.munoz@tekfusion-demo.cl',  20)
+) as c(name, sector, size, website, phone, address, city, region, description, rut, owner, days_ago);
+
+-- ---------------------------------------------------------------------
+-- Contactos (20). El trigger 20_contact_saved consulta Gravatar por HTTP;
+-- se desactiva durante la carga para que el seed no dependa de internet
+-- ni envíe nada a servicios externos.
+-- ---------------------------------------------------------------------
+alter table public.contacts disable trigger "20_contact_saved";
+
+with company_ids as (
+    select array_agg(id order by id) as ids from public.companies
+)
+insert into public.contacts (first_name, last_name, gender, title, background, first_seen, last_seen, has_newsletter, status, company_id, sales_id, email_jsonb, phone_jsonb)
+select p.first_name, p.last_name, p.gender, p.title, 'Contacto ficticio para pruebas.',
+       now() - (p.days_ago || ' days')::interval,
+       now() - ((p.days_ago / 3) || ' days')::interval,
+       false, 'warm',
+       ci.ids[p.company_idx],
+       (select sales_id from public.companies where id = ci.ids[p.company_idx]),
+       jsonb_build_array(jsonb_build_object('email', p.email, 'type', 'Work')),
+       jsonb_build_array(jsonb_build_object('number', p.phone, 'type', 'Work'))
+from company_ids ci,
+(values
+    ('Rodrigo',   'Valdés Ibarra',    'male',   'Jefe de Mantención',        1,  'rvaldes@cerrocobrizo.example',      '+56 9 0000 0001', 87),
+    ('Francisca', 'Leiva Contreras',  'female', 'Encargada de Compras',      1,  'fleiva@cerrocobrizo.example',       '+56 9 0000 0002', 84),
+    ('Matías',    'Fuentealba Ríos',  'male',   'Superintendente de Planta', 2,  'mfuentealba@quebradaocre.example',  '+56 9 0000 0003', 83),
+    ('Javiera',   'Orellana Paz',     'female', 'Ingeniera de Proyectos',    2,  'jorellana@quebradaocre.example',    '+56 9 0000 0004', 79),
+    ('Cristóbal', 'Saavedra Pino',    'male',   'Administrador de Contrato', 3,  'csaavedra@sulfurosdesierto.example','+56 9 0000 0005', 77),
+    ('Valentina', 'Godoy Marín',      'female', 'Jefa de Obra',              4,  'vgodoy@losarrayanes.example',       '+56 9 0000 0006', 75),
+    ('Sebastián', 'Carrasco Vidal',   'male',   'Gerente de Proyectos',      4,  'scarrasco@losarrayanes.example',    '+56 9 0000 0007', 72),
+    ('Constanza', 'Riquelme Soto',    'female', 'Ingeniera Civil',           5,  'criquelme@patagua-obras.example',   '+56 9 0000 0008', 68),
+    ('Felipe',    'Navarrete Lagos',  'male',   'Encargado de Adquisiciones',6,  'fnavarrete@cordillerasur.example',  '+56 9 0000 0009', 64),
+    ('Catalina',  'Bustos Henríquez', 'female', 'Jefa de Redes',             7,  'cbustos@valleescondido.example',    '+56 9 0000 0010', 59),
+    ('Ignacio',   'Tapia Mardones',   'male',   'Ingeniero de Operaciones',  7,  'itapia@valleescondido.example',     '+56 9 0000 0011', 57),
+    ('Daniela',   'Sepúlveda Araya',  'female', 'Presidenta APR',            8,  'dsepulveda@apr-laurel.example',     '+56 9 0000 0012', 54),
+    ('Tomás',     'Vergara Quiroz',   'male',   'Jefe de Planta',            9,  'tvergara@hidrosur-trat.example',    '+56 9 0000 0013', 44),
+    ('Isidora',   'Cáceres Molina',   'female', 'Encargada de Compras',      9,  'icaceres@hidrosur-trat.example',    '+56 9 0000 0014', 42),
+    ('Benjamín',  'Alarcón Toro',     'male',   'Administrador de Campo',    10, 'balarcon@nogaldorado.example',      '+56 9 0000 0015', 39),
+    ('Antonia',   'Figueroa Lillo',   'female', 'Jefa de Riego',             10, 'afigueroa@nogaldorado.example',     '+56 9 0000 0016', 36),
+    ('Vicente',   'Espinoza Cid',     'male',   'Enólogo y Jefe de Campo',   11, 'vespinoza@altosquillay.example',    '+56 9 0000 0017', 29),
+    ('Martina',   'Pizarro Olave',    'female', 'Gerenta de Operaciones',    12, 'mpizarro@fruticolapataguas.example','+56 9 0000 0018', 19),
+    ('Joaquín',   'Reyes Arriagada',  'male',   'Encargado de Mantención',   12, 'jreyes@fruticolapataguas.example',  '+56 9 0000 0019', 15),
+    ('Florencia', 'Muñoz Bravo',      'female', 'Ingeniera Agrónoma',        11, 'fmunoz@altosquillay.example',       '+56 9 0000 0020', 10)
+) as p(first_name, last_name, gender, title, company_idx, email, phone, days_ago);
+
+alter table public.contacts enable trigger "20_contact_saved";
+
+-- ---------------------------------------------------------------------
+-- Leads (60 deals): 10 por etapa (estados.ts: nuevo, contactado, cotizado,
+-- ganado, perdido, archivado), creados en los últimos 90 días, montos CLP
+-- enteros, asignados a los dos ejecutivos.
+-- ---------------------------------------------------------------------
+with
+company_ids as (
+    select array_agg(id order by id) as ids from public.companies
+),
+executives as (
+    select array_agg(id order by id) as ids from public.sales
+    where email in ('camila.rojas@tekfusion-demo.cl', 'diego.munoz@tekfusion-demo.cl')
+),
+stages as (
+    select array['nuevo', 'contactado', 'cotizado', 'ganado', 'perdido', 'archivado'] as s
+),
+products as (
+    select
+        array[
+            'Válvulas mariposa DN200 para planta',
+            'Tubería HDPE PE100 SDR11 de 250 mm',
+            'Geoceldas para estabilización de talud',
+            'Válvulas de compuerta DN150 para red',
+            'Tubería HDPE PE100 SDR17 de 400 mm',
+            'Geoceldas para camino de acceso',
+            'Válvulas de bola de acero inoxidable 2"',
+            'Tubería HDPE para conducción de relaves',
+            'Geoceldas para revestimiento de canal',
+            'Válvulas de retención para impulsión'
+        ] as names,
+        array[
+            'Cliente solicita cotización de válvulas mariposa con actuador neumático para recambio en planta.',
+            'Requiere tuberías HDPE PE100 SDR11 en tiras de 12 m, con fittings electrofusión.',
+            'Consulta por geoceldas de 150 mm de alto para estabilizar talud de 6 m, incluye geotextil.',
+            'Ampliación de red: válvulas de compuerta con cuña elástica y cámaras.',
+            'Matriz de tuberías HDPE PE100 SDR17 de 400 mm, unión por termofusión.',
+            'Geoceldas para confinamiento de base granular en camino de acceso a faena.',
+            'Reposición de válvulas de bola inoxidable 316 para línea de reactivos.',
+            'Línea de tuberías HDPE para relaves, con pedido de espesores y presión nominal.',
+            'Revestimiento de canal de regadío con geoceldas rellenas de hormigón.',
+            'Válvulas de retención tipo wafer para sistema de impulsión de agua.'
+        ] as descriptions
+)
+insert into public.deals (name, company_id, contact_ids, stage, description, amount, created_at, updated_at, archived_at, expected_closing_date, sales_id, index)
+select
+    pr.names[(g.i - 1) % 10 + 1] || ' — ' || co.name,
+    co.id,
+    (select array_agg(ct.id order by ct.id) from public.contacts ct where ct.company_id = co.id),
+    st.s[(g.i - 1) % 6 + 1],
+    pr.descriptions[(g.i - 1) % 10 + 1],
+    -- entre ~$800.000 y ~$48.000.000 CLP, redondeado a miles
+    (800 + (g.i * 7919) % 47200) * 1000,
+    created.at,
+    least(created.at + ((g.i % 10) || ' days')::interval, now()),
+    case when st.s[(g.i - 1) % 6 + 1] = 'archivado'
+         then created.at + ((10 + g.i % 20) || ' days')::interval end,
+    (created.at + ((30 + g.i % 30) || ' days')::interval)::date,
+    ex.ids[(g.i - 1) % 2 + 1],
+    ((g.i - 1) / 6)::smallint
+from generate_series(1, 60) as g(i)
+cross join company_ids ci
+cross join executives ex
+cross join stages st
+cross join products pr
+cross join lateral (
+    select id, name from public.companies where id = ci.ids[(g.i * 5) % 12 + 1]
+) as co
+cross join lateral (
+    -- 1 a 89 días atrás; los archivados quedan entre 31 y 89 días para que
+    -- archived_at no caiga en el futuro
+    select now() - (case when (g.i - 1) % 6 = 5
+                         then 31 + (g.i * 13) % 59
+                         else 1 + (g.i * 37) % 89 end || ' days')::interval as at
+) as created;

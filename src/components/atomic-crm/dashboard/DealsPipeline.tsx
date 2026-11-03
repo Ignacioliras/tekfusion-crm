@@ -8,7 +8,10 @@ import { SimpleList } from "../simple-list/SimpleList";
 import { CompanyAvatar } from "../companies/CompanyAvatar";
 import { findDealLabel } from "../deals/dealUtils";
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import type { Etapa } from "../tekfusion/estados";
 import type { Deal } from "../types";
+
+const PERDIDO: Etapa = "perdido";
 
 /**
  * This component displays the deals pipeline for the current user.
@@ -24,7 +27,7 @@ export const DealsPipeline = () => {
     {
       pagination: { page: 1, perPage: 10 },
       sort: { field: "last_seen", order: "DESC" },
-      filter: { "stage@neq": "lost", sales_id: identity?.id },
+      filter: { "stage@neq": PERDIDO, sales_id: identity?.id },
     },
     { enabled: Number.isInteger(identity?.id) },
   );

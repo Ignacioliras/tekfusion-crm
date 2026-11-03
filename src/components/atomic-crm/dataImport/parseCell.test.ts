@@ -9,9 +9,10 @@ import {
   toText,
 } from "./parseCell";
 
+// "cotizado" gets a label unlike its value so label matching is really exercised
 const stages = [
-  { value: "opportunity", label: "Opportunity" },
-  { value: "proposal-sent", label: "Proposal Sent" },
+  { value: "nuevo", label: "Nuevo" },
+  { value: "cotizado", label: "Cotización Enviada" },
 ];
 
 describe("toText", () => {
@@ -80,12 +81,12 @@ describe("toIsoDate", () => {
 
 describe("toConfiguredValue", () => {
   it("matches a configured value", () => {
-    expect(toConfiguredValue("proposal-sent", stages)).toBe("proposal-sent");
+    expect(toConfiguredValue("cotizado", stages)).toBe("cotizado");
   });
 
   it("matches a configured label, whatever its case", () => {
-    expect(toConfiguredValue("Proposal Sent", stages)).toBe("proposal-sent");
-    expect(toConfiguredValue("proposal sent", stages)).toBe("proposal-sent");
+    expect(toConfiguredValue("Cotización Enviada", stages)).toBe("cotizado");
+    expect(toConfiguredValue("cotización enviada", stages)).toBe("cotizado");
   });
 
   it("returns undefined when no option matches", () => {
@@ -96,20 +97,18 @@ describe("toConfiguredValue", () => {
 
 describe("toConfiguredValues", () => {
   it("matches each comma or semicolon separated entry", () => {
-    expect(toConfiguredValues("Proposal Sent; opportunity", stages)).toEqual([
-      "proposal-sent",
-      "opportunity",
+    expect(toConfiguredValues("Cotización Enviada; nuevo", stages)).toEqual([
+      "cotizado",
+      "nuevo",
     ]);
-    expect(toConfiguredValues("opportunity,Proposal Sent", stages)).toEqual([
-      "opportunity",
-      "proposal-sent",
+    expect(toConfiguredValues("nuevo,Cotización Enviada", stages)).toEqual([
+      "nuevo",
+      "cotizado",
     ]);
   });
 
   it("drops unknown entries and returns [] for an empty cell", () => {
-    expect(toConfiguredValues("opportunity, Archived", stages)).toEqual([
-      "opportunity",
-    ]);
+    expect(toConfiguredValues("nuevo, Archived", stages)).toEqual(["nuevo"]);
     expect(toConfiguredValues(null, stages)).toEqual([]);
   });
 });
