@@ -48,13 +48,16 @@
       "criterio": "Los tests pasan en el proyecto 'functions' de vitest y typecheck sigue limpio.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 05:09:07"
+      "commit": "f968b0406f832d1269578db831bb10a4d5c89470",
+      "costo_usd": 0.9395576000000001,
+      "session_id": "b6181323-49b9-489d-a928-608f0540b856",
+      "inicio": "2026-11-03 05:09:07",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé `leadClassification.ts`, que valida a mano la salida del clasificador (sin zod) y devuelve `indeterminada` con `error` en vez de lanzar, más 13 tests que pasan en el proyecto `functions`.",
+      "fin": "2026-11-03 05:11:14"
     },
     {
       "id": "T8",
