@@ -21,6 +21,8 @@
 // remoteJid is "<digits>@s.whatsapp.net" for a person and "<id>@g.us" for a group.
 // Any other key inside `message` (sticker, reaction, location...) becomes type "other".
 
+import { z } from "npm:zod@^4.3.6";
+
 export type EvolutionMessageType =
   "text" | "image" | "document" | "audio" | "other";
 
@@ -66,21 +68,37 @@ export const isAuthorized = (headers: Headers, secret: string): boolean => {
   return diff === 0;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
+const envelopeSchema = z.object({ event: z.string() });
+
+// Unix seconds, as a number or a numeric string.
+const timestampSchema = z
+  .union([z.number(), z.string().regex(/^\d+$/).transform(Number)])
+  .pipe(z.number().int().positive())
+  .transform((seconds) => new Date(seconds * 1000));
+
+const upsertSchema = z.object({
+  instance: z.string(),
+  data: z.object({
+    key: z.object({
+      id: z.string().min(1),
+      remoteJid: z.string(),
+      fromMe: z.boolean(),
+    }),
+    messageTimestamp: timestampSchema,
+    message: z.looseObject({}),
+  }),
+});
+
+const extendedTextSchema = z.object({ text: z.string() });
+
+// Caption and mimetype are optional metadata: a wrong type becomes null
+// instead of rejecting the whole message.
+const mediaSchema = z.object({
+  caption: z.string().nullable().catch(null),
+  mimetype: z.string().nullable().catch(null),
+});
 
 const ignore = (reason: string): IgnoredEvent => ({ ignore: true, reason });
-
-const parseTimestamp = (value: unknown): Date | null => {
-  const seconds =
-    typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
-  if (typeof seconds !== "number" || !Number.isInteger(seconds) || seconds <= 0)
-    return null;
-  return new Date(seconds * 1000);
-};
-
-const stringOrNull = (value: unknown): string | null =>
-  typeof value === "string" ? value : null;
 
 const readContent = (
   message: Record<string, unknown>,
@@ -88,17 +106,17 @@ const readContent = (
   if (typeof message.conversation === "string") {
     return { type: "text", text: message.conversation, mediaMimeType: null };
   }
-  const extended = message.extendedTextMessage;
-  if (isRecord(extended) && typeof extended.text === "string") {
-    return { type: "text", text: extended.text, mediaMimeType: null };
+  const extended = extendedTextSchema.safeParse(message.extendedTextMessage);
+  if (extended.success) {
+    return { type: "text", text: extended.data.text, mediaMimeType: null };
   }
   for (const [key, type] of Object.entries(MEDIA_TYPES)) {
-    const media = message[key];
-    if (isRecord(media)) {
+    const media = mediaSchema.safeParse(message[key]);
+    if (media.success) {
       return {
         type,
-        text: stringOrNull(media.caption),
-        mediaMimeType: stringOrNull(media.mimetype),
+        text: media.data.caption,
+        mediaMimeType: media.data.mimetype,
       };
     }
   }
@@ -109,27 +127,21 @@ const readContent = (
 export const parseEvolutionEvent = (
   body: unknown,
 ): EvolutionMessage | IgnoredEvent => {
-  if (!isRecord(body) || typeof body.event !== "string") {
-    return ignore("malformed body");
-  }
+  const envelope = envelopeSchema.safeParse(body);
+  if (!envelope.success) return ignore("malformed body");
   // Body uses "messages.upsert"; accept the config spelling "MESSAGES_UPSERT" too.
-  const event = body.event.toLowerCase().replace("_", ".");
-  if (event !== "messages.upsert")
-    return ignore(`unhandled event ${body.event}`);
+  const event = envelope.data.event.toLowerCase().replace("_", ".");
+  if (event !== "messages.upsert") {
+    return ignore(`unhandled event ${envelope.data.event}`);
+  }
 
-  const { instance, data } = body;
-  if (typeof instance !== "string" || !isRecord(data) || !isRecord(data.key)) {
-    return ignore("malformed body");
+  const parsed = upsertSchema.safeParse(body);
+  if (!parsed.success) {
+    const [issue] = parsed.error.issues;
+    return ignore(`malformed ${issue.path.join(".") || "body"}`);
   }
+  const { instance, data } = parsed.data;
   const { id, remoteJid, fromMe } = data.key;
-  if (
-    typeof id !== "string" ||
-    !id ||
-    typeof remoteJid !== "string" ||
-    typeof fromMe !== "boolean"
-  ) {
-    return ignore("malformed message key");
-  }
   if (remoteJid.endsWith(GROUP_JID_SUFFIX)) {
     return { ignore: true, reason: "group message", isGroup: true };
   }
@@ -138,10 +150,6 @@ export const parseEvolutionEvent = (
     : "";
   if (!E164_DIGITS.test(digits)) return ignore("unsupported remoteJid");
 
-  const timestamp = parseTimestamp(data.messageTimestamp);
-  if (!timestamp) return ignore("malformed messageTimestamp");
-  if (!isRecord(data.message)) return ignore("missing message content");
-
   return {
     instance,
     waMessageId: id,
@@ -149,7 +157,7 @@ export const parseEvolutionEvent = (
     phone: `+${digits}`,
     isGroup: false,
     fromMe,
-    timestamp,
+    timestamp: data.messageTimestamp,
     ...readContent(data.message),
   };
 };

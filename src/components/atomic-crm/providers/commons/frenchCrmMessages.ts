@@ -417,6 +417,16 @@ export const frenchCrmMessages = {
     changelog: {
       title: "Notes de version",
     },
+    credits: {
+      title: "Crédits",
+      developed_by:
+        "Ce système a été développé par %{developer} pour %{client}.",
+      whatsapp_uses: "La messagerie WhatsApp de ce système utilise",
+      whatsapp_license:
+        ", distribuée sous licence Apache 2.0 avec obligation d'attribution.",
+      third_party: "Composants tiers",
+      evolution_license: "Apache 2.0 (avec attribution)",
+    },
     activity: {
       added_company: "%{name} a ajouté l'entreprise",
       you_added_company: "Vous avez ajouté l'entreprise",

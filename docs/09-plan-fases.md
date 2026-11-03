@@ -19,13 +19,13 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Subir a GitHub (privado) y verificar CI en verde con el esqueleto.
 - [ ] Limpiar lo que Atomic trae y no usamos (`doc/`, `demo/`, Storybook, registro shadcn, Postmark, `companies` si no aplica), con plan aprobado. Navegación base en español (Pipeline, Leads, WhatsApp, Dashboard, Configuración).
 - [ ] Conectar a Supabase staging, desplegar en Cloudflare Pages (`staging.crm.tekfusion.cl`). 🔒 Cloudflare Access delante de staging.
-- [ ] Página **Créditos** (texto base) en el panel.
+- [x] Página **Créditos** (texto base) en el panel. (2026-11-03, nocturno T4: `creditos/CreditosPage.tsx`, enlazada desde el menú de usuario)
 - [ ] 🔒 Pedir a VíaRed/DNS: SPF, DKIM y DMARC de tekfusion.cl (se verifica en Fase 7).
 
 ## Fase 2 · Datos, permisos y migración (4 días)
 - [ ] Confirmar mapeo de tablas (`05`, recuadro inicial) y registrarlo en `10`. Esquema declarativo en `supabase/schemas/10_tekfusion_*.sql`; migraciones generadas con `npx supabase db diff`.
 - [ ] 🔒 **RLS completa** según `08-seguridad-roles.md` y tests pgTAP (ejecutivo no ve leads ajenos; lector no edita; gerencia ve todo; service role solo en Edge/n8n). Corren en CI.
-- [ ] `seed.sql` con datos ficticios (3 líneas, 4 usuarios, 60 leads en todos los estados, conversaciones, cotizaciones).
+- [ ] `seed.sql` con datos ficticios (3 líneas, 4 usuarios, 60 leads en todos los estados, conversaciones, cotizaciones). *Parcial (2026-11-03, nocturno T5): 4 usuarios, 12 empresas, 20 contactos y 60 leads (10 por etapa). Faltan la línea de negocio por lead, las conversaciones y las cotizaciones (sus tablas aún no existen).*
 - [ ] Auth: login, recuperación, creación de usuarios desde Configuración, roles. 🔒 TOTP obligatorio para gerencia; contraseña mínima 12; protección contra contraseñas filtradas activada.
 - [ ] Importador CSV (RF-15) con mapeo, dedupe y reporte de resultado; probar con una copia **anonimizada** del Sheets.
 - [ ] Revisar Security Advisor de Supabase: cero avisos de nivel error.

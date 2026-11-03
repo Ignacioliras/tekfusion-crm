@@ -216,6 +216,7 @@ const ChangelogMenuItem = () => {
 };
 
 const CreditosMenuItem = () => {
+  const translate = useTranslate();
   const userMenuContext = useUserMenu();
   if (!userMenuContext) {
     throw new Error("<CreditosMenuItem> must be used inside <UserMenu>");
@@ -228,7 +229,7 @@ const CreditosMenuItem = () => {
       }
     >
       <Info />
-      Créditos
+      {translate("crm.credits.title")}
     </DropdownMenuItem>
   );
 };

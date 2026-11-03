@@ -4,6 +4,7 @@ import englishMessages from "ra-language-english";
 import frenchMessages from "ra-language-french";
 import { raSupabaseEnglishMessages } from "ra-supabase-language-english";
 import { raSupabaseFrenchMessages } from "ra-supabase-language-french";
+import { spanishCrmMessages, spanishMessages } from "@/lib/i18n/es";
 import { englishCrmMessages } from "./englishCrmMessages";
 import { frenchCrmMessages } from "./frenchCrmMessages";
 
@@ -57,28 +58,24 @@ const frenchCatalog = mergeTranslations(
   frenchCrmMessages,
 );
 
-export const getInitialLocale = (): "en" | "fr" => {
-  if (typeof navigator === "undefined") {
-    return "en";
-  }
+// Keys without a Spanish translation fall back to English.
+const spanishCatalog = mergeTranslations(
+  englishCatalog,
+  spanishMessages,
+  spanishCrmMessages,
+);
 
-  const browserLocale = navigator.languages?.[0] ?? navigator.language;
-  if (browserLocale?.toLowerCase().startsWith("fr")) {
-    return "fr";
-  }
-
-  return "en";
-};
-
+// TekFusion works in Spanish: the CRM starts in Spanish whatever the browser
+// locale (docs/10-decisiones.md, 2026-11-03). Users can switch in the menu.
 export const i18nProvider = polyglotI18nProvider(
   (locale) => {
-    if (locale === "fr") {
-      return frenchCatalog;
-    }
+    if (locale === "es") return spanishCatalog;
+    if (locale === "fr") return frenchCatalog;
     return englishCatalog;
   },
-  getInitialLocale(),
+  "es",
   [
+    { locale: "es", name: "Español" },
     { locale: "en", name: "English" },
     { locale: "fr", name: "Français" },
   ],
