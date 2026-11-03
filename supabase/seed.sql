@@ -112,8 +112,7 @@ INSERT INTO favicons_excluded_domains (domain) VALUES
 -- El primer usuario queda como administrator; los siguientes necesitan
 -- una fila en user_invitations o el trigger rechaza el alta.
 -- Contraseña local de todos: demo-tekfusion
--- ponytail: sales aún no tiene columna role; "lector" y "ejecutivo" se
--- distinguen solo por administrator=false hasta la Fase 2.
+-- Roles (sales.role): Andrea gerencia, Camila y Diego ejecutivos, Pablo lector.
 -- ---------------------------------------------------------------------
 do $$
 declare
@@ -155,6 +154,35 @@ begin
         );
     end loop;
 end $$;
+
+-- Roles: el trigger sync_sales_role deja a Andrea como manager (primer usuario,
+-- administrator = true); el resto nace executive y Pablo pasa a lector.
+update public.sales set role = 'reader' where email = 'pablo.herrera@tekfusion-demo.cl';
+update public.sales set whatsapp_phone = p.phone, signature = p.signature
+from (values
+    ('andrea.soto@tekfusion-demo.cl',   '+56911110001', '— Andrea Soto, TekFusion'),
+    ('camila.rojas@tekfusion-demo.cl',  '+56911110002', '— Camila Rojas, TekFusion'),
+    ('diego.munoz@tekfusion-demo.cl',   '+56911110003', '— Diego Muñoz, TekFusion'),
+    ('pablo.herrera@tekfusion-demo.cl', '+56911110004', '— Pablo Herrera, TekFusion')
+) as p(email, phone, signature)
+where public.sales.email = p.email;
+
+-- ---------------------------------------------------------------------
+-- Líneas de negocio (3) y motivos de pérdida. Palabras clave = lineas.ts.
+-- ---------------------------------------------------------------------
+insert into public.business_lines (code, name, owner_sales_id, substitute_sales_id, keywords)
+select l.code::public.business_line, l.name,
+       (select id from public.sales where email = l.owner),
+       (select id from public.sales where email = l.substitute),
+       l.keywords
+from (values
+    ('valvulas',  'Válvulas',                  'camila.rojas@tekfusion-demo.cl', 'diego.munoz@tekfusion-demo.cl',  array['valvula','compuerta','bola','mariposa','check','globo','actuador']),
+    ('tuberias',  'Tuberías',                  'diego.munoz@tekfusion-demo.cl',  'camila.rojas@tekfusion-demo.cl', array['tuberia','caneria','hdpe','pvc','acero','ppr','fitting','codo','union','flange','manguera']),
+    ('geoceldas', 'Geoceldas y geosintéticos', 'camila.rojas@tekfusion-demo.cl', 'diego.munoz@tekfusion-demo.cl', array['geocelda','geosintetico','geomembrana','geotextil','geomalla','contencion','estabiliz'])
+) as l(code, name, owner, substitute, keywords);
+
+insert into public.lost_reasons (name, position) values
+    ('Precio', 1), ('Competencia', 2), ('Sin respuesta', 3), ('Sin presupuesto', 4), ('Otro', 5);
 
 -- ---------------------------------------------------------------------
 -- Empresas (12): minería, construcción, agua y agro. Todas inventadas.
@@ -296,6 +324,23 @@ cross join lateral (
                          then 31 + (g.i * 13) % 59
                          else 1 + (g.i * 37) % 89 end || ' days')::interval as at
 ) as created;
+
+-- Columnas de la Fase 2 en los leads: línea por el producto, canal de origen
+-- rotado, confianza de la IA cuando el canal es automático, monto final en los
+-- ganados y motivo en los perdidos.
+update public.deals set
+    business_line = case
+        when name ilike 'válvula%' then 'valvulas'
+        when name ilike 'tubería%' then 'tuberias'
+        when name ilike 'geocelda%' then 'geoceldas'
+        else 'indeterminada' end::public.business_line,
+    origin_channel = (array['correo','formulario','whatsapp','manual','bot'])[(id % 5) + 1]::public.origin_channel,
+    ai_confidence = case when (id % 5) + 1 = 4 then null else 0.70 + ((id * 7) % 30) / 100.0 end,
+    won_amount = case when stage = 'ganado' then amount end,
+    lost_reason_id = case when stage = 'perdido'
+        then (select id from public.lost_reasons order by position offset (public.deals.id % 5) limit 1) end,
+    first_response_at = case when stage <> 'nuevo' then created_at + interval '3 hours' end,
+    last_activity_at = updated_at;
 
 -- ---------------------------------------------------------------------
 -- Contactos calientes (5): 3 de Camila y 2 de Diego. El dashboard filtra
