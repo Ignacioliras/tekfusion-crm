@@ -10,13 +10,14 @@
 > | `actividades` | `deal_notes` / `contact_notes` + vista de actividad de Atomic (`activity_log`) + tabla `deal_events` para eventos de sistema | reutilizar la vista existente |
 > | `lineas_negocio` | `business_lines` | |
 > | `ausencias` | `sales_absences` | |
-> | `actividades` (eventos de sistema) | `audit_log` (hecho, Fase 2): `actor_sales_id`, `action`, `target_sales_id`, `deal_id`, `details`; lee gerencia, escribe solo el sistema. Reemplaza al `deal_events` planeado | las filas con `deal_id` alimentan la línea de tiempo del lead (Fase 3) |
+> | `actividades` (eventos de sistema) | `audit_log` (hecho, Fase 2): `actor_sales_id`, `action`, `target_sales_id`, `deal_id`, `details`; lee gerencia, escribe solo el sistema. Reemplaza al `deal_events` planeado | las filas con `deal_id` alimentan la línea de tiempo del lead: `deal.stage_changed` y `deal.reassigned` los escribe el trigger `log_deal_changes` (Fase 3) y quien ve el lead lee sus filas |
 > | adjuntos (Storage) | bucket `attachments` **privado** (Fase 2): archivos bajo `deals/<id>/`, `contacts/<id>/`, `companies/`, `sales/`, `config/`; lectura por URL firmada de 60 min y policy `can_read_attachment` / `can_write_attachment` | la base guarda la URL pública como referencia estable; el data provider la firma al leer |
 > | `cotizaciones` | `quotes` (hecho, Fase 3): `deal_id`, `version`, `amount`, `pdf_path`, `is_current`, `sent_at`, `sent_channels`, `delivery_status`, `sales_id` (autor) | PDF en el bucket privado `quotes`, `deals/<id>/<uuid>.pdf`, solo PDF, 15 MB |
 > | `seguimientos` | `followups` (hecho, Fase 3) | cancelar = update; `job_id` único |
 > | `conversaciones` / `mensajes` | `wa_conversations` / `wa_messages` | `wa_message_id` UNIQUE |
 > | `correos` | `emails` | |
-> | `alertas` | `alerts` (hecho, Fase 3): `recipient_sales_id` = destinatario | el usuario solo escribe `read_at` |
+> | cola de envío | `send_queue` (hecho, Fase 3): una fila por canal de cada cotización enviada (`deal_id`, `quote_id`, `channel`, `status`, `sales_id`, `sent_at`, `attempts`, `error`); la escribe solo `send_quote()` y la consume n8n (Fase 5) | `unique (quote_id, channel)`; nadie la borra |
+| `alertas` | `alerts` (hecho, Fase 3): `recipient_sales_id` = destinatario | el usuario solo escribe `read_at` |
 > | `plantillas`, `respuestas_rapidas`, `motivos_perdida` | `templates`, `quick_replies` (hechas, Fase 3), `lost_reasons` | Atomic tuvo `deals.lost_reason` y lo eliminó (migración 2026-09-28): usar tabla propia |
 > | `configuracion` | `configuration` (Atomic) | ya existe; extender sus claves |
 > | `estado_whatsapp`, `importaciones` | `wa_instance_status`, `imports` (nuevas) | Atomic ya trae importador CSV de contactos en el frontend (`contacts/`): extenderlo para deals |
