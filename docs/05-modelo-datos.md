@@ -4,9 +4,9 @@
 >
 > | Aquí (español) | Implementación | Nota |
 > |---|---|---|
-> | `perfiles` | `sales` (Atomic) + columnas `role`, `phone`, `signature`, `smtp_*`/`imap_*` (cifradas), `substitute_id`, `is_active` | `sales` ya está ligada a `auth.users` por triggers; Atomic desactiva, no borra |
+> | `perfiles` | `sales` (Atomic) + `role`, `whatsapp_phone`, `signature` (hecho, Fase 2). `activo` = `disabled`; el suplente vive en `business_lines`; SMTP/IMAP irán en `sales_mail_accounts` (Fase 5, Vault) | `sales` ya está ligada a `auth.users` por triggers; Atomic desactiva, no borra |
 > | `contactos` | `contacts` + `companies` (Atomic) | Atomic separa empresa y persona; mantenerlo |
-> | `leads` | `deals` (Atomic) + columnas `business_line`, `origin_channel`, `raw_source`, `ai_confidence`, `first_response_at`, `lost_reason_id`, `won_amount`, `archived_at` | etapa = `deals.stage`; etapas en `configuration` / `defaultDealStages` |
+> | `leads` | `deals` (Atomic) + `business_line`, `ai_confidence`, `origin_channel`, `raw_source`, `first_response_at`, `last_activity_at`, `lost_reason_id`, `won_amount`, `previous_deal_id`, `followups_enabled` (hecho, Fase 2); `archived_at` ya existía | etapa = `deals.stage` con `check` (`estados.ts` es la única fuente) |
 > | `actividades` | `deal_notes` / `contact_notes` + vista de actividad de Atomic (`activity_log`) + tabla `deal_events` para eventos de sistema | reutilizar la vista existente |
 > | `lineas_negocio` | `business_lines` | |
 > | `ausencias` | `sales_absences` | |
@@ -20,7 +20,7 @@
 > | `estado_whatsapp`, `importaciones` | `wa_instance_status`, `imports` (nuevas) | Atomic ya trae importador CSV de contactos en el frontend (`contacts/`): extenderlo para deals |
 > | enum `rol_usuario` | `user_role` (`manager`,`executive`,`reader`) | etiquetas en español en la interfaz |
 >
-> Antes de escribir la primera migración (Fase 2), Claude Code confirma este mapeo con `/plan` y lo registra en `10-decisiones.md`.
+> **Implementado el 2026-11-03** (`docs/fase-2-propuesta.md` aprobada; decisiones en `10-decisiones.md`): `supabase/schemas/10_tekfusion_tables.sql` (tipos `user_role`, `business_line`, `origin_channel`; tablas `business_lines`, `lost_reasons`, `sales_absences`; columnas en `sales`, `deals`, `contacts`), `11_tekfusion_policies.sql` (RLS, `take_deal`, triggers de guarda) y `12_tekfusion_grants.sql`. Ids `bigint` (no `uuid`) y valores de enum en español. Las tablas de las Fases 3–5 (`quotes`, `followups`, `wa_*`, `emails`, `alerts`, `templates`, …) se crean en su fase, con RLS y tests desde el primer día.
 
 Convenciones: `snake_case`, `id uuid default gen_random_uuid()`, `creado_en timestamptz default now()`, `actualizado_en` con trigger. Montos en CLP como `integer`. Teléfonos en E.164 (`+569XXXXXXXX`). Todas las tablas con RLS activa (ver `08-seguridad-roles.md`).
 
