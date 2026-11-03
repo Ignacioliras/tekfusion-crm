@@ -3,7 +3,7 @@
 -- una policy para anon, si una vista pierde security_invoker, o si alguien
 -- agrega una policy de delete a las tablas que nunca se borran (decisión 3).
 begin;
-select plan(7);
+select plan(13);
 
 select is(
   (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -39,6 +39,23 @@ select ok(
   exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'public' and p.proname = 'current_user_role' and p.prosecdef),
   'current_user_role() es security definer (lee sales sin pasar por su propia RLS)');
+
+select is(
+  (select count(*) from information_schema.role_table_grants where grantee = 'anon' and table_schema = 'public' and table_name <> 'init_state'),
+  0::bigint, 'anon no tiene privilegios sobre ninguna tabla ni vista salvo init_state');
+select is(
+  (select count(*) from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and privilege_type in ('TRUNCATE', 'REFERENCES', 'TRIGGER')),
+  0::bigint, 'authenticated no tiene TRUNCATE, REFERENCES ni TRIGGER (TRUNCATE ignora la RLS)');
+select is(
+  (select string_agg(column_name, ',' order by column_name) from information_schema.role_column_grants where grantee = 'authenticated' and table_schema = 'public' and table_name = 'sales' and privilege_type = 'UPDATE'),
+  'administrator,avatar,disabled,first_name,last_name,role,signature,whatsapp_phone', 'authenticated solo actualiza las columnas de perfil y las tres protegidas de sales');
+select ok(not has_function_privilege('anon', 'public.take_deal(bigint)', 'execute') and not has_function_privilege('anon', 'public.current_sales_id()', 'execute'), 'anon no ejecuta take_deal ni los helpers de RLS');
+select ok(
+  not exists (select 1 from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace where n.nspname = 'public' and d.defaclrole = 'postgres'::regrole and array_to_string(d.defaclacl, ',') like '%anon=%'),
+  'los privilegios por defecto de public ya no incluyen a anon');
+select is(
+  (select count(*) from pg_policies where schemaname = 'storage' and tablename = 'objects' and (coalesce(qual, '') || coalesce(with_check, '')) not similar to '%(is_internal_user|current_user_role)%'),
+  0::bigint, 'toda policy de storage.objects exige un usuario interno (no basta el bucket)');
 
 select * from finish();
 rollback;

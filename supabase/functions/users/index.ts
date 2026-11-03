@@ -4,6 +4,7 @@ import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
+import { isActiveSale, resolveDisabled } from "../_shared/activeSale.ts";
 import {
   findInvalidEmail,
   MAX_SECONDARY_EMAILS,
@@ -13,7 +14,7 @@ import {
 async function updateSaleDisabled(user_id: string, disabled: boolean) {
   return await supabaseAdmin
     .from("sales")
-    .update({ disabled: disabled ?? false })
+    .update({ disabled })
     .eq("user_id", user_id);
 }
 
@@ -339,6 +340,12 @@ async function patchUser(req: Request, currentUserSale: any) {
     }
   }
 
+  const effectiveDisabled = resolveDisabled(
+    sale.disabled,
+    disabled,
+    currentUserSale.administrator,
+  );
+
   const primaryEmail = (email ?? sale.email).trim().toLowerCase();
   const effectiveSecondaryEmails =
     normalizedSecondaryEmails ??
@@ -355,7 +362,9 @@ async function patchUser(req: Request, currentUserSale: any) {
   const { data, error: userError } =
     await supabaseAdmin.auth.admin.updateUserById(sale.user_id, {
       email,
-      ban_duration: disabled ? "87600h" : "none",
+      // Only an administrator changes the ban, and only on purpose: a user
+      // patching its own profile must not lift its own ban.
+      ban_duration: effectiveDisabled ? "87600h" : "none",
       user_metadata: { first_name, last_name },
     });
 
@@ -398,8 +407,19 @@ async function patchUser(req: Request, currentUserSale: any) {
   }
 
   try {
-    await updateSaleDisabled(data.user.id, disabled);
-    const sale = await updateSaleAdministrator(data.user.id, administrator);
+    if (typeof disabled === "boolean") {
+      await updateSaleDisabled(data.user.id, disabled);
+    }
+    const sale =
+      typeof administrator === "boolean"
+        ? await updateSaleAdministrator(data.user.id, administrator)
+        : (
+            await supabaseAdmin
+              .from("sales")
+              .select("*")
+              .eq("user_id", data.user.id)
+              .single()
+          ).data;
     return new Response(
       JSON.stringify({
         data: sale,
@@ -422,7 +442,8 @@ Deno.serve(async (req: Request) =>
     AuthMiddleware(req, async (req) =>
       UserMiddleware(req, async (req, user) => {
         const currentUserSale = await getUserSale(user);
-        if (!currentUserSale) {
+        // A disabled user may still hold a valid JWT: refuse it here.
+        if (!isActiveSale(currentUserSale)) {
           return createErrorResponse(401, "Unauthorized");
         }
 

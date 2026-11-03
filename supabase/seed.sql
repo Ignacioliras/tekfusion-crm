@@ -343,6 +343,10 @@ update public.deals set
     first_response_at = case when stage <> 'nuevo' then created_at + interval '3 hours' end,
     last_activity_at = updated_at;
 
+-- Tres leads nuevos sin asignar: la cola que los ejecutivos pueden tomar (take_deal).
+update public.deals set sales_id = null
+where id in (select id from public.deals where stage = 'nuevo' order by id limit 3);
+
 -- ---------------------------------------------------------------------
 -- Contactos calientes (5): 3 de Camila y 2 de Diego. El dashboard filtra
 -- por el ejecutivo conectado, así que ambos ven la tarjeta con datos.

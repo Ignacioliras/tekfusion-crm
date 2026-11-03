@@ -52,7 +52,7 @@ select
     d.sales_id,
     null::json as company,
     null::json as contact,
-    (to_jsonb(d.*) - 'fts')::json as deal,
+    (to_jsonb(d.*) - 'fts' - 'raw_source')::json as deal,
     null::json as contact_note,
     null::json as deal_note
 from public.deals d

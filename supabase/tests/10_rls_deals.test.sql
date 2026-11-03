@@ -32,6 +32,7 @@ select
   (select count(*) from public.deals where sales_id = (select id from public.sales where email = 'diego.munoz@tekfusion-demo.cl')) as diego_total,
   (select min(id) from public.deals where sales_id = (select id from public.sales where email = 'camila.rojas@tekfusion-demo.cl')) as own_deal,
   (select min(id) from public.deals where sales_id = (select id from public.sales where email = 'diego.munoz@tekfusion-demo.cl')) as foreign_deal,
+  (select count(*) from public.deals where sales_id is null) as free,
   0::bigint as unassigned;
 insert into public.deals (name, stage, sales_id, company_id) values ('Lead sin asignar', 'nuevo', null, 1);
 update fx set unassigned = (select id from public.deals where name = 'Lead sin asignar');
@@ -39,7 +40,7 @@ grant select on fx to authenticated;
 
 -- Ejecutivo --------------------------------------------------------------
 select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
-select is((select count(*) from public.deals), (select camila_total + 1 from fx), 'ejecutivo ve solo sus leads más los sin asignar');
+select is((select count(*) from public.deals), (select camila_total + free + 1 from fx), 'ejecutivo ve solo sus leads más los sin asignar');
 select is((select count(*) from public.deals where id = (select foreign_deal from fx)), 0::bigint, 'ejecutivo no ve un lead ajeno');
 select is(pg_temp.exec_count(format('update public.deals set name = %L where id = %s', 'x', (select foreign_deal from fx))), 0::bigint, 'ejecutivo no edita un lead ajeno');
 select is(pg_temp.exec_count(format('update public.deals set description = %L where id = %s', 'editado', (select own_deal from fx))), 1::bigint, 'ejecutivo edita su propio lead');
@@ -54,7 +55,7 @@ select is((select sales_id from public.deals where id = (select unassigned from 
 
 reset role;
 select pg_temp.login_as('diego.munoz@tekfusion-demo.cl');
-select is((select count(*) from public.deals), (select diego_total from fx), 'el otro ejecutivo ya no ve el lead tomado');
+select is((select count(*) from public.deals), (select diego_total + free from fx), 'el otro ejecutivo ya no ve el lead tomado');
 select throws_ok(format('select public.take_deal(%s)', (select unassigned from fx)), 'P0002', null, 'un lead ya tomado no se puede volver a tomar');
 
 -- Lector -------------------------------------------------------------------
@@ -77,7 +78,7 @@ select is(pg_temp.exec_count('delete from public.deals'), 0::bigint, 'nadie borr
 -- anon ---------------------------------------------------------------------
 reset role;
 set local role anon;
-select is((select count(*) from public.deals), 0::bigint, 'anon no ve leads');
+select throws_ok('select count(*) from public.deals', '42501', null, 'anon no tiene ni privilegio de lectura sobre leads');
 
 select * from finish();
 rollback;
