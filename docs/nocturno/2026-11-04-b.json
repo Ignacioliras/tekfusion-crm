@@ -61,13 +61,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 22:56:15"
+      "commit": "a5660adf507b517aadf543fe5db52532e33301b2",
+      "costo_usd": 3.2764702999999997,
+      "session_id": "4eacefe3-ff81-4e73-9de1-524bd04fb512",
+      "inicio": "2026-11-03 22:56:15",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: vista sales_ranking solo para gerencia con security_invoker, grants, migración a mano, test pgTAP 26 contra el seed y columnas documentadas en docs/05.",
+      "fin": "2026-11-03 23:02:43"
     },
     {
       "id": "T3",
