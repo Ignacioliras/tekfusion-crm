@@ -25,13 +25,16 @@
       "criterio": "El documento existe, tiene una tabla con columna Ruta y más de 2.500 caracteres.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 05:06:52"
+      "commit": "a4274b5436524ed28f76a3f07e9150c94cf7077f",
+      "costo_usd": 1.3380424,
+      "session_id": "808d7fc6-d35c-48d0-afd9-595a67316092",
+      "inicio": "2026-11-03 05:06:52",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: escribí docs/atomic/inventario-limpieza.md con 14 ítems de Atomic que no usamos (rutas, dependencias, impacto, recomendación) y un orden de limpieza por riesgo, sin borrar nada.",
+      "fin": "2026-11-03 05:09:07"
     },
     {
       "id": "T7",
