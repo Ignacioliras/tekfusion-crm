@@ -117,13 +117,16 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (gerencia guarda; ejecutivo no ve; validaciones); los defaults coinciden con send_quote ([2, 5, 10]); docs/09 anota avance parcial de 'Configuración completa (RF-14)'.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 22:24:01"
+      "commit": "0d312fd9b9535d8dbedebc7d3a3236767da31341",
+      "costo_usd": 3.3067561999999997,
+      "session_id": "1c21667c-fdb7-40be-b6cf-3784bee3d2c4",
+      "inicio": "2026-11-03 22:24:01",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Configuración (solo gerencia) ahora edita cadencia por defecto, horario hábil, correo de facturación y reporte semanal en configuration.config, con defaults [2, 5, 10] como send_quote, validación en español y 7 tests nuevos en verde.",
+      "fin": "2026-11-03 22:35:52"
     },
     {
       "id": "T5",
