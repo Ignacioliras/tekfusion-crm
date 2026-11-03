@@ -31,13 +31,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 22:49:46"
+      "commit": "786831b3580b02b7b93b9f259d26ed0bf3426930",
+      "costo_usd": 3.4714737500000004,
+      "session_id": "0d0d8d4c-2185-4796-b490-d6fd65565e9c",
+      "inicio": "2026-11-03 22:49:46",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: vista dashboard_monthly con security_invoker, grants, migración a mano, test pgTAP 25 contra el seed y métricas documentadas en docs/05.",
+      "fin": "2026-11-03 22:56:14"
     },
     {
       "id": "T2",
