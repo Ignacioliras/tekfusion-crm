@@ -30,6 +30,67 @@ export type LostReason = {
   position: number;
 } & Pick<RaRecord, "id">;
 
+// Fase 3 (supabase/schemas/10_tekfusion_tables.sql): quotes, follow-ups,
+// templates, alerts and the audit trail that feeds the lead timeline.
+export type SendChannel = "correo" | "whatsapp";
+export type DeliveryStatus =
+  "pendiente" | "enviado" | "entregado" | "leido" | "fallido";
+export type FollowupMode = "automatico" | "recordatorio";
+export type FollowupStatus = "pendiente" | "enviado" | "vencido" | "cancelado";
+
+export type Quote = {
+  created_at: string;
+  deal_id: Identifier;
+  version: number;
+  amount: number;
+  pdf_path: string;
+  is_current: boolean;
+  sent_at?: string | null;
+  sent_channels: SendChannel[];
+  delivery_status: DeliveryStatus;
+  sales_id?: Identifier | null;
+} & Pick<RaRecord, "id">;
+
+export type Followup = {
+  created_at: string;
+  deal_id: Identifier;
+  step: number;
+  scheduled_at: string;
+  channels: SendChannel[];
+  mode: FollowupMode;
+  template_id?: Identifier | null;
+  status: FollowupStatus;
+  sent_at?: string | null;
+  attempts: number;
+  cancel_reason?: string | null;
+} & Pick<RaRecord, "id">;
+
+export type Template = {
+  name: string;
+  channel: SendChannel;
+  subject?: string | null;
+  body: string;
+  active: boolean;
+} & Pick<RaRecord, "id">;
+
+export type Alert = {
+  created_at: string;
+  type: string;
+  recipient_sales_id: Identifier;
+  deal_id?: Identifier | null;
+  message: string;
+  read_at?: string | null;
+} & Pick<RaRecord, "id">;
+
+export type AuditLogEntry = {
+  created_at: string;
+  actor_sales_id?: Identifier | null;
+  action: string;
+  target_sales_id?: Identifier | null;
+  deal_id?: Identifier | null;
+  details: Record<string, unknown>;
+} & Pick<RaRecord, "id">;
+
 export type SalesAbsence = {
   sales_id: Identifier;
   starts_on: string;

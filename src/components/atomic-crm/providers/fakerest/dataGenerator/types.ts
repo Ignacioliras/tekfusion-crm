@@ -3,8 +3,14 @@ import type {
   Company,
   Contact,
   ContactNote,
+  Alert,
+  AuditLogEntry,
   Deal,
   DealNote,
+  Followup,
+  LostReason,
+  Quote,
+  Template,
   Sale,
   SalesAbsence,
   Tag,
@@ -24,5 +30,12 @@ export interface Db {
   // FakeRest keys every record by id: business lines use their code as id.
   business_lines: Array<BusinessLineConfig & { id: string }>;
   sales_absences: SalesAbsence[];
+  lost_reasons: LostReason[];
+  quotes: Quote[];
+  followups: Followup[];
+  templates: Template[];
+  alerts: Alert[];
+  audit_log: AuditLogEntry[];
+  send_queue: Array<{ id: number; quote_id: number; channel: string }>;
   configuration: Array<{ id: number; config: ConfigurationContextValue }>;
 }

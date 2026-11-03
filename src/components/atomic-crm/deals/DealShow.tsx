@@ -1,11 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import { isValid } from "date-fns";
 import { Archive, ArchiveRestore } from "lucide-react";
 import {
-  InfiniteListBase,
   ShowBase,
   useDataProvider,
-  useLocaleState,
   useNotify,
   useRecordContext,
   useRedirect,
@@ -16,25 +13,16 @@ import {
 } from "ra-core";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { EditButton } from "@/components/admin/edit-button";
-import { ReferenceArrayField } from "@/components/admin/reference-array-field";
 import { ReferenceField } from "@/components/admin/reference-field";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
 import { CompanyAvatar } from "../companies/CompanyAvatar";
-import { NoteCreate } from "../notes/NoteCreate";
-import { NotesIterator } from "../notes/NotesIterator";
-import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
-import { ContactList } from "./ContactList";
-import {
-  findDealLabel,
-  formatDealCategories,
-  formatISODateString,
-} from "./dealUtils";
-import { formatAmount } from "../tekfusion/money";
+import { LeadActions } from "./LeadActions";
+import { LeadDataBlock } from "./LeadDataBlock";
+import { LeadTimeline } from "./LeadTimeline";
 
 export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
   const redirect = useRedirect();
@@ -44,7 +32,7 @@ export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="lg:max-w-4xl p-4 overflow-y-auto max-h-9/10 top-1/20 translate-y-0">
+      <DialogContent className="lg:max-w-6xl p-4 overflow-y-auto max-h-9/10 top-1/20 translate-y-0">
         {id ? (
           <ShowBase id={id}>
             <DealShowContent />
@@ -56,138 +44,56 @@ export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
 };
 
 const DealShowContent = () => {
-  const translate = useTranslate();
-  const [locale = "es"] = useLocaleState();
-  const { dealStages, dealCategories, currency } = useConfigurationContext();
   const record = useRecordContext<Deal>();
   if (!record) return null;
 
   return (
-    <>
-      <div className="space-y-2">
-        {record.archived_at ? <ArchivedTitle /> : null}
-        <div className="flex-1">
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex items-center gap-4">
-              <ReferenceField
-                source="company_id"
-                reference="companies"
-                link="show"
-              >
-                <CompanyAvatar />
-              </ReferenceField>
-              <h2 className="text-xl font-semibold">{record.name}</h2>
-            </div>
-            <div className={`flex gap-2 ${record.archived_at ? "" : "pr-12"}`}>
-              {record.archived_at ? (
-                <>
-                  <CanAccess resource="deals" action="edit" record={record}>
-                    <UnarchiveButton record={record} />
-                  </CanAccess>
-                  <DeleteButton />
-                </>
-              ) : (
-                <>
-                  <CanAccess resource="deals" action="edit" record={record}>
-                    <ArchiveButton record={record} />
-                  </CanAccess>
-                  <EditButton />
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-8 m-4">
-            <div className="flex flex-col mr-10">
-              <span className="text-xs text-muted-foreground tracking-wide">
-                {translate("resources.deals.fields.expected_closing_date")}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm">
-                  {isValid(new Date(record.expected_closing_date))
-                    ? formatISODateString(record.expected_closing_date, locale)
-                    : translate("resources.deals.invalid_date")}
-                </span>
-                {new Date(record.expected_closing_date) < new Date() ? (
-                  <Badge variant="destructive">
-                    {translate("crm.common.past")}
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="flex flex-col mr-10">
-              <span className="text-xs text-muted-foreground tracking-wide">
-                {translate("resources.deals.fields.amount")}
-              </span>
-              <span className="text-sm">
-                {formatAmount(record.amount, currency)}
-              </span>
-            </div>
-
-            {!!record.categories?.length && (
-              <div className="flex flex-col mr-10">
-                <span className="text-xs text-muted-foreground tracking-wide">
-                  {translate("resources.deals.fields.categories")}
-                </span>
-                <span className="text-sm">
-                  {formatDealCategories(dealCategories, record.categories)}
-                </span>
-              </div>
-            )}
-
-            <div className="flex flex-col mr-10">
-              <span className="text-xs text-muted-foreground tracking-wide">
-                {translate("resources.deals.fields.stage")}
-              </span>
-              <span className="text-sm">
-                {findDealLabel(dealStages, record.stage)}
-              </span>
-            </div>
-          </div>
-
-          {!!record.contact_ids?.length && (
-            <div className="m-4">
-              <div className="flex flex-col min-h-12 mr-10">
-                <span className="text-xs text-muted-foreground tracking-wide">
-                  {translate("resources.deals.fields.contact_ids")}
-                </span>
-                <ReferenceArrayField
-                  source="contact_ids"
-                  reference="contacts_summary"
-                >
-                  <ContactList />
-                </ReferenceArrayField>
-              </div>
-            </div>
+    <div className="flex flex-col gap-6">
+      {record.archived_at ? <ArchivedTitle /> : null}
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex items-center gap-4">
+          <ReferenceField source="company_id" reference="companies" link="show">
+            <CompanyAvatar />
+          </ReferenceField>
+          <h2 className="text-xl font-semibold">{record.name}</h2>
+        </div>
+        <div className={`flex gap-2 ${record.archived_at ? "" : "pr-12"}`}>
+          {record.archived_at ? (
+            <>
+              <CanAccess resource="deals" action="edit" record={record}>
+                <UnarchiveButton record={record} />
+              </CanAccess>
+              <DeleteButton />
+            </>
+          ) : (
+            <>
+              <CanAccess resource="deals" action="edit" record={record}>
+                <ArchiveButton record={record} />
+              </CanAccess>
+              <EditButton />
+            </>
           )}
-
-          {record.description && (
-            <div className="m-4 whitespace-pre-line">
-              <span className="text-xs text-muted-foreground tracking-wide">
-                {translate("resources.deals.fields.description")}
-              </span>
-              <p className="text-sm leading-6">{record.description}</p>
-            </div>
-          )}
-
-          <div className="m-4">
-            <Separator className="mb-4" />
-            <InfiniteListBase
-              resource="deal_notes"
-              filter={{ deal_id: record.id }}
-              sort={{ field: "date", order: "DESC" }}
-              perPage={25}
-              disableSyncWithLocation
-              storeKey={false}
-              empty={<NoteCreate reference={"deals"} />}
-            >
-              <NotesIterator reference="deals" />
-            </InfiniteListBase>
-          </div>
         </div>
       </div>
-    </>
+
+      {record.archived_at ? null : <LeadActions deal={record} />}
+
+      {record.description ? (
+        <p className="text-sm leading-6 whitespace-pre-line">
+          {record.description}
+        </p>
+      ) : null}
+
+      <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
+        <aside className="flex flex-col gap-6">
+          <LeadDataBlock deal={record} />
+        </aside>
+        <div className="min-w-0">
+          <Separator className="mb-4 lg:hidden" />
+          <LeadTimeline deal={record} />
+        </div>
+      </div>
+    </div>
   );
 };
 

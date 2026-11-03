@@ -168,6 +168,12 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Ganado/perdido:** trigger `guard_deal_closing` en la transición de etapa (no `check`): los leads históricos que importa la migración (RF-15) pueden venir cerrados sin monto o motivo.
 - **Descartado:** encolar desde el frontend con varios inserts (no atómico; la cola quedaría escribible por los usuarios).
 
+## 2026-11-04 · Ficha del lead: pantalla
+- **Decisión:** la ficha sigue siendo el diálogo de Atomic (`DealShow`, ahora `lg:max-w-6xl`), con dos columnas: "Datos del lead" (`LeadDataBlock`) y "Línea de tiempo" (`LeadTimeline`, caja de nota arriba). Orden: lo más reciente arriba, como las notas de Atomic. Los seguimientos pendientes no van a la línea de tiempo (viven en el programador).
+- **Editable en línea:** `InlineEditField` abre un `Form` de ra-core con un solo input de `components/admin` y guarda solo esa columna (línea, canal de origen, contacto, empresa). El ejecutivo no se edita en línea: lo cambia "Reasignar", solo gerencia, sin lectores en la lista.
+- **Acciones:** todas dentro de `CanAccess action="edit"` (el lector no ve ninguna); "Tomar" llama `take_deal` (método `takeDeal` del data provider).
+- **Textos:** las pantallas nuevas de TekFusion usan el catálogo `tekfusion.*` (`src/lib/i18n/es/tekfusion.ts`), solo en español, mezclado en los tres idiomas; las claves de Atomic siguen con sus traducciones. Evita mantener inglés y francés de pantallas que solo se usan en español.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
