@@ -3,6 +3,7 @@ import { supabaseAuthProvider } from "ra-supabase-core";
 
 import { canAccess, getAccessRole } from "../commons/canAccess";
 import type { MfaApi, MfaRequirement } from "../../mfa/mfaApi";
+import { resetSigner } from "./signedUrls";
 import { getSupabaseClient } from "./supabase";
 
 const getBaseAuthProvider = () =>
@@ -109,6 +110,8 @@ export const getAuthProvider = (): AuthProvider => {
     },
     logout: async (params) => {
       clearCache();
+      // Signed URLs of the attachments belong to this session.
+      resetSigner();
       return baseAuthProvider.logout(params);
     },
     checkAuth: async (params) => {
@@ -164,7 +167,8 @@ export const getAuthProvider = (): AuthProvider => {
       // Read from the session's JWT: no request.
       const { data, error } =
         await getSupabaseClient().auth.mfa.getAuthenticatorAssuranceLevel();
-      if (error || !data) return null;
+      // Fail closed: without a readable level, ask for the code.
+      if (error || !data) return "verify";
       // A verified factor exists and this session has not used it yet.
       if (data.nextLevel === "aal2" && data.currentLevel !== "aal2") {
         return "verify";

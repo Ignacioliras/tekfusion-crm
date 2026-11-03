@@ -44,7 +44,8 @@ create table public.audit_log (
     actor_sales_id bigint references public.sales (id) on delete set null,
     action text not null,
     target_sales_id bigint references public.sales (id) on delete set null,
-    deal_id bigint references public.deals (id) on delete cascade,
+    -- set null, not cascade: the trail outlives the lead (leads are never deleted anyway)
+    deal_id bigint references public.deals (id) on delete set null,
     details jsonb not null default '{}'::jsonb
 );
 

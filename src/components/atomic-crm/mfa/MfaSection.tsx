@@ -24,6 +24,8 @@ export const MfaSection = () => {
     queryKey: ["mfa", "factor"],
     queryFn: () => getVerifiedFactor(mfa!),
     enabled: !!mfa,
+    // Never written to localStorage (CRM.tsx persists react-query).
+    meta: { persist: false },
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["mfa"] });

@@ -80,6 +80,23 @@ export const signUrl = async (src: string, sign: Signer): Promise<string> => {
 const toList = (value: unknown): RAFile[] =>
   Array.isArray(value) ? value : value ? [value as RAFile] : [];
 
+let signer: Signer | undefined;
+let signerClient: SupabaseClient | undefined;
+
+/** The app's signer (one cache); forgotten on logout so the next user starts clean. */
+export const getSigner = (client: SupabaseClient): Signer => {
+  if (!signer || signerClient !== client) {
+    signer = createSigner(client);
+    signerClient = client;
+  }
+  return signer;
+};
+
+export const resetSigner = () => {
+  signer = undefined;
+  signerClient = undefined;
+};
+
 /**
  * Signs through Supabase Storage, remembering each URL until five minutes
  * before it expires so a refetch of a list does not sign everything again.

@@ -19,6 +19,8 @@ export const MfaGate = ({ children }: { children: ReactNode }) => {
     queryFn: () => authProvider?.getMfaRequirement?.() ?? null,
     staleTime: 0,
     gcTime: 0,
+    // Never written to localStorage (CRM.tsx persists react-query).
+    meta: { persist: false },
   });
 
   if (isPending) return null;

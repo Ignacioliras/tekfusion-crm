@@ -22,6 +22,8 @@ export const MfaVerifyForm = ({
   const factor = useQuery({
     queryKey: ["mfa", "factor"],
     queryFn: () => getVerifiedFactor(mfa),
+    // Never written to localStorage (CRM.tsx persists react-query).
+    meta: { persist: false },
   });
 
   const verify = useMutation({

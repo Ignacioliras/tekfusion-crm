@@ -48,7 +48,7 @@ select is(
   0::bigint, 'authenticated no tiene TRUNCATE, REFERENCES ni TRIGGER (TRUNCATE ignora la RLS)');
 select is(
   (select string_agg(column_name, ',' order by column_name) from information_schema.role_column_grants where grantee = 'authenticated' and table_schema = 'public' and table_name = 'sales' and privilege_type = 'UPDATE'),
-  'administrator,avatar,disabled,first_name,last_name,role,signature,whatsapp_phone', 'authenticated solo actualiza las columnas de perfil y las tres protegidas de sales');
+  'administrator,avatar,first_name,last_name,role,signature,whatsapp_phone', 'authenticated solo actualiza las columnas de perfil, role y administrator de sales (disabled solo por la Edge Function)');
 select ok(not has_function_privilege('anon', 'public.take_deal(bigint)', 'execute') and not has_function_privilege('anon', 'public.current_sales_id()', 'execute'), 'anon no ejecuta take_deal ni los helpers de RLS');
 select ok(
   not exists (select 1 from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace where n.nspname = 'public' and d.defaclrole = 'postgres'::regrole and array_to_string(d.defaclacl, ',') like '%anon=%'),

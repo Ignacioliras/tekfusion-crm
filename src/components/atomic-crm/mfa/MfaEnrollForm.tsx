@@ -42,6 +42,8 @@ export const MfaEnrollForm = ({
     staleTime: Infinity,
     gcTime: 0,
     retry: false,
+    // Never written to localStorage (CRM.tsx persists react-query).
+    meta: { persist: false },
   });
 
   const confirm = useMutation({

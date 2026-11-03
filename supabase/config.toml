@@ -109,7 +109,7 @@ content_path = "./supabase/templates/recovery.html"
 [auth.mfa]
 # TOTP (docs/08): mandatory for managers, optional for the rest. The app
 # enforces it (MfaGate); Auth only offers the factor.
-max_enrolled_factors = 10
+max_enrolled_factors = 3
 
 [auth.mfa.totp]
 enroll_enabled = true

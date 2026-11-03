@@ -2,7 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
+import {
+  AuthMiddleware,
+  getJwtClaims,
+  UserMiddleware,
+} from "../_shared/authentication.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { isActiveSale, resolveDisabled } from "../_shared/activeSale.ts";
 import {
@@ -432,11 +436,20 @@ async function patchUser(req: Request, currentUserSale: any) {
   try {
     if (typeof disabled === "boolean") {
       await updateSaleDisabled(data.user.id, disabled);
+      if (sale.disabled && !disabled) {
+        // Deactivation goes through offboard_sale (DELETE); reactivation is
+        // written here so the trail shows both ends.
+        await supabaseAdmin.from("audit_log").insert({
+          actor_sales_id: currentUserSale.id,
+          action: "sale.reactivated",
+          target_sales_id: sale.id,
+        });
+      }
     }
-    const sale = await updateSaleRole(data.user.id, role, administrator);
+    const updated = await updateSaleRole(data.user.id, role, administrator);
     return new Response(
       JSON.stringify({
-        data: sale,
+        data: updated,
       }),
       {
         headers: {
@@ -461,6 +474,11 @@ async function offboardUser(req: Request, currentUserSale: any) {
   const { sales_id } = await req.json();
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
+  }
+  if (!Number.isInteger(sales_id)) {
+    return createErrorResponse(400, "sales_id must be an integer", {
+      code: "invalid_sales_id",
+    });
   }
   const { data: sale } = await supabaseAdmin
     .from("sales")
@@ -492,17 +510,28 @@ async function offboardUser(req: Request, currentUserSale: any) {
 
   const { data, error } = await supabaseAdmin.rpc("offboard_sale", {
     sale_id: sale.id,
+    actor_id: currentUserSale.id,
   });
   if (error) {
     console.error("Error offboarding user:", error);
-    await supabaseAdmin.auth.admin.updateUserById(sale.user_id, {
-      ban_duration: "none",
-    });
-    return createErrorResponse(
-      error.code === "42501" ? 401 : 500,
-      error.message,
-      { code: error.code },
-    );
+    // P0001: another request offboarded the user first; the ban stays.
+    if (error.code !== "P0001") {
+      const { error: unbanError } =
+        await supabaseAdmin.auth.admin.updateUserById(sale.user_id, {
+          ban_duration: "none",
+        });
+      if (unbanError) console.error("Error lifting the ban:", unbanError);
+    }
+    // Fixed messages: SQL errors stay in the logs.
+    if (error.code === "42501") {
+      return createErrorResponse(401, "Not Authorized");
+    }
+    if (error.code === "P0001") {
+      return createErrorResponse(409, "User is already disabled", {
+        code: "already_disabled",
+      });
+    }
+    return createErrorResponse(500, "Internal Server Error");
   }
   return new Response(JSON.stringify({ data }), {
     headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -517,6 +546,20 @@ Deno.serve(async (req: Request) =>
         // A disabled user may still hold a valid JWT: refuse it here.
         if (!isActiveSale(currentUserSale)) {
           return createErrorResponse(401, "Unauthorized");
+        }
+        // Two-step verification (docs/08): a manager, or anyone who enrolled a
+        // factor, acts only from a session verified by TOTP (aal2), as the RLS
+        // of the database already demands.
+        const hasVerifiedFactor = (user?.factors ?? []).some(
+          (factor) => factor.status === "verified",
+        );
+        if (
+          (currentUserSale.role === "manager" || hasVerifiedFactor) &&
+          getJwtClaims(req).aal !== "aal2"
+        ) {
+          return createErrorResponse(401, "Two-step verification required", {
+            code: "mfa_required",
+          });
         }
 
         try {

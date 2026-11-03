@@ -9,7 +9,7 @@ declare uid uuid;
 begin
   select user_id into uid from public.sales where email = p_email;
   if uid is null then raise exception 'no existe el usuario %', p_email; end if;
-  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated', 'aal', 'aal2')::text, true);
   perform set_config('role', 'authenticated', true);
 end $$;
 
@@ -26,7 +26,7 @@ select
   (select id from public.sales where email = 'camila.rojas@tekfusion-demo.cl') as camila,
   (select id from public.sales where email = 'diego.munoz@tekfusion-demo.cl') as diego,
   (select id from public.sales where email = 'pablo.herrera@tekfusion-demo.cl') as pablo;
-grant select on fx to authenticated;
+grant select on fx to authenticated, service_role;
 
 -- Sincronización role <-> administrator (como postgres, sin RLS) -----------
 select is((select role from public.sales where email = 'andrea.soto@tekfusion-demo.cl'), 'manager'::public.user_role, 'el primer usuario (administrator) queda como manager');
@@ -66,7 +66,13 @@ select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
 select lives_ok(format('update public.sales set role = %L where id = %s', 'executive', (select pablo from fx)), 'gerencia cambia el rol de un usuario');
 select lives_ok('insert into public.lost_reasons (name) values (''Gerencia'')', 'gerencia crea motivos de pérdida');
 select is(pg_temp.exec_count('update public.business_lines set name = name'), 3::bigint, 'gerencia edita las líneas de negocio');
-select lives_ok(format('update public.sales set disabled = true where id = %s', (select diego from fx)), 'gerencia desactiva usuarios');
+-- Desactivar va por "Dar de baja" (Edge Function, service role): la columna
+-- no se escribe por PostgREST (revisión 2026-11-03, docs/10).
+select throws_ok(format('update public.sales set disabled = true where id = %s', (select diego from fx)), '42501', null, 'gerencia no desactiva usuarios directo por PostgREST');
+reset role;
+select set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+set local role service_role;
+update public.sales set disabled = true where id = (select diego from fx);
 
 -- Usuario desactivado ------------------------------------------------------
 reset role;

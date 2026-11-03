@@ -22,16 +22,14 @@ import { ATTACHMENTS_BUCKET } from "../commons/attachments";
 import { getIsInitialized } from "./authProvider";
 import { searchDealCategories } from "./searchDealCategories";
 import {
-  createSigner,
+  getSigner as getSignerFor,
   signRecordFiles,
   signUrl,
-  type Signer,
 } from "./signedUrls";
 import { getSupabaseClient } from "./supabase";
 
-// One signer per app: it remembers the signed URLs for an hour (signedUrls.ts).
-let signer: Signer | undefined;
-const getSigner = () => (signer ??= createSigner(getSupabaseClient()));
+// The app's signer: remembers the signed URLs for an hour, reset on logout.
+const getSigner = () => getSignerFor(getSupabaseClient());
 
 const getBaseDataProvider = () =>
   supabaseDataProvider({
@@ -525,7 +523,12 @@ const uploadToBucket = async (fi: RAFile, folder: string) => {
         .createSignedUrl(fi.path, 60);
 
       if (!error) {
-        return fi;
+        // The record may carry the signed URL it was read with: store the
+        // stable public reference, never a token.
+        const { data } = getSupabaseClient()
+          .storage.from(ATTACHMENTS_BUCKET)
+          .getPublicUrl(fi.path);
+        return { ...fi, src: data.publicUrl };
       }
     }
   }
