@@ -1,15 +1,23 @@
 import { formatDistance } from "date-fns";
 import { FileText } from "lucide-react";
-import { useGetIdentity, useGetList, useTranslate } from "ra-core";
+import {
+  useGetIdentity,
+  useGetList,
+  useLocaleState,
+  useTranslate,
+} from "ra-core";
 import { ReferenceField } from "@/components/admin/reference-field";
 import { TextField } from "@/components/admin/text-field";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { getDateFnsLocale } from "../misc/RelativeDate";
 import type { Contact, ContactNote } from "../types";
 
 export const LatestNotes = () => {
   const { identity } = useGetIdentity();
   const translate = useTranslate();
+  const [locale = "es"] = useLocaleState();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const { data: contactNotesData, isPending: contactNotesLoading } = useGetList(
     "contact_notes",
     {
@@ -75,6 +83,7 @@ export const LatestNotes = () => {
                 {translate("crm.dashboard.latest_notes_added_ago", {
                   timeAgo: formatDistance(note.date, new Date(), {
                     addSuffix: true,
+                    locale: dateFnsLocale,
                   }),
                 })}
               </div>

@@ -5,23 +5,32 @@ const LOCALE = "es-CL";
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
-const getFormatter = (currency: string): Intl.NumberFormat => {
-  let formatter = formatters.get(currency);
+const getFormatter = (
+  currency: string,
+  compact: boolean,
+): Intl.NumberFormat => {
+  const key = `${currency}:${compact}`;
+  let formatter = formatters.get(key);
   if (!formatter) {
     formatter = new Intl.NumberFormat(LOCALE, {
       style: "currency",
       currency,
       currencyDisplay: "narrowSymbol",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      ...(compact
+        ? { notation: "compact", maximumFractionDigits: 1 }
+        : { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
     });
-    formatters.set(currency, formatter);
+    formatters.set(key, formatter);
   }
   return formatter;
 };
 
-/** Formats an amount for display, e.g. formatAmount(8719000, "CLP") → "$8.719.000". */
+/**
+ * Formats an amount for display, e.g. formatAmount(8719000, "CLP") → "$8.719.000".
+ * `compact` is for tight spaces such as chart axes: "$8,7 M".
+ */
 export const formatAmount = (
   amount: number | null | undefined,
   currency: string,
-): string => getFormatter(currency).format(amount ?? 0);
+  { compact = false }: { compact?: boolean } = {},
+): string => getFormatter(currency, compact).format(amount ?? 0);

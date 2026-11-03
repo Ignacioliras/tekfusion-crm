@@ -14,6 +14,16 @@ describe("formatAmount", () => {
     expect(formatAmount(undefined, "CLP")).toBe("$0");
   });
 
+  it("abbreviates millions in compact mode for chart axes", () => {
+    // Intl separates the unit with a non-breaking space.
+    expect(formatAmount(400000000, "CLP", { compact: true })).toMatch(
+      /^\$400\sM$/,
+    );
+    expect(formatAmount(8719000, "CLP", { compact: true })).toMatch(
+      /^\$8,7\sM$/,
+    );
+  });
+
   it("keeps the Chilean number format for another configured currency", () => {
     expect(formatAmount(1500, "USD")).toBe("$1.500");
   });

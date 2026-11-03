@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-
 import type { DealStage, LabeledValue } from "../types";
 
 export const findDealLabel = (dealStages: DealStage[], dealValue: string) => {
@@ -49,7 +47,7 @@ function ucFirst(str: string): string {
 
 const isoDateStringRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-export function formatISODateString(dateString: string) {
+export function formatISODateString(dateString: string, locale = "en") {
   if (!isoDateStringRegex.test(dateString)) {
     throw new Error("Invalid date format. Expected YYYY-MM-DD.");
   }
@@ -58,5 +56,5 @@ export function formatISODateString(dateString: string) {
   const [year, month, day] = dateString.split("-").map(Number);
   const date = new Date(year, month - 1, day);
 
-  return format(date, "PP");
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }

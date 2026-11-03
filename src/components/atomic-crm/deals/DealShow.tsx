@@ -5,6 +5,7 @@ import {
   InfiniteListBase,
   ShowBase,
   useDataProvider,
+  useLocaleState,
   useNotify,
   useRecordContext,
   useRedirect,
@@ -55,6 +56,7 @@ export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
 
 const DealShowContent = () => {
   const translate = useTranslate();
+  const [locale = "es"] = useLocaleState();
   const { dealStages, dealCategories, currency } = useConfigurationContext();
   const record = useRecordContext<Deal>();
   if (!record) return null;
@@ -98,7 +100,7 @@ const DealShowContent = () => {
               <div className="flex items-center gap-2">
                 <span className="text-sm">
                   {isValid(new Date(record.expected_closing_date))
-                    ? formatISODateString(record.expected_closing_date)
+                    ? formatISODateString(record.expected_closing_date, locale)
                     : translate("resources.deals.invalid_date")}
                 </span>
                 {new Date(record.expected_closing_date) < new Date() ? (
