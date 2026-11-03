@@ -83,7 +83,7 @@ export type CRMProps = {
  * seeds the store with any custom prop values for backwards compatibility.
  *
  * @param {LabeledValue[]} companySectors - The list of company sectors used in the application.
- * @param {string} currency - The ISO 4217 currency code used to format monetary values (e.g. "USD", "EUR", "GBP").
+ * @param {string} currency - The ISO 4217 currency code used to format monetary values (e.g. "CLP", "USD").
  * @param {RaThemeOptions} darkTheme - The theme to use when the application is in dark mode.
  * @param {LabeledValue[]} dealCategories - The categories of deals used in the application.
  * @param {string[]} dealPipelineStatuses - The statuses of deals in the pipeline used in the application.

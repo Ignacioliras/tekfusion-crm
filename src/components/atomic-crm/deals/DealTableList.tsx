@@ -2,13 +2,13 @@ import { DataTable } from "@/components/admin/data-table";
 import { DateField } from "@/components/admin/date-field";
 import { ExportButton } from "@/components/admin/export-button";
 import { List } from "@/components/admin/list";
-import { NumberField } from "@/components/admin/number-field";
 import { ReferenceField } from "@/components/admin/reference-field";
 import { SearchInput } from "@/components/admin/search-input";
 import { SelectField } from "@/components/admin/select-field";
 
 import { TopToolbar } from "../layout/TopToolbar";
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import { formatAmount } from "../tekfusion/money";
 
 const filters = [<SearchInput source="q" alwaysOn />];
 
@@ -47,12 +47,10 @@ export const DealTableList = () => {
             translateChoice={false}
           />
         </DataTable.Col>
-        <DataTable.Col source="amount">
-          <NumberField
-            source="amount"
-            options={{ style: "currency", currency, maximumFractionDigits: 0 }}
-          />
-        </DataTable.Col>
+        <DataTable.Col
+          source="amount"
+          render={(record) => formatAmount(record.amount, currency)}
+        />
         <DataTable.Col source="expected_closing_date">
           <DateField source="expected_closing_date" />
         </DataTable.Col>

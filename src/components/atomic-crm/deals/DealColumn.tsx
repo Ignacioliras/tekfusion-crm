@@ -4,6 +4,7 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 import { findDealLabel } from "./dealUtils";
 import { DealCard } from "./DealCard";
+import { formatAmount } from "../tekfusion/money";
 
 export const DealColumn = ({
   stage,
@@ -21,13 +22,7 @@ export const DealColumn = ({
           {findDealLabel(dealStages, stage)}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {totalAmount.toLocaleString("en-US", {
-            notation: "compact",
-            style: "currency",
-            currency,
-            currencyDisplay: "narrowSymbol",
-            minimumSignificantDigits: 3,
-          })}
+          {formatAmount(totalAmount, currency)}
         </p>
       </div>
       <Droppable droppableId={stage}>

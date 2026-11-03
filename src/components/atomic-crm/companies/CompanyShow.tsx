@@ -42,6 +42,7 @@ import {
   ContextInfo,
 } from "./CompanyAside";
 import { CompanyAvatar } from "./CompanyAvatar";
+import { formatAmount } from "../tekfusion/money";
 
 export const CompanyShow = () => {
   const isMobile = useIsMobile();
@@ -281,13 +282,7 @@ const DealsIterator = () => {
                 <div className="font-medium">{deal.name}</div>
                 <div className="text-sm text-muted-foreground">
                   {findDealLabel(dealStages, deal.stage)},{" "}
-                  {deal.amount.toLocaleString("en-US", {
-                    notation: "compact",
-                    style: "currency",
-                    currency,
-                    currencyDisplay: "narrowSymbol",
-                    minimumSignificantDigits: 3,
-                  })}
+                  {formatAmount(deal.amount, currency)}
                   {deal.categories?.length
                     ? `, ${formatDealCategories(dealCategories, deal.categories)}`
                     : ""}
