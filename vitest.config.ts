@@ -96,6 +96,7 @@ export default defineConfig({
             ),
             "npm:tldts": path.resolve(__dirname, "node_modules/tldts"),
             "npm:pgsql-ast-parser@^12": "pgsql-ast-parser",
+            "npm:zod@^4.3.6": "zod",
           },
         },
         test: {
