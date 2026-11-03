@@ -18,17 +18,23 @@
       "id": "T6",
       "titulo": "Inventario de lo que Atomic trae y no usamos",
       "descripcion": "Escribir docs/atomic/inventario-limpieza.md: una tabla con cada cosa que Atomic CRM trae y que el CRM TekFusion no necesita (ver CLAUDE.md §4 último punto: doc/ sitio Astro, demo/, Storybook, registro shadcn, Postmark/correo entrante, FakeRest si no se usa en demo, el MCP de supabase/functions/mcp, deal categories, company sectors, contact gender, etc.). Para cada ítem: ruta(s), qué otros archivos dependen de él (usar grep en src/, supabase/, package.json, makefile, .github/), qué pasaría si se borra, y una recomendación (borrar en Fase 1 / dejar / decidir con Ignacio). No borrar nada: solo documentar. Terminar con una sección 'Orden sugerido de limpieza' de menor a mayor riesgo.",
-      "archivos": ["docs/atomic/inventario-limpieza.md"],
+      "archivos": [
+        "docs/atomic/inventario-limpieza.md"
+      ],
       "verificacion": "node -e \"const s=require('fs').readFileSync('docs/atomic/inventario-limpieza.md','utf8'); if(!/\\|.*Ruta/i.test(s)||s.length<2500) process.exit(1)\"",
       "criterio": "El documento existe, tiene una tabla con columna Ruta y más de 2.500 caracteres.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "a4274b5436524ed28f76a3f07e9150c94cf7077f",
+      "costo_usd": 1.3380424,
+      "session_id": "808d7fc6-d35c-48d0-afd9-595a67316092",
+      "inicio": "2026-11-03 05:06:52",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: escribí docs/atomic/inventario-limpieza.md con 14 ítems de Atomic que no usamos (rutas, dependencias, impacto, recomendación) y un orden de limpieza por riesgo, sin borrar nada.",
+      "fin": "2026-11-03 05:09:07"
     },
     {
       "id": "T7",
@@ -42,12 +48,16 @@
       "criterio": "Los tests pasan en el proyecto 'functions' de vitest y typecheck sigue limpio.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "f968b0406f832d1269578db831bb10a4d5c89470",
+      "costo_usd": 0.9395576000000001,
+      "session_id": "b6181323-49b9-489d-a928-608f0540b856",
+      "inicio": "2026-11-03 05:09:07",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé `leadClassification.ts`, que valida a mano la salida del clasificador (sin zod) y devuelve `indeterminada` con `error` en vez de lanzar, más 13 tests que pasan en el proyecto `functions`.",
+      "fin": "2026-11-03 05:11:14"
     },
     {
       "id": "T8",
@@ -61,28 +71,38 @@
       "criterio": "Tests pasan; typecheck limpio; ninguna función toca Supabase ni hace fetch.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "986ba13a052b793769c809d19cbc092695e56665",
+      "costo_usd": 0.9826876000000001,
+      "session_id": "5de39b90-f529-4b70-9839-8aff831f9266",
+      "inicio": "2026-11-03 05:11:14",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Creé evolutionWebhook.ts con isAuthorized, parseEvolutionEvent y dedupeKey (funciones puras) y 16 tests que pasan.",
+      "fin": "2026-11-03 05:13:14"
     },
     {
       "id": "T9",
       "titulo": "Tests pgTAP de las políticas RLS actuales de Atomic",
       "descripcion": "Documentar con tests el punto de partida de seguridad antes de reemplazar las políticas en la Fase 2. Leer supabase/schemas/05_policies.sql y 06_grants.sql. Crear supabase/tests/05_rls_atomic_actual.test.sql con pgTAP que verifique, para las tablas deals, contacts, companies, sales, tasks, contact_notes y deal_notes: que RLS está activada (relrowsecurity), que existe al menos una política para authenticated, y que el rol anon NO tiene política de select (o documentar en un comentario si la tiene). Usar has_table, policies_are o policy_cmd_is / is() sobre pg_policies según lo que pgTAP ofrezca en esta versión; mirar supabase/tests/00_humo.test.sql para el formato (begin; select plan(N); ... select * from finish(); rollback;). Ajustar plan(N) al número exacto de aserciones. No cambiar ninguna política.",
-      "archivos": ["supabase/tests/05_rls_atomic_actual.test.sql"],
+      "archivos": [
+        "supabase/tests/05_rls_atomic_actual.test.sql"
+      ],
       "verificacion": "npx supabase test db",
       "criterio": "`supabase test db` pasa con el test nuevo y el de humo.",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "2f350ff12b9333745a33de31c48a52758f822aeb",
+      "costo_usd": 0.7490485999999998,
+      "session_id": "085c43c5-8447-4b86-b6b6-d92dc684f2ba",
+      "inicio": "2026-11-03 05:13:17",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Agregué tests pgTAP que fijan las políticas RLS actuales de Atomic en las 7 tablas, sin cambiar ninguna; `supabase test db` pasa.",
+      "fin": "2026-11-03 05:14:09"
     },
     {
       "id": "T10",
@@ -96,12 +116,25 @@
       "criterio": "Typecheck y lint limpios; el archivo de test existe.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "c230b61ff0e31909ac00c8a1f0cd322b333a9d80",
+      "costo_usd": 0.89166,
+      "session_id": "9767b489-ca86-4953-a252-1d742494b583",
+      "inicio": "2026-11-03 05:14:09",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Creé lineas.ts (LINEAS_NEGOCIO, LineaNegocio, detectarLineaPorPalabras) y lineas.test.ts con 5 casos; typecheck y lint pasan, pero los tests no se pudieron correr (no levanta el navegador y node -e fue denegado).",
+      "fin": "2026-11-03 05:16:06"
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-03 05:06:52",
+      "modelo": "opus",
+      "simulado": false,
+      "fin": "2026-11-03 05:16:07",
+      "motivo": "cola terminada"
     }
   ]
 }
