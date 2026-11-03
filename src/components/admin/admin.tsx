@@ -4,7 +4,7 @@ import type {
   CoreAdminProps,
 } from "ra-core";
 import { CoreAdminUI, CoreAdminContext, localStorageStore } from "ra-core";
-import { i18nProvider as defaultI18nProvider } from "@/lib/i18nProvider";
+import { i18nProvider as defaultI18nProvider } from "@/components/atomic-crm/providers/commons/i18nProvider";
 import { AccessDenied } from "@/components/admin/access-denied";
 import { Layout } from "@/components/admin/layout";
 import { LoginPage } from "@/components/admin/login-page";
