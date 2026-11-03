@@ -6,7 +6,7 @@ import {
   type EvolutionMessage,
 } from "./evolutionWebhook";
 
-const SECRET = "secreto-de-prueba-123";
+const SECRET = "secreto-de-prueba-123"; // gitleaks:allow (dato de prueba, no es un secreto)
 
 const upsert = (
   message: Record<string, unknown>,
