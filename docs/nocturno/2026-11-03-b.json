@@ -71,12 +71,13 @@
       "criterio": "Tests pasan; typecheck limpio; ninguna función toca Supabase ni hace fetch.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 05:11:14"
     },
     {
       "id": "T9",
