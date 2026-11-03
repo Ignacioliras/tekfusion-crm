@@ -518,3 +518,56 @@ create policy attachments_insert on storage.objects for insert to authenticated
     with check (bucket_id = 'attachments' and (select public.is_internal_user()) and public.can_write_attachment(name));
 create policy attachments_delete on storage.objects for delete to authenticated
     using (bucket_id = 'attachments' and (select public.is_internal_user()) and public.can_write_attachment(name));
+
+-- Fase 3 -------------------------------------------------------------------
+-- quotes and followups follow their lead (docs/08): visible with the lead
+-- (deals RLS), written by managers and the lead's owner, never deleted.
+
+-- The author of a quote is the caller (Atomic's default, as in deal_notes).
+create or replace trigger set_quote_sales_id_trigger
+    before insert on public.quotes
+    for each row execute function public.set_sales_id_default();
+
+create policy quotes_select on public.quotes for select to authenticated
+    using (exists (select 1 from public.deals d where d.id = deal_id));
+-- An executive signs its own quotes; managers may record one for anybody.
+create policy quotes_insert on public.quotes for insert to authenticated
+    with check (public.can_edit_deal(deal_id)
+        and ((select public.is_manager()) or sales_id = (select public.current_sales_id())));
+create policy quotes_update on public.quotes for update to authenticated
+    using (public.can_edit_deal(deal_id)) with check (public.can_edit_deal(deal_id));
+
+create policy followups_select on public.followups for select to authenticated
+    using (exists (select 1 from public.deals d where d.id = deal_id));
+create policy followups_insert on public.followups for insert to authenticated
+    with check (public.can_edit_deal(deal_id));
+create policy followups_update on public.followups for update to authenticated
+    using (public.can_edit_deal(deal_id)) with check (public.can_edit_deal(deal_id));
+
+-- alerts: the recipient and managers read them; only the recipient marks them
+-- read (12_ grants update on read_at alone); the system inserts them.
+create policy alerts_select on public.alerts for select to authenticated
+    using (recipient_sales_id = (select public.current_sales_id()) or (select public.is_manager()));
+create policy alerts_update on public.alerts for update to authenticated
+    using (recipient_sales_id = (select public.current_sales_id()))
+    with check (recipient_sales_id = (select public.current_sales_id()));
+
+-- templates and quick replies: configuration, everyone reads, managers write.
+create policy templates_select on public.templates for select to authenticated
+    using ((select public.is_internal_user()));
+create policy templates_write on public.templates for all to authenticated
+    using ((select public.is_manager())) with check ((select public.is_manager()));
+
+create policy quick_replies_select on public.quick_replies for select to authenticated
+    using ((select public.is_internal_user()));
+create policy quick_replies_write on public.quick_replies for all to authenticated
+    using ((select public.is_manager())) with check ((select public.is_manager()));
+
+-- storage: quote PDFs follow their lead like the deals/ attachments. Uploads
+-- must use a regenerated name (uuid.pdf); no delete policy (quotes stay).
+create policy quotes_files_select on storage.objects for select to authenticated
+    using (bucket_id = 'quotes' and (select public.is_internal_user())
+        and (storage.foldername(name))[1] = 'deals' and public.can_read_attachment(name));
+create policy quotes_files_insert on storage.objects for insert to authenticated
+    with check (bucket_id = 'quotes' and (select public.is_internal_user())
+        and name ~ '^deals/[0-9]{1,15}/[0-9a-f-]{36}\.pdf$' and public.can_write_attachment(name));

@@ -412,3 +412,100 @@ from (values
 ) as n(deal_rank, text, days)
 join (select id, sales_id, row_number() over (order by id) as deal_rank from public.deals) d
   on d.deal_rank = n.deal_rank;
+
+-- ---------------------------------------------------------------------
+-- Fase 3: plantillas (4), respuestas rápidas (4), cotizaciones (15),
+-- seguimientos (20) y alertas (10). Todo ficticio.
+-- ---------------------------------------------------------------------
+insert into public.templates (name, channel, subject, body) values
+    ('Seguimiento 1 · correo', 'correo', 'Cotización {{producto}} · TekFusion',
+     'Hola {{nombre}}, le escribo para saber si pudo revisar la cotización de {{producto}} para {{empresa}}. Quedo atento a sus comentarios. {{ejecutivo}}'),
+    ('Seguimiento 2 · correo', 'correo', 'Seguimos atentos · {{producto}}',
+     'Hola {{nombre}}, ¿hay algo de la cotización que podamos ajustar (plazo, cantidades, alternativa)? {{ejecutivo}}'),
+    ('Seguimiento 1 · WhatsApp', 'whatsapp', null,
+     'Hola {{nombre}}, ¿alcanzó a revisar la cotización de {{producto}}? Cualquier duda me escribe por aquí. {{ejecutivo}}'),
+    ('Último seguimiento · WhatsApp', 'whatsapp', null,
+     'Hola {{nombre}}, cierro el seguimiento de la cotización de {{producto}}. Si más adelante la necesitan, la actualizamos. {{ejecutivo}}');
+
+insert into public.quick_replies (title, body) values
+    ('Saludo', 'Hola, gracias por escribir a TekFusion. ¿En qué le podemos ayudar?'),
+    ('Pedir datos', '¿Nos puede indicar diámetro, presión de trabajo y cantidad aproximada?'),
+    ('Cotización en camino', 'Estamos preparando la cotización; se la enviamos hoy durante el día.'),
+    ('Fuera de horario', 'Gracias por su mensaje. Nuestro horario es de lunes a viernes de 9:00 a 18:00; le respondemos a primera hora.');
+
+-- Cotizaciones: v1 en los 10 leads cotizados; los 5 primeros tienen además
+-- una v2 vigente (la v1 queda como historial). Rutas con nombre regenerado.
+insert into public.quotes (deal_id, version, amount, pdf_path, is_current, sent_at, sent_channels, delivery_status, sales_id, created_at)
+select d.id, 1, d.amount,
+       format('deals/%s/%s.pdf', d.id, gen_random_uuid()),
+       d.rank > 5,
+       d.updated_at,
+       case d.rank % 3 when 0 then array['correo'] when 1 then array['whatsapp'] else array['correo', 'whatsapp'] end::public.send_channel[],
+       (array['enviado', 'entregado', 'leido'])[d.rank % 3 + 1]::public.delivery_status,
+       d.sales_id, d.updated_at - interval '1 hour'
+from (select id, amount, sales_id, updated_at, row_number() over (order by id) as rank
+        from public.deals where stage = 'cotizado') d;
+
+insert into public.quotes (deal_id, version, amount, pdf_path, is_current, sent_at, sent_channels, delivery_status, sales_id, created_at)
+select q.deal_id, 2, (q.amount * 0.95)::bigint / 1000 * 1000,
+       format('deals/%s/%s.pdf', q.deal_id, gen_random_uuid()),
+       true,
+       case when q.rank = 5 then null else least(q.sent_at + interval '2 days', now()) end,
+       case when q.rank = 5 then '{}' else array['correo'] end::public.send_channel[],
+       case when q.rank = 5 then 'pendiente' when q.rank = 4 then 'fallido' else 'entregado' end::public.delivery_status,
+       q.sales_id, least(q.sent_at + interval '2 days', now()) - interval '1 hour'
+from (select *, row_number() over (order by deal_id) as rank from public.quotes where not is_current) q;
+
+-- Seguimientos: dos pasos por lead cotizado. Paso 1 ya enviado (o cancelado
+-- porque el cliente respondió); paso 2 pendiente, vencido o recordatorio.
+insert into public.followups (deal_id, step, scheduled_at, channels, mode, template_id, status, sent_at, job_id, attempts, cancel_reason)
+select d.id, 1, d.updated_at + interval '2 days',
+       array['correo']::public.send_channel[], 'automatico',
+       (select id from public.templates where name = 'Seguimiento 1 · correo'),
+       case when d.rank % 4 = 0 then 'cancelado' else 'enviado' end::public.followup_status,
+       case when d.rank % 4 = 0 then null else d.updated_at + interval '2 days' end,
+       case when d.rank % 4 = 0 then null else format('seed-%s-1', d.id) end,
+       case when d.rank % 4 = 0 then 0 else 1 end,
+       case when d.rank % 4 = 0 then 'El cliente respondió por WhatsApp' end
+from (select id, updated_at, row_number() over (order by id) as rank
+        from public.deals where stage = 'cotizado') d;
+
+insert into public.followups (deal_id, step, scheduled_at, channels, mode, template_id, status, cancel_reason)
+select d.id, 2,
+       case when d.rank % 3 = 0 then now() - interval '1 day' else now() + (d.rank || ' days')::interval end,
+       case when d.rank % 2 = 0 then array['whatsapp'] else array['correo', 'whatsapp'] end::public.send_channel[],
+       case when d.rank % 3 = 0 then 'recordatorio' else 'automatico' end::public.followup_mode,
+       (select id from public.templates where name = 'Seguimiento 1 · WhatsApp'),
+       case when d.rank % 4 = 0 then 'cancelado' when d.rank % 3 = 0 then 'vencido' else 'pendiente' end::public.followup_status,
+       case when d.rank % 4 = 0 then 'El cliente respondió por WhatsApp' end
+from (select id, row_number() over (order by id) as rank
+        from public.deals where stage = 'cotizado') d;
+
+-- Alertas: a los ejecutivos por sus leads y a gerencia; 3 ya leídas.
+insert into public.alerts (type, recipient_sales_id, deal_id, message, read_at, created_at)
+select a.type::public.alert_type, s.id, d.id, a.message,
+       case when a.is_read then now() - interval '2 hours' end,
+       now() - (a.hours || ' hours')::interval
+from (values
+    ('sin_contacto_24h',      'camila.rojas@tekfusion-demo.cl', 'nuevo',      0, 'Lead sin contacto hace más de 24 h',              false, 3),
+    ('sin_contacto_24h',      'diego.munoz@tekfusion-demo.cl',  'nuevo',      0, 'Lead sin contacto hace más de 24 h',              false, 5),
+    ('sin_contacto_24h',      'andrea.soto@tekfusion-demo.cl',  'nuevo',      1, 'Lead sin contacto hace más de 24 h',              false, 5),
+    ('seguimiento_vencido',   'camila.rojas@tekfusion-demo.cl', 'cotizado',   0, 'Recordatorio de seguimiento vencido',             false, 20),
+    ('seguimiento_vencido',   'diego.munoz@tekfusion-demo.cl',  'cotizado',   0, 'Recordatorio de seguimiento vencido',             true,  30),
+    ('cliente_respondio',     'camila.rojas@tekfusion-demo.cl', 'cotizado',   1, 'El cliente respondió por WhatsApp',               false, 1),
+    ('cliente_respondio',     'diego.munoz@tekfusion-demo.cl',  'contactado', 0, 'El cliente respondió por correo',                 true,  48),
+    ('por_archivar',          'andrea.soto@tekfusion-demo.cl',  'nuevo',      2, 'Lead con 14 días en nuevo: se archivará en 48 h', false, 12),
+    ('sin_asignar',           'andrea.soto@tekfusion-demo.cl',  'nuevo',      0, 'Lead sin asignar',                                false, 2),
+    ('whatsapp_desconectado', 'andrea.soto@tekfusion-demo.cl',  null,         0, 'El número de WhatsApp se desconectó',             true,  72)
+) as a(type, email, stage, nth, message, is_read, hours)
+join public.sales s on s.email = a.email
+-- El n-ésimo lead de la etapa: del propio ejecutivo; para gerencia, de
+-- cualquiera (sin_asignar: uno sin dueño). whatsapp_desconectado: sin lead.
+left join lateral (
+    select x.id from public.deals x
+    where x.stage = a.stage
+      and case when a.type = 'sin_asignar' then x.sales_id is null
+               when s.role = 'manager' then x.sales_id is not null
+               else x.sales_id = s.id end
+    order by x.id offset a.nth limit 1
+) d on true;

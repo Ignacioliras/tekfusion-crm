@@ -57,3 +57,18 @@ grant execute on function public.is_manager() to authenticated, service_role;
 grant execute on function public.is_internal_user() to authenticated, service_role;
 grant execute on function public.can_edit_deal(bigint) to authenticated, service_role;
 grant execute on function public.can_edit_contact(bigint) to authenticated, service_role;
+
+-- Fase 3. Default privileges would grant authenticated everything (TRUNCATE
+-- included) on new tables: spell out each one. quotes and followups are never
+-- deleted; alerts are written by the system and their recipient can only set
+-- read_at.
+revoke all on table public.quotes, public.followups, public.alerts, public.templates, public.quick_replies from authenticated;
+grant select, insert, update on table public.quotes, public.followups to authenticated;
+grant select on table public.alerts to authenticated;
+grant update (read_at) on table public.alerts to authenticated;
+grant select, insert, update, delete on table public.templates, public.quick_replies to authenticated;
+grant all on table public.quotes, public.followups, public.alerts, public.templates, public.quick_replies to service_role;
+revoke all on sequence public.alerts_id_seq from authenticated;
+grant all on sequence public.alerts_id_seq to service_role;
+grant all on sequence public.quotes_id_seq, public.followups_id_seq, public.templates_id_seq, public.quick_replies_id_seq
+    to authenticated, service_role;
