@@ -31,6 +31,9 @@ describe("i18nProvider", () => {
 
     expect(i18nProvider.translate("ra.action.save")).toBe("Guardar");
     expect(i18nProvider.translate("crm.credits.title")).toBe("Créditos");
+    expect(i18nProvider.translate("ra-supabase.auth.forgot_password")).toBe(
+      "¿Olvidaste tu contraseña?",
+    );
   });
 
   it("names deals as leads and the account manager as ejecutivo in spanish", async () => {

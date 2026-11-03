@@ -46,5 +46,16 @@ export const commonMessages: PartialCrmMessages = {
       third_party: "Componentes de terceros",
       evolution_license: "Apache 2.0 (con atribución)",
     },
+    image_editor: {
+      change: "Cambiar",
+      drop_hint: "Arrastra un archivo para subirlo, o haz clic para elegirlo.",
+      editable_content: "Contenido editable",
+      title: "Subir y recortar imagen",
+      update_image: "Actualizar imagen",
+    },
+    validation: {
+      invalid_url: "Debe ser una URL válida",
+      invalid_linkedin_url: "La URL debe ser de linkedin.com",
+    },
   },
 };

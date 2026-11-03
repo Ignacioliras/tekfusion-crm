@@ -131,7 +131,7 @@ describe("DataImportButton", () => {
     const { dataProvider, screen } = await renderImport(useCompanyImport, [
       {
         name: "Acme",
-        sector: "Information Technology",
+        sector: "Tecnologías de la información",
         size: 50,
         city: "New York",
         website: "https://acme.example",
