@@ -117,13 +117,13 @@ export const GlobalSearchButton = ({
           onClick={openDialog}
           aria-label={translate("crm.search.title")}
           aria-keyshortcuts="Control+K Meta+K"
-          className="mr-2 w-40 justify-start bg-background px-3 font-normal text-muted-foreground lg:w-64"
+          className="mr-2 w-40 justify-start bg-background px-3 font-normal text-muted-foreground 2xl:w-64"
         >
           <Search />
           <span className="flex-1 text-left">
             {translate("crm.search.title")}
           </span>
-          <kbd className="pointer-events-none hidden rounded border bg-muted px-1.5 font-sans text-[10px] font-medium lg:inline">
+          <kbd className="pointer-events-none hidden rounded border bg-muted px-1.5 font-sans text-[10px] font-medium 2xl:inline">
             {SHORTCUT_LABEL}
           </kbd>
         </Button>
