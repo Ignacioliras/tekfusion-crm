@@ -98,12 +98,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "bloqueada",
+      "intentos": 1,
       "error": null,
       "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "costo_usd": 3.6168722000000004,
+      "session_id": "5bb4981e-2c51-42b5-b851-56f49f3f70c3",
+      "inicio": "2026-11-03 23:02:43",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "BLOQUEADA: el presupuesto de la sesión se agotó durante la lectura de contexto; la tarea necesita una corrida nueva con más presupuesto (el código quedó intacto).",
+      "motivo": "el presupuesto de la sesión se agotó durante la lectura de contexto; la tarea necesita una corrida nueva con más presupuesto (el código quedó intacto)."
     },
     {
       "id": "T4",
