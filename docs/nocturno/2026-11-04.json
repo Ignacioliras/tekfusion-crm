@@ -57,12 +57,15 @@
       "criterio": "db reset aplica la migración nueva; todos los pgTAP pasan, incluido el escenario nuevo de 17_baja_usuario; suite de app en verde; el ítem 'Completar offboard_sale' de la Fase 3 en docs/09 queda [x] y las reglas quedan en docs/10 (sección fechada 2026-11-03, decisión de Ignacio).",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
-      "error": null,
+      "estado": "fallida",
+      "intentos": 1,
+      "error": "Verificación falló (código 1):\n$ npx supabase db reset --local && npx supabase test db && npm run typecheck && npm run lint && npm run test:unit:app -- --run\n{\"_tag\":\"Error\",\"error\":{\"code\":\"DbSetupError\",\"message\":\"error running container: exit 1\"}}\nResetting local database...\nWARN: config section [inbucket] is deprecated and will be removed in v3, use [local_smtp] instead.\nRecreating database...\nInitialising schema...",
       "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "costo_usd": 2.3825384,
+      "session_id": "b0382437-5d23-4cfe-b963-0554d6b8ec26",
+      "inicio": "2026-11-03 22:08:39",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: offboard_sale reasigna cada lead al suplente de su línea, los contactos por mayoría y las tareas pendientes a su contacto, con migración, test pgTAP y docs/09-10 actualizados."
     },
     {
       "id": "T3",
