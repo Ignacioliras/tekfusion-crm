@@ -56,15 +56,16 @@ export const DealCardContent = ({
         >
           <CardContent className="px-3 flex flex-col">
             <div className="flex-1 flex">
-              <p className="flex-1 text-sm font-medium mb-2">
-                <ReferenceField
-                  source="company_id"
-                  reference="companies"
-                  link={false}
-                />
-                {" - "}
-                {deal.name}
-              </p>
+              <div className="flex-1 mb-2">
+                <p className="text-sm font-medium">{deal.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  <ReferenceField
+                    source="company_id"
+                    reference="companies"
+                    link={false}
+                  />
+                </p>
+              </div>
               <ReferenceField
                 source="company_id"
                 reference="companies"

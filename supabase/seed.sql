@@ -247,7 +247,7 @@ products as (
             'Válvulas de compuerta DN150 para red',
             'Tubería HDPE PE100 SDR17 de 400 mm',
             'Geoceldas para camino de acceso',
-            'Válvulas de bola de acero inoxidable 2"',
+            'Válvulas de bola 2'''' inox',
             'Tubería HDPE para conducción de relaves',
             'Geoceldas para revestimiento de canal',
             'Válvulas de retención para impulsión'
@@ -267,7 +267,7 @@ products as (
 )
 insert into public.deals (name, company_id, contact_ids, stage, description, amount, created_at, updated_at, archived_at, expected_closing_date, sales_id, index)
 select
-    pr.names[(g.i - 1) % 10 + 1] || ' — ' || co.name,
+    pr.names[(g.i - 1) % 10 + 1],
     co.id,
     (select array_agg(ct.id order by ct.id) from public.contacts ct where ct.company_id = co.id),
     st.s[(g.i - 1) % 6 + 1],
