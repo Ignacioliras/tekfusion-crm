@@ -65,6 +65,7 @@ Estas reglas son la lógica que implementan la base de datos, el frontend y los 
 - Clave de coincidencia: correo normalizado **o** teléfono normalizado (formato E.164, +56…).
 - Si existe un lead **activo** con esa clave: la nueva consulta se agrega como actividad "nueva consulta" al lead existente y se avisa al ejecutivo.
 - Si el lead existente está cerrado o archivado: se crea un lead nuevo enlazado al anterior ("cliente recurrente").
+- **Importación CSV (RF-15):** una fila cuyo contacto ya tiene un lead activo **se omite y se reporta** como duplicada; no se agrega como actividad (decisión de Ignacio, 2026-11-03, `docs/10`). Sin ejecutivo en la fila, el lead va al dueño de la línea; sin línea o sin dueño, queda sin asignar.
 
 ## Visibilidad por rol
 

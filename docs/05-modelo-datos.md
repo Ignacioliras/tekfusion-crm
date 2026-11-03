@@ -10,6 +10,8 @@
 > | `actividades` | `deal_notes` / `contact_notes` + vista de actividad de Atomic (`activity_log`) + tabla `deal_events` para eventos de sistema | reutilizar la vista existente |
 > | `lineas_negocio` | `business_lines` | |
 > | `ausencias` | `sales_absences` | |
+> | `actividades` (eventos de sistema) | `audit_log` (hecho, Fase 2): `actor_sales_id`, `action`, `target_sales_id`, `deal_id`, `details`; lee gerencia, escribe solo el sistema. Reemplaza al `deal_events` planeado | las filas con `deal_id` alimentan la línea de tiempo del lead (Fase 3) |
+> | adjuntos (Storage) | bucket `attachments` **privado** (Fase 2): archivos bajo `deals/<id>/`, `contacts/<id>/`, `companies/`, `sales/`, `config/`; lectura por URL firmada de 60 min y policy `can_read_attachment` / `can_write_attachment` | la base guarda la URL pública como referencia estable; el data provider la firma al leer |
 > | `cotizaciones` | `quotes` | PDF en Storage (bucket `quotes`) |
 > | `seguimientos` | `followups` | |
 > | `conversaciones` / `mensajes` | `wa_conversations` / `wa_messages` | `wa_message_id` UNIQUE |
