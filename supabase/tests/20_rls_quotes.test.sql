@@ -87,9 +87,11 @@ select throws_ok(format('insert into public.quotes (deal_id, version, amount, pd
 select throws_ok(format('insert into public.quotes (deal_id, version, amount, pdf_path) values (%s, 11, 1000, %L)',
     (select own_deal from q), format('deals/%s/cotizacion final.pdf', (select own_deal from q))),
   '23514', null, 'el nombre del PDF es regenerado (uuid), no el del usuario');
-select throws_ok(format('insert into public.quotes (deal_id, version, amount, pdf_path) values (%s, 11, 1000, %L)',
-    (select own_deal from q), format('deals/%s/00000000-0000-4000-8000-000000000007.pdf', (select own_deal from q))),
-  '23505', null, 'un lead tiene una sola cotización vigente');
+insert into public.quotes (deal_id, amount, pdf_path)
+  values ((select own_deal from q), 1000, format('deals/%s/00000000-0000-4000-8000-000000000007.pdf', (select own_deal from q)));
+select is((select array_agg(version order by version) from public.quotes where deal_id = (select own_deal from q) and is_current),
+  (select array[max(version)] from public.quotes where deal_id = (select own_deal from q)),
+  'una cotización nueva toma la versión siguiente y reemplaza a la vigente');
 
 -- Storage ----------------------------------------------------------------------------
 select is((select (public, file_size_limit, allowed_mime_types)::text from storage.buckets where id = 'quotes'),

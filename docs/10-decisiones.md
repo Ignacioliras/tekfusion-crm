@@ -161,6 +161,13 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Pendiente anotado:** PDFs huérfanos si falla el insert de la cotización tras subir el archivo (limpieza con service role cuando exista el envío); sin `unique (deal_id, step)` en seguimientos porque una cotización nueva regenera los pasos.
 - **Aprendizaje:** `db diff` comió el `$'` de una regex dentro de una policy de Storage (mismo bug de `String.replace`); y una migración nueva debe llevar timestamp posterior a la última (`revision_seguridad` es 21:00 aunque se generó antes): si no, corre antes de las funciones que usa.
 
+## 2026-11-04 · Ficha del lead: base de datos
+- **Línea de tiempo:** los cambios de etapa y de ejecutivo hechos por usuarios se registran en `audit_log` (trigger `log_deal_changes`, `deal.stage_changed` / `deal.reassigned`); una policy nueva deja leer las filas con `deal_id` a quien ve el lead. Las acciones del sistema (service role, n8n, `offboard_sale`) escriben su propio registro.
+- **Enviar cotización:** RPC `send_quote(quote_id, channels)` (security definer, valida gerencia o dueño del lead): una fila por canal en `send_queue` (la consume n8n en la Fase 5; nadie la escribe a mano), lead a `cotizado` con el monto de la cotización, cancela los seguimientos pendientes o vencidos y programa la cadencia `configuration.config.followupCadenceDays` (por defecto `[2, 5, 10]`) a las 10:00 de Santiago, corrida al lunes si cae en fin de semana, con los mismos canales y la plantilla activa del primer canal (rotando por paso). Si el lead tiene `followups_enabled = false`, no programa.
+- **Versiones:** trigger `set_quote_version`: una cotización nueva toma la versión siguiente y deja la vigente en el historial (`is_current = false`).
+- **Ganado/perdido:** trigger `guard_deal_closing` en la transición de etapa (no `check`): los leads históricos que importa la migración (RF-15) pueden venir cerrados sin monto o motivo.
+- **Descartado:** encolar desde el frontend con varios inserts (no atómico; la cola quedaría escribible por los usuarios).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
