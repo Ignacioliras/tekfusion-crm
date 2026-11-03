@@ -1,0 +1,112 @@
+{
+  "fecha": "2026-11-03",
+  "fase": 1,
+  "modelo": "opus",
+  "esfuerzo": "high",
+  "limites": {
+    "turnos_por_tarea": 60,
+    "usd_por_tarea": 4,
+    "usd_total": 20,
+    "hora_fin": "07:30",
+    "intentos": 2,
+    "minutos_verificacion": 15,
+    "modelo_reintento": "fable",
+    "esfuerzo_reintento": "high"
+  },
+  "tareas": [
+    {
+      "id": "T1",
+      "titulo": "Línea base verde en Windows",
+      "descripcion": "Verificar que el proyecto Atomic CRM pasa typecheck, lint y build en este Windows sin cambios de fondo. Si algo falla por rutas, saltos de línea o un script que asume Linux (por ejemplo `make`), hacer el ajuste MÍNIMO en el archivo responsable y anotar en docs/nocturno/aprendizajes.md qué falló y qué se cambió. No tocar lógica de la app. Si todo pasa a la primera, solo anotar 'línea base OK' en aprendizajes.md.",
+      "archivos": [
+        "package.json (solo scripts si es imprescindible)",
+        "eslint.config.js",
+        ".prettierignore",
+        "docs/nocturno/aprendizajes.md"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npm run build",
+      "criterio": "Los tres comandos terminan con código 0.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T2",
+      "titulo": "Constantes de etapas del pipeline en español",
+      "descripcion": "Crear src/components/atomic-crm/tekfusion/estados.ts que exporte ETAPAS: lista de las seis etapas del CRM TekFusion según docs/03-reglas-negocio.md: nuevo, contactado, cotizado, ganado, perdido, archivado. Cada una con value (string en minúsculas), label en español de Chile ('Nuevo', 'Contactado', 'Cotizado', 'Ganado', 'Perdido', 'Archivado') y un color de la paleta de Tailwind que ya use Atomic. Exportar también ETAPAS_ABIERTAS (nuevo, contactado, cotizado) y ETAPAS_CERRADAS (ganado, perdido, archivado) y un tipo Etapa. Luego, en src/components/atomic-crm/root/defaultConfiguration.ts, reemplazar defaultDealStages por las etapas de ETAPAS (mismo formato que usa Atomic: value y label) y ajustar defaultDealPipelineStatuses para que 'ganado' sea el estado ganado y 'perdido'/'archivado' los perdidos, siguiendo la forma que ya tiene ese archivo. Revisar con grep si el generador de datos falsos (src/components/atomic-crm/providers/fakerest/dataGenerator/) o algún test referencia los valores viejos de etapas ('opportunity', 'proposal-sent', 'won', 'lost', etc.) y actualizarlos a los nuevos.",
+      "archivos": [
+        "src/components/atomic-crm/tekfusion/estados.ts",
+        "src/components/atomic-crm/root/defaultConfiguration.ts",
+        "src/components/atomic-crm/providers/fakerest/dataGenerator/deals.ts",
+        "cualquier *.test.ts* que referencie etapas viejas"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npm run build",
+      "criterio": "Compila, lint limpio, no quedan referencias a las etapas viejas de Atomic en src/ (grep -rn \"proposal-sent\\|opportunity\" src/ no devuelve nada fuera de comentarios).",
+      "depende_de": ["T1"],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T3",
+      "titulo": "Español como idioma por defecto",
+      "descripcion": "Crear src/lib/i18n/es.ts con la traducción al español de Chile de TODOS los mensajes de ra-language-english (los de ra-core: ra.action.*, ra.boolean.*, ra.page.*, ra.input.*, ra.message.*, ra.navigation.*, ra.auth.*, ra.notification.*, ra.validation.*, ra.saved_queries.*, ra.configurable.*), tomando como base la estructura del paquete ra-language-english que está en node_modules (leerlo, no inventarlo). Usar tuteo cercano y claro, sin tecnicismos ('Guardar', 'Cancelar', 'No hay resultados', etc.). Luego modificar src/lib/i18nProvider.ts para que el proveedor devuelva los mensajes en español cuando el locale es 'es', que 'es' sea el locale por defecto, y que la lista de idiomas disponibles sea solo [{ name: 'es', value: 'Español' }, { name: 'en', value: 'English' }]. Mantener allowMissing: true.",
+      "archivos": ["src/lib/i18n/es.ts", "src/lib/i18nProvider.ts"],
+      "verificacion": "npm run typecheck && npm run lint && npm run build",
+      "criterio": "Compila y al abrir la app (no hace falta probarlo esta noche) la interfaz base de react-admin aparece en español.",
+      "depende_de": ["T1"],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T4",
+      "titulo": "Página Créditos",
+      "descripcion": "Crear src/components/atomic-crm/creditos/CreditosPage.tsx: una página simple, en español, con el estilo de las demás páginas de Atomic (usar los mismos componentes de layout que usa la página de Settings), titulada 'Créditos', que diga que el sistema fue desarrollado por Libux para TekFusion y liste los componentes de terceros con su licencia: Atomic CRM (marmelab, MIT), shadcn/ui (MIT), react-admin / ra-core (MIT), Supabase (Apache 2.0), n8n (Sustainable Use License), y una sección destacada 'WhatsApp' que informe que la mensajería usa Evolution API (licencia Apache 2.0 con condición de atribución) con enlace a https://github.com/EvolutionAPI/evolution-api. Registrar la ruta /creditos como CustomRoute en src/components/atomic-crm/root/CRM.tsx siguiendo cómo están registradas las rutas existentes (por ejemplo la de settings), y agregar un enlace 'Créditos' donde Atomic tiene el menú de usuario o la página de Settings (el lugar más natural que ya exista; no crear un menú nuevo). Datos exactos en CLAUDE.md regla 8 y docs/13-acuerdo-comercial.md.",
+      "archivos": [
+        "src/components/atomic-crm/creditos/CreditosPage.tsx",
+        "src/components/atomic-crm/root/CRM.tsx",
+        "el archivo del menú de usuario o settings donde se agrega el enlace"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npm run build",
+      "criterio": "Compila; existe la ruta /creditos; la página menciona Evolution API con enlace.",
+      "depende_de": ["T1"],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T5",
+      "titulo": "Seed ficticio de TekFusion",
+      "descripcion": "Reemplazar el contenido de supabase/seed.sql por datos ficticios de TekFusion que respeten el esquema actual de Atomic (leer supabase/schemas/01_tables.sql y el seed actual para los nombres de columnas y el formato de sales/auth): 4 usuarios en sales (Camila Rojas y Diego Muñoz como ejecutivos, Andrea Soto gerencia, Pablo Herrera lector; correos @tekfusion-demo.cl), 12 companies (empresas chilenas inventadas de minería, construcción, agua y agro), 20 contacts, 60 deals repartidos entre las etapas nuevo/contactado/cotizado/ganado/perdido/archivado (usar los values de src/components/atomic-crm/tekfusion/estados.ts si existe; si no, esos seis strings), con fechas en los últimos 90 días, montos en CLP enteros y descripciones que mencionen válvulas, tuberías HDPE o geoceldas. Nada que parezca una empresa o persona real. Si el seed actual de Atomic crea usuarios en auth.users con una función o formato especial, seguir exactamente ese patrón.",
+      "archivos": ["supabase/seed.sql"],
+      "verificacion": "npx supabase db reset --local",
+      "criterio": "db reset termina sin error (si el SQL falla, el comando falla).",
+      "depende_de": ["T2"],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    }
+  ]
+}

@@ -9,7 +9,9 @@
     "usd_total": 20,
     "hora_fin": "07:00",
     "intentos": 2,
-    "minutos_verificacion": 15
+    "minutos_verificacion": 15,
+    "modelo_reintento": "fable",
+    "esfuerzo_reintento": "high"
   },
   "tareas": [
     {
@@ -35,9 +37,7 @@
       "id": "T2",
       "titulo": "Seed ficticio de TekFusion",
       "descripcion": "Reemplazar supabase/seed.sql por datos ficticios de TekFusion: 3 líneas de negocio, 4 usuarios (2 ejecutivos, 1 gerencia, 1 lector), 12 empresas, 20 contactos, 60 deals repartidos en todas las etapas con fechas de los últimos 90 días. Nombres inventados, nunca reales.",
-      "archivos": [
-        "supabase/seed.sql"
-      ],
+      "archivos": ["supabase/seed.sql"],
       "verificacion": "npx supabase db reset --local",
       "criterio": "db reset termina sin error (si el SQL falla, el comando falla).",
       "depende_de": [],
