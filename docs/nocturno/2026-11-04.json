@@ -31,13 +31,16 @@
       "criterio": "Typecheck y lint limpios; toda la suite de app en verde, incluidos los tests nuevos de clearPersistedCache; el ítem 'Limpiar la caché persistida de react-query' de la Fase 3 en docs/09 queda marcado [x] con fecha y una línea de qué se hizo.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 22:04:23"
+      "commit": "6806997d5271bba816708f6c1885214a5dbc99ff",
+      "costo_usd": 1.3279102,
+      "session_id": "1a04d0c1-96da-4f18-8822-eae957df9408",
+      "inicio": "2026-11-03 22:04:23",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: el cierre de sesión (Supabase y FakeRest) ahora vacía la caché de react-query en memoria y borra `REACT_QUERY_OFFLINE_CACHE` vía `root/clearPersistedCache.ts`, con tests y el ítem de la Fase 3 marcado.",
+      "fin": "2026-11-03 22:08:34"
     },
     {
       "id": "T2",
