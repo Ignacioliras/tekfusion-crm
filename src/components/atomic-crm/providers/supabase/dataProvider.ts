@@ -10,6 +10,8 @@ import type {
   ContactNote,
   Deal,
   DealNote,
+  Quote,
+  SendChannel,
   RAFile,
   Sale,
   SalesFormData,
@@ -19,6 +21,11 @@ import type {
 } from "../../types";
 import type { ConfigurationContextValue } from "../../root/ConfigurationContext";
 import { ATTACHMENTS_BUCKET } from "../commons/attachments";
+import {
+  QUOTES_BUCKET,
+  quotePdfPath,
+  validateQuoteFile,
+} from "../commons/quoteFile";
 import { getIsInitialized } from "./authProvider";
 import { searchDealCategories } from "./searchDealCategories";
 import {
@@ -216,6 +223,47 @@ const getDataProviderWithCustomMethods = () => {
       }
 
       return updatedData.data;
+    },
+    /** "Tomar": an executive takes an unassigned lead (RPC take_deal). */
+    async takeDeal(dealId: Identifier): Promise<Deal> {
+      const { data, error } = await getSupabaseClient().rpc("take_deal", {
+        deal_id: dealId,
+      });
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return data as Deal;
+    },
+    /** "Enviar cotización" (RF-06): enqueue, move to cotizado, schedule follow-ups. */
+    async sendQuote(
+      quoteId: Identifier,
+      channels: SendChannel[],
+    ): Promise<Quote> {
+      const { data, error } = await getSupabaseClient().rpc("send_quote", {
+        quote_id: quoteId,
+        channels,
+      });
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return data as Quote;
+    },
+    /** Uploads a quote PDF under deals/<id>/<uuid>.pdf; returns its path. */
+    async uploadQuotePdf(dealId: Identifier, file: File): Promise<string> {
+      const invalid = validateQuoteFile(file);
+      if (invalid) throw Object.assign(new Error(invalid), { code: invalid });
+      const path = quotePdfPath(dealId);
+      const { error } = await getSupabaseClient()
+        .storage.from(QUOTES_BUCKET)
+        .upload(path, file, { contentType: "application/pdf" });
+      if (error) throw new Error(error.message);
+      return path;
+    },
+    /** Signed URL (60 min) of a quote PDF; the storage policy checks the lead. */
+    async getQuotePdfUrl(path: string): Promise<string> {
+      const { data, error } = await getSupabaseClient()
+        .storage.from(QUOTES_BUCKET)
+        .createSignedUrl(path, 60 * 60);
+      if (error || !data) throw new Error(error?.message ?? "No signed URL");
+      return data.signedUrl;
     },
     /** "Dar de baja": disables the user through the users Edge Function (docs/08). */
     async salesOffboard(id: Identifier): Promise<void> {

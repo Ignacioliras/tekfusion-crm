@@ -14,6 +14,7 @@ import type {
   ContactNote,
   Deal,
   DealNote,
+  Quote,
   Sale,
   SalesFormData,
   SearchResourceName,
@@ -35,6 +36,7 @@ import {
   USER_STORAGE_KEY,
 } from "./authProvider";
 import generateData from "./dataGenerator";
+import { createLeadMethods } from "./leadMethods";
 import type { Db } from "./dataGenerator/types";
 import { withSupabaseFilterAdapter } from "./internal/supabaseAdapter";
 
@@ -177,6 +179,7 @@ export const createDataProvider = ({
 
   const dataProviderWithCustomMethod: CrmDataProvider = {
     ...baseDataProvider,
+    ...createLeadMethods(() => dataProvider, getIdentity),
     async getMany(resource: string, params: any) {
       if (resource === "tags") {
         // like PostgREST, ignore unknown ids (a deleted tag may still be in cached contacts)
@@ -398,6 +401,35 @@ export const createDataProvider = ({
   const dataProvider = withLifecycleCallbacks(
     withSupabaseFilterAdapter(dataProviderWithCustomMethod),
     [
+      {
+        // Mirrors set_quote_version(): next version, replaces the current one.
+        resource: "quotes",
+        beforeCreate: async (params) => {
+          const { data: quotes } = await dataProvider.getList<Quote>("quotes", {
+            filter: { deal_id: params.data.deal_id },
+            pagination: { page: 1, perPage: 1000 },
+            sort: { field: "version", order: "DESC" },
+          });
+          for (const quote of quotes.filter((q) => q.is_current)) {
+            await dataProvider.update("quotes", {
+              id: quote.id,
+              data: { is_current: false },
+              previousData: quote,
+            });
+          }
+          return {
+            ...params,
+            data: {
+              is_current: true,
+              sent_channels: [],
+              delivery_status: "pendiente",
+              created_at: new Date().toISOString(),
+              ...params.data,
+              version: params.data.version ?? (quotes[0]?.version ?? 0) + 1,
+            },
+          };
+        },
+      },
       {
         resource: "configuration",
         beforeUpdate: async (params) => {

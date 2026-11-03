@@ -1,0 +1,155 @@
+import type { DataProvider, Identifier, UserIdentity } from "ra-core";
+
+import type { Deal, Followup, Quote, SendChannel, Template } from "../../types";
+import { ETAPAS_ABIERTAS, type Etapa } from "../../tekfusion/estados";
+import { quotePdfPath, validateQuoteFile } from "../commons/quoteFile";
+
+const ALL = {
+  pagination: { page: 1, perPage: 1000 },
+  sort: { field: "id", order: "ASC" as const },
+};
+const DEFAULT_CADENCE_DAYS = [2, 5, 10];
+
+/** Follow-up dates of a cadence: 10:00 local time, moved off weekends. */
+export const cadenceDates = (from: Date, days: number[]): Date[] =>
+  days.map((n) => {
+    const due = new Date(from);
+    due.setDate(due.getDate() + n);
+    due.setHours(10, 0, 0, 0);
+    const weekday = due.getDay();
+    if (weekday === 6) due.setDate(due.getDate() + 2);
+    if (weekday === 0) due.setDate(due.getDate() + 1);
+    return due;
+  });
+
+/**
+ * In-browser mirrors of take_deal() and send_quote()
+ * (supabase/schemas/11_tekfusion_policies.sql) for the demo and the tests.
+ */
+export const createLeadMethods = (
+  getDataProvider: () => DataProvider,
+  getIdentity: () => Promise<UserIdentity | undefined>,
+) => ({
+  takeDeal: async (dealId: Identifier): Promise<Deal> => {
+    const dataProvider = getDataProvider();
+    const me = await getIdentity();
+    const { data: deal } = await dataProvider.getOne<Deal>("deals", {
+      id: dealId,
+    });
+    if (deal.sales_id != null) throw new Error("lead is not available");
+    const { data } = await dataProvider.update<Deal>("deals", {
+      id: dealId,
+      data: { sales_id: me?.id },
+      previousData: deal,
+    });
+    return data;
+  },
+
+  sendQuote: async (
+    quoteId: Identifier,
+    channels: SendChannel[],
+  ): Promise<Quote> => {
+    const dataProvider = getDataProvider();
+    if (channels.length === 0) throw new Error("choose at least one channel");
+    const { data: quote } = await dataProvider.getOne<Quote>("quotes", {
+      id: quoteId,
+    });
+    const { data: deal } = await dataProvider.getOne<Deal>("deals", {
+      id: quote.deal_id,
+    });
+    if (!quote.is_current)
+      throw new Error("only the current quote can be sent");
+    if (!ETAPAS_ABIERTAS.includes(deal.stage as Etapa))
+      throw new Error("lead is closed");
+    const { data: queued } = await dataProvider.getList("send_queue", {
+      ...ALL,
+      filter: { quote_id: quoteId },
+    });
+    if (queued.length > 0)
+      throw Object.assign(new Error("already sent"), { code: "23505" });
+
+    for (const channel of channels) {
+      await dataProvider.create("send_queue", {
+        data: {
+          deal_id: deal.id,
+          quote_id: quoteId,
+          channel,
+          status: "pendiente",
+          sales_id: deal.sales_id,
+        },
+      });
+    }
+    const { data: sent } = await dataProvider.update<Quote>("quotes", {
+      id: quoteId,
+      data: { sent_channels: channels, delivery_status: "pendiente" },
+      previousData: quote,
+    });
+    const now = new Date().toISOString();
+    await dataProvider.update("deals", {
+      id: deal.id,
+      data: {
+        stage: "cotizado",
+        amount: quote.amount,
+        last_activity_at: now,
+        first_response_at: deal.first_response_at ?? now,
+      },
+      previousData: deal,
+    });
+
+    const { data: followups } = await dataProvider.getList<Followup>(
+      "followups",
+      {
+        ...ALL,
+        filter: { deal_id: deal.id },
+      },
+    );
+    for (const followup of followups.filter((f) =>
+      ["pendiente", "vencido"].includes(f.status),
+    )) {
+      await dataProvider.update("followups", {
+        id: followup.id,
+        data: {
+          status: "cancelado",
+          cancel_reason: "Nueva cotización enviada",
+        },
+        previousData: followup,
+      });
+    }
+    if (deal.followups_enabled) {
+      const { data: templates } = await dataProvider.getList<Template>(
+        "templates",
+        {
+          ...ALL,
+          filter: { channel: channels[0], active: true },
+        },
+      );
+      const dates = cadenceDates(new Date(), DEFAULT_CADENCE_DAYS);
+      for (const [index, due] of dates.entries()) {
+        await dataProvider.create("followups", {
+          data: {
+            deal_id: deal.id,
+            step: index + 1,
+            scheduled_at: due.toISOString(),
+            channels,
+            mode: "automatico",
+            template_id: templates.length
+              ? templates[index % templates.length].id
+              : null,
+            status: "pendiente",
+            attempts: 0,
+            created_at: now,
+          },
+        });
+      }
+    }
+    return sent;
+  },
+
+  uploadQuotePdf: async (dealId: Identifier, file: File): Promise<string> => {
+    const invalid = validateQuoteFile(file);
+    if (invalid) throw Object.assign(new Error(invalid), { code: invalid });
+    return quotePdfPath(dealId);
+  },
+
+  getQuotePdfUrl: async (path: string): Promise<string> => `#${path}`,
+});

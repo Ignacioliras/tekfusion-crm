@@ -73,3 +73,13 @@ grant all on sequence public.alerts_id_seq to service_role;
 grant all on sequence public.quotes_id_seq, public.followups_id_seq, public.templates_id_seq, public.quick_replies_id_seq
     to authenticated, service_role;
 revoke execute on function public.guard_deal_child() from public, anon;
+revoke all on table public.send_queue from authenticated, anon;
+grant select on table public.send_queue to authenticated;
+grant all on table public.send_queue to service_role;
+revoke all on sequence public.send_queue_id_seq from authenticated, anon;
+grant all on sequence public.send_queue_id_seq to service_role;
+revoke execute on function public.send_quote(bigint, public.send_channel[]) from public, anon;
+grant execute on function public.send_quote(bigint, public.send_channel[]) to authenticated, service_role;
+revoke execute on function public.log_deal_changes() from public, anon;
+revoke execute on function public.guard_deal_closing() from public, anon;
+revoke execute on function public.set_quote_version() from public, anon;

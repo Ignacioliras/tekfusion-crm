@@ -5,6 +5,7 @@ import frenchMessages from "ra-language-french";
 import { raSupabaseEnglishMessages } from "ra-supabase-language-english";
 import { raSupabaseFrenchMessages } from "ra-supabase-language-french";
 import { spanishCrmMessages, spanishMessages } from "@/lib/i18n/es";
+import { tekfusionMessages } from "@/lib/i18n/es/tekfusion";
 import { englishCrmMessages } from "./englishCrmMessages";
 import { frenchCrmMessages } from "./frenchCrmMessages";
 
@@ -30,6 +31,7 @@ const englishCatalog = mergeTranslations(
   raSupabaseEnglishMessages,
   raSupabaseEnglishMessagesOverride,
   englishCrmMessages,
+  tekfusionMessages,
 );
 
 const frenchCatalog = mergeTranslations(

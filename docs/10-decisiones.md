@@ -161,6 +161,26 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Pendiente anotado:** PDFs huérfanos si falla el insert de la cotización tras subir el archivo (limpieza con service role cuando exista el envío); sin `unique (deal_id, step)` en seguimientos porque una cotización nueva regenera los pasos.
 - **Aprendizaje:** `db diff` comió el `$'` de una regex dentro de una policy de Storage (mismo bug de `String.replace`); y una migración nueva debe llevar timestamp posterior a la última (`revision_seguridad` es 21:00 aunque se generó antes): si no, corre antes de las funciones que usa.
 
+## 2026-11-04 · Ficha del lead: base de datos
+- **Línea de tiempo:** los cambios de etapa y de ejecutivo hechos por usuarios se registran en `audit_log` (trigger `log_deal_changes`, `deal.stage_changed` / `deal.reassigned`); una policy nueva deja leer las filas con `deal_id` a quien ve el lead. Las acciones del sistema (service role, n8n, `offboard_sale`) escriben su propio registro.
+- **Enviar cotización:** RPC `send_quote(quote_id, channels)` (security definer, valida gerencia o dueño del lead): una fila por canal en `send_queue` (la consume n8n en la Fase 5; nadie la escribe a mano), lead a `cotizado` con el monto de la cotización, cancela los seguimientos pendientes o vencidos y programa la cadencia `configuration.config.followupCadenceDays` (por defecto `[2, 5, 10]`) a las 10:00 de Santiago, corrida al lunes si cae en fin de semana, con los mismos canales y la plantilla activa del primer canal (rotando por paso). Si el lead tiene `followups_enabled = false`, no programa.
+- **Versiones:** trigger `set_quote_version`: una cotización nueva toma la versión siguiente y deja la vigente en el historial (`is_current = false`).
+- **Ganado/perdido:** trigger `guard_deal_closing` en la transición de etapa (no `check`): los leads históricos que importa la migración (RF-15) pueden venir cerrados sin monto o motivo.
+- **Descartado:** encolar desde el frontend con varios inserts (no atómico; la cola quedaría escribible por los usuarios).
+
+## 2026-11-04 · Ficha del lead: pantalla
+- **Decisión:** la ficha sigue siendo el diálogo de Atomic (`DealShow`, ahora `lg:max-w-6xl`), con dos columnas: "Datos del lead" (`LeadDataBlock`) y "Línea de tiempo" (`LeadTimeline`, caja de nota arriba). Orden: lo más reciente arriba, como las notas de Atomic. Los seguimientos pendientes no van a la línea de tiempo (viven en el programador).
+- **Editable en línea:** `InlineEditField` abre un `Form` de ra-core con un solo input de `components/admin` y guarda solo esa columna (línea, canal de origen, contacto, empresa). El ejecutivo no se edita en línea: lo cambia "Reasignar", solo gerencia, sin lectores en la lista.
+- **Acciones:** todas dentro de `CanAccess action="edit"` (el lector no ve ninguna); "Tomar" llama `take_deal` (método `takeDeal` del data provider).
+- **Textos:** las pantallas nuevas de TekFusion usan el catálogo `tekfusion.*` (`src/lib/i18n/es/tekfusion.ts`), solo en español, mezclado en los tres idiomas; las claves de Atomic siguen con sus traducciones. Evita mantener inglés y francés de pantallas que solo se usan en español.
+
+## 2026-11-04 · Cotización, cierre y seguimientos (pantallas)
+- **Cotización:** módulo `quotes/`: `SendQuoteButton` sube el PDF (`uploadQuotePdf`), crea la versión y llama `send_quote`; `QuoteHistory` lista las versiones y abre el PDF con URL firmada al hacer clic. Validación de los formularios a nivel de formulario cuando hay un `ReferenceInput` (un validador de campo dentro de él puede registrarse tarde y dejar pasar un envío).
+- **Ganado/perdido:** `CloseDealDialog` + `useCloseDeal`, usados por la ficha (botones "Ganado"/"Perdido") y por el kanban: soltar una tarjeta en esas columnas abre el diálogo y la tarjeta solo se mueve al confirmar. El formulario de edición ya no ofrece esas dos etapas salvo que el lead esté en ellas. La nota del perdido es una nota del lead.
+- **Seguimientos:** módulo `followups/`: `FollowupScheduler` (próximo, resto e historial) y `FollowupDialog` (programar/ajustar). Ajustar uno vencido lo devuelve a `pendiente`. Vista previa con `renderTemplate`: `{{nombre}}` = primer contacto, `{{empresa}}`, `{{producto}}` = nombre del lead, `{{ejecutivo}}` = firma del ejecutivo (o su nombre); un valor faltante queda visible como `{{…}}`. Fechas mostradas en `America/Santiago`.
+- **Arreglo en shadcn-admin-kit:** `SelectInput` no mostraba el mensaje de error en su rama principal (solo en la de carga): se agregó `<FormError />`.
+- **Kanban:** cada columna es una `section` con `aria-label` (accesible y localizable en tests).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

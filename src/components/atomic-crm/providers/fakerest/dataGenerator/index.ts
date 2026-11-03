@@ -8,6 +8,7 @@ import { generateSales } from "./sales";
 import { generateTags } from "./tags";
 import { generateTasks } from "./tasks";
 import type { Db } from "./types";
+import { DEFAULT_LOST_REASONS, DEFAULT_TEMPLATES } from "./leadDefaults";
 import { LINEAS_NEGOCIO, LINEA_INDETERMINADA } from "../../../tekfusion/lineas";
 
 export default (): Db => {
@@ -32,6 +33,22 @@ export default (): Db => {
     keywords: [...linea.keywords],
   }));
   db.sales_absences = [];
+  db.lost_reasons = DEFAULT_LOST_REASONS.map((name, index) => ({
+    id: index + 1,
+    name,
+    active: true,
+    position: index,
+  }));
+  db.templates = DEFAULT_TEMPLATES.map((template, index) => ({
+    id: index + 1,
+    active: true,
+    ...template,
+  }));
+  db.quotes = [];
+  db.followups = [];
+  db.alerts = [];
+  db.audit_log = [];
+  db.send_queue = [];
   db.configuration = [
     {
       id: 1,

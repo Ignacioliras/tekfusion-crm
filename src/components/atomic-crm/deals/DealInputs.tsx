@@ -1,4 +1,4 @@
-import { required, useTranslate } from "ra-core";
+import { required, useRecordContext, useTranslate } from "ra-core";
 import { AutocompleteArrayInput } from "@/components/admin/autocomplete-array-input";
 import { ReferenceArrayInput } from "@/components/admin/reference-array-input";
 import { ReferenceInput } from "@/components/admin/reference-input";
@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import type { Deal } from "../types";
+import { CLOSING_STAGES } from "./CloseDealDialog";
 import { AutocompleteCompanyInput } from "../companies/AutocompleteCompanyInput.tsx";
 import { AutocompleteContactInput } from "../contacts/AutocompleteContactInput.tsx";
 
@@ -62,6 +64,13 @@ const DealLinkedToInputs = () => {
 const DealMiscInputs = () => {
   const { dealStages, dealCategories } = useConfigurationContext();
   const translate = useTranslate();
+  const record = useRecordContext<Deal>();
+  // Ganado / perdido go through their dialog (amount, reason): not offered
+  // here unless the lead already is in that stage.
+  const stageChoices = dealStages.filter(
+    (stage) =>
+      !CLOSING_STAGES.includes(stage.value) || stage.value === record?.stage,
+  );
   return (
     <div className="flex flex-col gap-4 flex-1">
       <h6 className="text-lg font-semibold">
@@ -89,7 +98,7 @@ const DealMiscInputs = () => {
       />
       <SelectInput
         source="stage"
-        choices={dealStages}
+        choices={stageChoices}
         optionText="label"
         optionValue="value"
         defaultValue={dealStages[0]?.value}
