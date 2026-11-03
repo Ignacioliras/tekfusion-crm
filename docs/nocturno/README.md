@@ -31,7 +31,7 @@ Cada corrida de `claude -p` guarda su sesión: en el reporte, cada tarea fallida
 - Windows: doble clic en `NOCHE.cmd` (usa la fecha de hoy) o `node scripts\tekfusion\nocturno.mjs --fecha 2026-11-04`
 - Mac: `scripts/tekfusion/nocturno.sh --fecha 2026-11-04`
 
-Opciones: `--hasta 06:30` (hora de corte), `--modelo sonnet`, `--max-tareas 3`, `--solo T4` (una sola tarea), `--simular` (recorre la cola sin llamar a Claude, para probar), `--sin-dormir` (no bloquea la suspensión).
+Opciones: `--hasta 06:30` (hora de corte), `--modelo opus --esfuerzo high` (también van en el JSON: `"modelo"`, `"esfuerzo"`), `--max-tareas 3`, `--solo T4` (una sola tarea), `--simular` (recorre la cola sin llamar a Claude, para probar), `--sin-dormir` (no bloquea la suspensión).
 
 **En la mañana:** en Claude Code, en el repo principal, `/manana` → resumen, qué mergear, qué arreglar y en qué orden, y el `--resume` de cada tarea fallida.
 
@@ -43,7 +43,7 @@ Opciones: `--hasta 06:30` (hora de corte), `--modelo sonnet`, `--max-tareas 3`, 
 Regla de oro: **si no puedes escribir el comando que demuestra que quedó bien, no va de noche.**
 
 ## Límites por defecto (`limites` en el JSON)
-`turnos_por_tarea` 60 · `usd_por_tarea` 4 · `usd_total` 20 · `hora_fin` 07:00 · `intentos` 2 · `minutos_verificacion` 15. Con plan Max el costo en dólares es estimado (no se cobra aparte), pero sirve de freno: una tarea que gasta US$4 está dando vueltas.
+`turnos_por_tarea` 60 · `usd_por_tarea` 4 · `usd_total` 20 · `hora_fin` 07:00 · `intentos` 2 · `minutos_verificacion` 15. Con plan Max el costo en dólares es estimado (no se cobra aparte), pero sirve de freno: una tarea que gasta US$4 está dando vueltas. Lo que sí consume la noche es la **cuota del plan** (ventana de 5 h y límite semanal): con Max 5x, 5–6 tareas con Opus por noche es razonable; más que eso te deja corto para el día siguiente. Usa `--max-tareas`.
 
 ## Qué puede salir mal y qué pasa
 | Situación | Qué hace el script |

@@ -2,6 +2,7 @@
   "fecha": "AAAA-MM-DD",
   "fase": 1,
   "modelo": "opus",
+  "esfuerzo": "high",
   "limites": {
     "turnos_por_tarea": 60,
     "usd_por_tarea": 4,

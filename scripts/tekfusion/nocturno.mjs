@@ -8,7 +8,7 @@
 // Todo ocurre en un worktree aparte (rama nocturno/<fecha>); el repo principal no se toca.
 //
 // Uso:  node scripts/tekfusion/nocturno.mjs [--fecha 2026-11-04] [--hasta 07:00] [--modelo opus]
-//                                            [--max-tareas N] [--solo T3] [--simular] [--sin-dormir]
+//                                            [--esfuerzo high] [--max-tareas N] [--solo T3] [--simular] [--sin-dormir]
 // Docs: docs/nocturno/README.md
 
 import { spawnSync, spawn, execSync } from "node:child_process";
@@ -40,6 +40,7 @@ const SIN_DORMIR = opt("sin-dormir", false) === true;
 const SOLO = opt("solo", null);
 const MAX_TAREAS = Number(opt("max-tareas", 999));
 const MODELO_CLI = opt("modelo", null);
+const ESFUERZO_CLI = opt("esfuerzo", null);
 const HASTA_CLI = opt("hasta", null);
 const CLAUDE_BIN = process.env.CLAUDE_BIN || "claude";
 
@@ -109,10 +110,11 @@ estado.limites = {
   minutos_verificacion: 15, ...(estado.limites || {}),
 };
 const MODELO = MODELO_CLI || estado.modelo || "opus";
+const ESFUERZO = ESFUERZO_CLI || estado.esfuerzo || "high";
 const HORA_FIN = horaAFecha(HASTA_CLI || estado.limites.hora_fin);
 estado.corridas ??= [];
 estado.corridas.push({ inicio: ahora(), modelo: MODELO, simulado: SIMULAR });
-log(`Modelo ${MODELO} · hasta ${HORA_FIN.toLocaleString()} · ${estado.tareas.length} tareas · límite US$${estado.limites.usd_total}`);
+log(`Modelo ${MODELO} (esfuerzo ${ESFUERZO}) · hasta ${HORA_FIN.toLocaleString()} · ${estado.tareas.length} tareas · límite US$${estado.limites.usd_total}`);
 
 // ───────────────────────── mantener el PC despierto ─────────────────────────
 let despierto = null;
@@ -233,6 +235,7 @@ const correrClaude = (t) => {
   const a = [
     "-p", "--output-format", "json",
     "--model", MODELO,
+    "--effort", ESFUERZO,
     "--max-turns", String(estado.limites.turnos_por_tarea),
     "--max-budget-usd", String(estado.limites.usd_por_tarea),
     "--permission-mode", "acceptEdits",
