@@ -1,3 +1,4 @@
+import { AlertsBell } from "../alerts/AlertsBell";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
 import { MobileRefreshButton } from "./MobileRefreshButton";
 
@@ -17,6 +18,7 @@ const MobileHeader = ({
       {children}
       <div className="flex items-center">
         <GlobalSearchButton variant="icon" />
+        <AlertsBell />
         {showRefresh ? <MobileRefreshButton /> : null}
       </div>
     </header>

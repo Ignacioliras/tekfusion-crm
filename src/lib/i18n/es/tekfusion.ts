@@ -132,5 +132,23 @@ export const tekfusionMessages = {
         recordatorio: "Recordatorio (te avisa para que lo envíes tú)",
       },
     },
+    alerts: {
+      title: "Alertas",
+      bell: "Alertas: %{count} sin leer",
+      empty: "No tienes alertas pendientes.",
+      mark_read: "Marcar leída",
+      mark_all_read: "Marcar todas como leídas",
+      open_lead: "Ver lead",
+      error: "No se pudo marcar la alerta. Intenta de nuevo.",
+      types: {
+        sin_contacto_24h: "Sin contacto en 24 h",
+        sin_contacto_48h: "Sin contacto en 48 h",
+        seguimiento_vencido: "Seguimiento vencido",
+        cliente_respondio: "Cliente respondió",
+        whatsapp_desconectado: "WhatsApp desconectado",
+        por_archivar: "Por archivar",
+        sin_asignar: "Sin asignar",
+      },
+    },
   },
 };

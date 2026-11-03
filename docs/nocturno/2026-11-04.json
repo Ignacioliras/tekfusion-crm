@@ -86,12 +86,13 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos de alertas (contador, grupos, marcar una, marcar todas, enlace); Header.test.tsx sigue pasando; ítem 'Panel de alertas' de la Fase 3 en docs/09 marcado [x] con fecha, anotando que la captura se toma en la mañana.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 22:18:59"
     },
     {
       "id": "T4",
