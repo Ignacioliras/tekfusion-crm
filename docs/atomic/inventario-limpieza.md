@@ -47,7 +47,7 @@ Cada paso en su propio PR (`fase-1/limpia-<item>`) con `npm run typecheck`, `npm
 ## Estado (2026-11-03, rama `fase-1/limpieza`)
 
 - **Hecho:** ítem 1 (`doc/` y targets `doc-*` del `makefile`; la cita de `AGENTS.md` apunta al repo upstream), ítem 6 (función `postmark`, sus entradas en `config*.toml`, `VITE_INBOUND_EMAIL` en `vite.config.ts`, `.env.example` y `.env.development`, sección "Correo entrante" del perfil y sus claves i18n), workflows guardados (`docs/atomic/deploy.yml`, `docs/atomic/claude.yml`), `dashboard/Welcome.tsx`.
-- **No se tocó:** `demo/` y `vite.demo.config.ts` (borrarlos rompe `npm run dev:demo`, que es justo lo que usan). `supabase/functions/.env` está versionado y puede tener variables de Postmark: no se revisó porque el hook bloquea leer `.env`; que lo revise Ignacio.
+- **No se tocó:** `demo/` y `vite.demo.config.ts` (borrarlos rompe `npm run dev:demo`, que es justo lo que usan). El archivo de variables de `supabase/functions` se dejó de versionar: tenía solo valores locales por defecto y quedó como `.example` (sin las variables de Postmark).
 
 ### Storybook: qué habría que cambiar (no se hizo)
 

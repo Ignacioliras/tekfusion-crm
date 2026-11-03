@@ -18,10 +18,10 @@ Abre una terminal en la carpeta del repo (en el Explorador: clic derecho → "Ab
 ```powershell
 npm run dev
 ```
-- [ ] Abre http://localhost:5173 → crea el primer usuario (queda como administrador) → entra. Si ves el CRM en inglés con datos vacíos, está sano.
+- [ ] Abre http://localhost:5173 → entra con un usuario del seed ficticio (`andrea.soto@tekfusion-demo.cl`, administradora; o `camila.rojas@tekfusion-demo.cl`, ejecutiva; clave `demo-tekfusion`). Si ves el CRM en español con leads de válvulas, tuberías y geoceldas, está sano.
 - [ ] Supabase Studio local (la base de datos por dentro): http://127.0.0.1:54323
 
-No hace falta copiar claves: `.env.development` (de Atomic) ya apunta al Supabase local.
+No hace falta copiar claves del frontend: `.env.development` (de Atomic) ya apunta al Supabase local. Para las Edge Functions en local, copia `supabase/functions/.env.example` a `supabase/functions/.env` (trae solo los valores locales por defecto del CLI).
 
 Si solo quieres mirar sin base de datos: `npm run dev:demo` (datos falsos en el navegador).
 
