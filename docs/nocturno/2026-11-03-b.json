@@ -71,13 +71,16 @@
       "criterio": "Tests pasan; typecheck limpio; ninguna función toca Supabase ni hace fetch.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 05:11:14"
+      "commit": "986ba13a052b793769c809d19cbc092695e56665",
+      "costo_usd": 0.9826876000000001,
+      "session_id": "5de39b90-f529-4b70-9839-8aff831f9266",
+      "inicio": "2026-11-03 05:11:14",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Creé evolutionWebhook.ts con isAuthorized, parseEvolutionEvent y dedupeKey (funciones puras) y 16 tests que pasan.",
+      "fin": "2026-11-03 05:13:14"
     },
     {
       "id": "T9",
