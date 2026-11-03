@@ -80,13 +80,16 @@
         "T1"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 04:56:44"
+      "commit": "becfa7033bdc89265427e3bc5c91ff0f5375a1ba",
+      "costo_usd": 1.0334501999999999,
+      "session_id": "198b050b-f99f-4e47-811b-f879d50d0f5b",
+      "inicio": "2026-11-03 04:56:44",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé src/lib/i18n/es.ts con todos los mensajes ra.* en español de Chile y dejé el i18nProvider con 'es' por defecto y la lista Español/English, con typecheck, lint y build pasando.",
+      "fin": "2026-11-03 04:59:19"
     },
     {
       "id": "T4",
