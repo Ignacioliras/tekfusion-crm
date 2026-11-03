@@ -2,7 +2,7 @@ import { CreateButton } from "@/components/admin/create-button";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useTranslate } from "ra-core";
+import { useTranslate, CanAccess } from "ra-core";
 
 import useAppBarHeight from "../misc/useAppBarHeight";
 import { DataImportButton } from "../dataImport/DataImportButton";
@@ -37,14 +37,16 @@ export const ContactEmpty = () => {
         </div>
         <div className="flex flex-row gap-2">
           {isMobile ? (
-            <Button
-              onClick={() => setCreateOpen(true)}
-              variant="outline"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              {translate("resources.contacts.action.new")}
-            </Button>
+            <CanAccess resource="contacts" action="create">
+              <Button
+                onClick={() => setCreateOpen(true)}
+                variant="outline"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {translate("resources.contacts.action.new")}
+              </Button>
+            </CanAccess>
           ) : (
             <>
               <CreateButton label="resources.contacts.action.new" />

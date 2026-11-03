@@ -3,6 +3,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
   LinkBase,
+  useCanAccess,
   useCreatePath,
   useGetResourceLabel,
   useResourceContext,
@@ -55,6 +56,9 @@ export const CreateButton = (props: CreateButtonProps) => {
     },
     userText: labelProp,
   });
+  // Hidden when the user may not create (e.g. the TekFusion reader role).
+  const { canAccess } = useCanAccess({ resource, action: "create" });
+  if (!canAccess) return null;
   return (
     <LinkBase
       className={cn(buttonVariants({ variant: "outline" }))}

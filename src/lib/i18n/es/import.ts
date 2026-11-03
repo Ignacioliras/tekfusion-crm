@@ -22,6 +22,30 @@ export const importMessages: PartialCrmMessages = {
       stopped:
         "Importación detenida. Se importaron %{importCount} registros, con %{errorCount} errores",
       title: "Importar datos",
+      report: {
+        title: "Resultado de la importación",
+        created: "Creados",
+        duplicates: "Duplicados",
+        errors: "Errores",
+        line: "Línea",
+        kind: "Tipo",
+        reason: "Motivo",
+        close: "Cerrar",
+        kinds: {
+          duplicate: "Duplicado",
+          error: "Error",
+        },
+        reasons: {
+          missing_name: "El lead no tiene nombre",
+          invalid_email: "Correo no válido: %{value}",
+          invalid_phone: "Teléfono no válido: %{value}",
+          unknown_business_line: "Línea de negocio desconocida: %{value}",
+          unknown_stage: "Etapa desconocida: %{value}",
+          unknown_sales: "No hay un usuario activo con el correo %{value}",
+          duplicate: "El contacto ya tiene un lead activo: %{lead}",
+          refused: "La base de datos rechazó la fila",
+        },
+      },
     },
     import: {
       action: {

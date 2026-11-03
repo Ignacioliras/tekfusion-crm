@@ -1,89 +1,190 @@
-import { useCallback } from "react";
-import { useDataProvider, useGetIdentity, type DataProvider } from "ra-core";
+import { useCallback, useRef } from "react";
+import { useDataProvider, type DataProvider } from "ra-core";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
-import { LINEA_INDETERMINADA } from "../tekfusion/lineas";
-import { useCompanyResolver } from "./useCompanyResolver";
-import { createEachRow } from "./createEachRow";
+import type { Contact, Deal } from "../types";
 import {
-  toConfiguredValue,
-  toConfiguredValues,
-  toInteger,
-  toIsoDate,
-  toText,
-} from "./parseCell";
-import type { ImportRow, ProcessImportBatch } from "./types";
+  findContact,
+  indexLead,
+  loadLeadIndex,
+  type LeadIndex,
+} from "./leadIndex";
+import { parseLeadRow, type LeadDraft } from "./leadRow";
+import { useCompanyResolver } from "./useCompanyResolver";
+import type {
+  ImportBatchReport,
+  ImportRow,
+  ImportRowIssue,
+  ProcessImportBatch,
+} from "./types";
 
 /** One CSV row, with the values needed before its deal can be created. */
 type DealRow = {
   row: ImportRow;
-  companyName: string | undefined;
-  stage: string | undefined;
+  line: number;
+  draft: LeadDraft;
+  stage: string;
 };
 
 /**
- * Creates a deal per CSV row. Unknown columns are ignored, missing ones are
- * left empty — except `name`, which the database requires. The `company` column
- * holds a company name: matching companies are reused, unknown ones are created.
+ * Imports leads (RF-15): one deal per CSV row, with its contact, company,
+ * business line, stage and executive (columns: deals_sample.csv), marked as
+ * `migracion`. Rows are checked first (leadRow.ts): one with a value that is
+ * not understood is reported as an error. A row whose contact (same e-mail or
+ * phone, docs/03) already has an open lead is left out and reported as a
+ * duplicate; when that contact's last lead is closed, the new one links to it.
+ * Matching companies and contacts are reused, unknown ones are created.
  */
 export function useDealImport(): ProcessImportBatch {
   const { dealCategories, dealStages } = useConfigurationContext();
-  const { identity } = useGetIdentity();
   const dataProvider = useDataProvider();
   const getCompanies = useCompanyResolver();
+  const indexRef = useRef<LeadIndex | null>(null);
 
   return useCallback(
-    async (batch) => {
-      // Parse the company name and the stage once per row: both are needed to
-      // resolve companies and column indexes up front, then again per deal.
-      const rows: DealRow[] = batch.map((row) => ({
-        row,
-        companyName: toText(row.company),
-        // stage is required, so fall back to the first configured one
-        stage: toConfiguredValue(row.stage, dealStages) ?? dealStages[0]?.value,
-      }));
+    async (batch, context): Promise<ImportBatchReport> => {
+      // A new import starts from what the database holds now
+      if (!indexRef.current || !context || context.isFirstBatch) {
+        indexRef.current = await loadLeadIndex(dataProvider);
+      }
+      const index = indexRef.current;
+      const firstLine = context?.firstLine ?? 2;
+
+      const issues: ImportRowIssue[] = [];
+      const valid: DealRow[] = [];
+      batch.forEach((row, position) => {
+        const line = firstLine + position;
+        const parsed = parseLeadRow(row, {
+          dealStages,
+          dealCategories,
+          salesByEmail: index.salesByEmail,
+          lineOwners: index.lineOwners,
+        });
+        if ("error" in parsed) {
+          issues.push({ line, kind: "error", ...parsed.error });
+        } else {
+          valid.push({
+            row,
+            line,
+            draft: parsed.draft,
+            stage: parsed.draft.stage,
+          });
+        }
+      });
 
       const [companies, indexes] = await Promise.all([
         getCompanies(
-          rows
-            .map(({ companyName }) => companyName)
+          valid
+            .map(({ draft }) => draft.companyName)
             .filter((name): name is string => name !== undefined),
         ),
-        appendedIndexes(rows, dataProvider),
+        appendedIndexes(valid, dataProvider),
       ]);
 
-      const now = new Date().toISOString();
-      return createEachRow(
-        rows.map(({ row, companyName, stage }) =>
-          dataProvider.create("deals", {
+      // One row at a time: a contact repeated inside the batch must see the
+      // lead its first row created.
+      let created = 0;
+      for (const { row, line, draft } of valid) {
+        const contactId = findContact(index, draft.email, draft.phone);
+        const openDeal =
+          contactId === undefined
+            ? undefined
+            : index.openDealByContact.get(String(contactId));
+        if (openDeal) {
+          issues.push({
+            line,
+            kind: "duplicate",
+            reason: "crm.data_import.report.reasons.duplicate",
+            args: { lead: openDeal.name },
+          });
+          continue;
+        }
+        try {
+          const companyId = draft.companyName
+            ? companies.get(draft.companyName)?.id
+            : undefined;
+          const contact = await resolveContact(
+            dataProvider,
+            index,
+            contactId,
+            draft,
+            companyId,
+          );
+          const now = new Date().toISOString();
+          const { data: deal } = await dataProvider.create<Deal>("deals", {
             data: {
-              name: toText(row.name),
-              company_id: companyName
-                ? companies.get(companyName)?.id
-                : undefined,
-              contact_ids: [],
-              categories: toConfiguredValues(row.categories, dealCategories),
-              stage,
-              description: toText(row.description),
-              // amount lands in a bigint column, which rejects "4500.50"
-              amount: toInteger(row.amount),
-              expected_closing_date: toIsoDate(row.expected_closing_date),
-              sales_id: identity?.id,
+              name: draft.name,
+              company_id: companyId,
+              contact_ids: contact ? [contact.id] : [],
+              categories: draft.categories,
+              stage: draft.stage,
+              description: draft.description,
+              amount: draft.amount,
+              expected_closing_date: draft.expectedClosingDate,
+              sales_id: draft.salesId,
               index: indexes.get(row) ?? 0,
               created_at: now,
               updated_at: now,
-              business_line: LINEA_INDETERMINADA,
+              business_line: draft.businessLine,
               origin_channel: "migracion",
               last_activity_at: now,
               followups_enabled: true,
+              previous_deal_id: contact
+                ? index.closedDealByContact.get(String(contact.id))?.id
+                : undefined,
             },
-          }),
-        ),
-      );
+          });
+          if (contact) indexLead(index, contact, deal);
+          created += 1;
+        } catch (cause) {
+          console.error("Failed to import a row", cause);
+          issues.push({
+            line,
+            kind: "error",
+            reason: "crm.data_import.report.reasons.refused",
+          });
+        }
+      }
+      return { created, issues };
     },
-    [dataProvider, dealCategories, dealStages, getCompanies, identity?.id],
+    [dataProvider, dealCategories, dealStages, getCompanies],
   );
 }
+
+/** The row's contact: the matching one, a new one, or none without e-mail or phone. */
+const resolveContact = async (
+  dataProvider: DataProvider,
+  index: LeadIndex,
+  contactId: Contact["id"] | undefined,
+  draft: LeadDraft,
+  companyId: Contact["company_id"] | undefined,
+): Promise<Pick<Contact, "id" | "email_jsonb" | "phone_jsonb"> | undefined> => {
+  if (contactId !== undefined) {
+    const { data } = await dataProvider.getOne<Contact>("contacts", {
+      id: contactId,
+    });
+    return data;
+  }
+  if (!draft.email && !draft.phone) return undefined;
+  const now = new Date().toISOString();
+  const { data } = await dataProvider.create<Contact>("contacts", {
+    data: {
+      first_name: draft.firstName ?? "",
+      last_name: draft.lastName ?? "",
+      email_jsonb: draft.email ? [{ email: draft.email, type: "Work" }] : [],
+      phone_jsonb: draft.phone ? [{ number: draft.phone, type: "Work" }] : [],
+      company_id: companyId,
+      sales_id: draft.salesId,
+      first_seen: now,
+      last_seen: now,
+      status: "warm",
+      tags: [],
+      has_newsletter: false,
+    },
+  });
+  indexLead(index, data);
+  return data;
+};
 
 /**
  * One distinct index per imported deal, appended below the deals already in its

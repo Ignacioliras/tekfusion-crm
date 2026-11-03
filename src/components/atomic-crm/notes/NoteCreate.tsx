@@ -10,6 +10,7 @@ import {
   useUpdate,
   type Identifier,
   type RaRecord,
+  useCanAccess,
 } from "ra-core";
 import { useFormContext } from "react-hook-form";
 import { SaveButton } from "@/components/admin/form";
@@ -31,8 +32,9 @@ export const NoteCreate = ({
   const resource = useResourceContext();
   const record = useRecordContext();
   const { identity } = useGetIdentity();
+  const { canAccess } = useCanAccess({ resource, action: "create" });
 
-  if (!record || !identity) return null;
+  if (!record || !identity || !canAccess) return null;
 
   const defaultStatus = reference === "contacts" ? record.status : undefined;
 

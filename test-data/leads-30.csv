@@ -1,0 +1,31 @@
+name,company,contact_first_name,contact_last_name,email,phone,business_line,stage,sales_email,amount,expected_closing_date,description
+Válvulas de bola 4 pulgadas para relaves,Minera Altiplano Sur SpA,Héctor,Morales,hmorales@altiplanosur.example,+56 9 3100 0001,Válvulas,Nuevo,camila.rojas@tekfusion-demo.cl,3200000,2026-12-10,Recambio en línea de relaves
+Tubería HDPE 250 mm (2 km),Aguas del Norte Grande S.A.,Paula,Rivas,privas@nortegrande.example,9 3100 0002,Tuberías,Cotizado,diego.munoz@tekfusion-demo.cl,18500000,2027-01-15,
+Geoceldas para talud acceso norte,Constructora Pehuén Ltda.,Marcelo,Díaz,mdiaz@pehuen.example,+56 9 3100 0003,Geoceldas y geosintéticos,Contactado,,9700000,2026-12-20,Estabilización de talud
+Válvulas mariposa DN300,Sanitaria Costa Azul S.A.,Lorena,Vega,lvega@costaazul.example,+56 9 3100 0004,valvulas,Nuevo,,5400000,,
+Fittings PVC para riego tecnificado,Agrícola Los Maitenes,Gonzalo,Pino,gpino@losmaitenes.example,+56 9 3100 0005,tuberias,Nuevo,diego.munoz@tekfusion-demo.cl,1250000,2026-11-30,
+"Geomembrana HDPE 1,5 mm",Minera Cerro Blanco SpA,Carolina,Núñez,cnunez@cerroblanco.example,+56 9 3100 0006,geoceldas,Cotizado,camila.rojas@tekfusion-demo.cl,22000000,2027-02-01,Piscina de emergencia
+Actuadores eléctricos para compuertas,Hidroeléctrica Río Claro,Andrés,Fuentes,afuentes@rioclaro.example,+56 9 3100 0007,Válvulas,Contactado,camila.rojas@tekfusion-demo.cl,7800000,,
+Tubería acero 12 pulgadas cédula 40,Metalúrgica del Pacífico,Sofía,Herrera,sherrera@metpacifico.example,+56 9 3100 0008,Tuberías,Nuevo,,14300000,2027-01-05,
+Válvulas check para impulsión,APR Las Quilas,Rubén,Castro,rcastro@aprlasquilas.example,+56 9 3100 0009,Válvulas,Nuevo,camila.rojas@tekfusion-demo.cl,890000,,
+Geotextil no tejido 300 g,Vialidad Austral Ltda.,Natalia,Sanhueza,nsanhueza@vialaustral.example,+56 9 3100 0010,Geoceldas,Nuevo,diego.munoz@tekfusion-demo.cl,3100000,,
+Ampliación red de agua potable,Constructora Los Arrayanes SpA,Valentina,Godoy,VGodoy@LosArrayanes.example,,tuberias,Nuevo,,6000000,,Duplicado: contacto con lead abierto (correo)
+Válvulas compuerta DN150,Constructora Andes Norte,Esteban,Molina,emolina@andesnorte.example,+56 9 3100 0012,Válvulas,Cotizado,camila.rojas@tekfusion-demo.cl,4100000,2026-12-30,
+Tubería PPR para planta,Lácteos del Sur S.A.,Daniela,Toledo,dtoledo@lacteossur.example,+56 9 3100 0013,Tuberías,Contactado,diego.munoz@tekfusion-demo.cl,2700000,,
+Geomalla para muro estabilizado,Obras Civiles Lircay,Pablo,Araya,paraya@lircay.example,+56 9 3100 0014,geoceldas,Nuevo,,11200000,,
+Bombas sumergibles,Minera Quebrada Seca,Iván,Rojas,irojas@quebradaseca.example,+56 9 3100 0015,Bombas,Nuevo,camila.rojas@tekfusion-demo.cl,5000000,,Error: línea desconocida
+Válvulas globo para vapor,Celulosa Biobío Demo,Fernanda,Lagos,flagos@celulosabiobio.example,+56 9 3100 0016,Válvulas,Nuevo,camila.rojas@tekfusion-demo.cl,3600000,,
+Recambio de flanges y uniones,Minera Altiplano Sur SpA,Jorge,Salinas,jsalinas@altiplanosur.example,+56 9 3100 0017,Tuberías,Nuevo,,980000,,
+Nueva consulta de válvulas,Edificaciones Cordillera Sur SpA,Felipe,Navarrete,,9 0000 0009,Válvulas,Nuevo,,0,,Duplicado: contacto con lead abierto (teléfono)
+Geoceldas para camino forestal,Forestal Las Lomas,Camilo,Bravo,cbravo@laslomas.example,+56 9 3100 0019,Geoceldas,Contactado,diego.munoz@tekfusion-demo.cl,8800000,,
+Tubería HDPE para conducción de relaves,Sulfuros del Desierto Ltda.,Cristóbal,Saavedra,csaavedra@sulfurosdesierto.example,,Tuberías,Nuevo,diego.munoz@tekfusion-demo.cl,25000000,2027-03-01,Cliente recurrente: su lead anterior está ganado
+Válvulas de alivio,Química Andina Demo,Rocío,Méndez,rmendez@quimicaandina.example,+56 9 3100 0021,Válvulas,Nuevo,nadie@tekfusion-demo.cl,1500000,,Error: ejecutivo inexistente
+Segunda cotización geoceldas talud,Constructora Pehuén Ltda.,Marcelo,Díaz,MDIAZ@pehuen.example,,geoceldas,Nuevo,,4000000,,Duplicado: repite el correo de la línea 4
+Tubería PVC sanitaria 200 mm,Inmobiliaria Bosque Nativo,Patricio,Ortiz,portiz@bosquenativo.example,+56 9 3100 0023,Tuberías,Nuevo,,2200000,,
+Válvulas de control de nivel,Embotelladora Cumbres,Macarena,Silva,msilva@cumbres.example,+56 9 3100 0024,Válvulas,Contactado,camila.rojas@tekfusion-demo.cl,6300000,,
+Geomembrana para tranque de riego,Agrícola Santa Elena,Ricardo,Peña,rpena@santaelena.example,+56 9 3100 0025,geoceldas,Cotizado,diego.munoz@tekfusion-demo.cl,13400000,2027-01-25,
+Consulta por cañería de cobre,Particular,Elena,Campos,ecampos@correo.example,+56 9 3100 0026,,Nuevo,,0,,Sin línea: queda por clasificar y sin asignar
+Válvulas para planta desaladora,Desaladora Caleta Demo,Tomás,Ibáñez,tibanez@caletademo.example,+56 9 3100 0027,Válvulas,Nuevo,,19800000,2027-04-10,
+Tubería HDPE 110 mm para APR,APR El Molino,Gloria,Muñoz,gmunoz@aprelmolino.example,+56 9 3100 0028,tuberias,Nuevo,diego.munoz@tekfusion-demo.cl,3900000,,
+Geoceldas para canal de regadío,Junta de Vigilancia Río Demo,Sergio,Vidal,svidal@juntario.example,+56 9 3100 0029,Geoceldas,Nuevo,,7600000,,
+Válvulas de compuerta para pozo,Agua Potable Rural Peumo,Adriana,Soto,asoto@aprpeumo.example,+56 9 3100 0030,Válvulas,Nuevo,camila.rojas@tekfusion-demo.cl,1100000,,

@@ -9,6 +9,7 @@ import {
   useRecordContext,
   useTranslate,
   useUpdate,
+  useCanAccess,
 } from "ra-core";
 import { useState } from "react";
 import { SaveButton } from "@/components/admin/form";
@@ -37,6 +38,7 @@ export const AddTask = ({
   display?: "chip" | "icon";
 }) => {
   const { identity } = useGetIdentity();
+  const { canAccess } = useCanAccess({ resource: "tasks", action: "create" });
   const dataProvider = useDataProvider();
   const [update] = useUpdate();
   const notify = useNotify();
@@ -64,7 +66,7 @@ export const AddTask = ({
     notify("resources.tasks.added");
   };
 
-  if (!identity) return null;
+  if (!identity || !canAccess) return null;
 
   return (
     <>

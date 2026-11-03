@@ -8,6 +8,7 @@ import {
   useGetRecordRepresentation,
   useResourceTranslation,
   useRecordContext,
+  useCanAccess,
   useResourceContext,
   useTranslate,
 } from "ra-core";
@@ -90,6 +91,9 @@ export const DeleteButton = (props: DeleteButtonProps) => {
     },
     userText: labelProp,
   });
+  // Hidden when the user may not delete (e.g. the TekFusion reader role).
+  const { canAccess } = useCanAccess({ resource, action: "delete", record });
+  if (!canAccess) return null;
 
   return (
     <Button

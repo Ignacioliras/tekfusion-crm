@@ -1,5 +1,5 @@
 import { Upload } from "lucide-react";
-import { useTranslate } from "ra-core";
+import { useCanAccess, useTranslate } from "ra-core";
 import { Button } from "@/components/ui/button";
 
 import { useDataImportContext } from "./DataImportProvider";
@@ -17,12 +17,17 @@ export const DataImportButton = ({
 }) => {
   const translate = useTranslate();
   const { resources, isImporting, openDialog } = useDataImportContext();
+  // Importing creates records: hidden for the reader role.
+  const { canAccess } = useCanAccess({
+    resource: resource ?? "contacts",
+    action: "create",
+  });
   const available = resource
     ? resources.filter(({ name }) => name === resource)
     : resources;
 
   // The resource may not be registered in this Admin, e.g. deals on mobile
-  if (!available.length) return null;
+  if (!available.length || !canAccess) return null;
 
   return (
     <Button

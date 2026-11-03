@@ -10,9 +10,10 @@ import {
 } from "react";
 import { useNotify, useRefresh } from "ra-core";
 
-import { usePapaParse } from "../misc/usePapaParse";
+import { usePapaParse, type ImportState } from "../misc/usePapaParse";
 import { DataImportDialog } from "./DataImportDialog";
 import { DataImportProgressToast } from "./DataImportProgressToast";
+import { DataImportReport } from "./DataImportReport";
 import type { ImportableResource, ImportRow } from "./types";
 import type { ImportableResourceName } from "./useImportableResources";
 import { useImportableResources } from "./useImportableResources";
@@ -64,6 +65,16 @@ export const DataImportProvider = ({ children }: { children: ReactNode }) => {
 
   const isImporting =
     importer.state === "parsing" || importer.state === "running";
+
+  // An import whose batches report their rows (the leads importer) ends on a
+  // report, shown until closed.
+  const [closedReport, setClosedReport] = useState<ImportState | null>(null);
+  const report =
+    importer.state === "complete" &&
+    importer.hasReport &&
+    closedReport !== importer
+      ? importer
+      : null;
 
   useEffect(() => {
     if (importer.state === "complete") {
@@ -148,6 +159,16 @@ export const DataImportProvider = ({ children }: { children: ReactNode }) => {
         />
       )}
       <DataImportProgressToast importer={importer} onStop={stopImport} />
+      {report && (
+        <DataImportReport
+          open
+          importCount={report.importCount}
+          duplicateCount={report.duplicateCount}
+          errorCount={report.errorCount}
+          issues={report.issues}
+          onClose={() => setClosedReport(report)}
+        />
+      )}
     </DataImportContext.Provider>
   );
 };

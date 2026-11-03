@@ -13,6 +13,32 @@ export const settingsMessages: PartialCrmMessages = {
         secondary_emails: "Correos secundarios",
         administrator: "Administrador",
         disabled: "Desactivado",
+        name: "Nombre",
+        role: "Rol",
+        business_lines: "Línea a cargo",
+        substitute: "Suplente",
+        no_substitute: "Sin suplente",
+        absences: "Ausencias",
+        starts_on: "Desde",
+        ends_on: "Hasta",
+        absence_reason: "Motivo",
+      },
+      roles: {
+        manager: "Gerencia",
+        executive: "Ejecutivo",
+        reader: "Lector",
+      },
+      sections: {
+        assignment: "Líneas de negocio y ausencias",
+      },
+      helpers: {
+        business_lines: "Los leads de estas líneas se asignan a este usuario.",
+        substitute:
+          "Recibe los leads nuevos mientras este usuario está ausente. Vale para todas sus líneas.",
+      },
+      validation: {
+        self_substitute: "Un usuario no puede ser su propio suplente",
+        absence_range: "La fecha de término debe ser igual o posterior a la de inicio",
       },
       create: {
         error: "Ocurrió un error al crear el usuario.",

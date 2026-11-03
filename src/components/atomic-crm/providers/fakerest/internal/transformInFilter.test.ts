@@ -30,3 +30,11 @@ it("should return an array of quoted strings", () => {
   expect(transformInFilter('("a")')).toEqual(["a"]);
   expect(transformInFilter('("a","B, c")')).toEqual(["a", "B, c"]);
 });
+
+it("should accept punctuation inside quoted strings, as PostgREST does", () => {
+  expect(
+    transformInFilter(
+      '("Aguas del Norte S.A.","Pehuén Ltda.","A & B (Chile)")',
+    ),
+  ).toEqual(["Aguas del Norte S.A.", "Pehuén Ltda.", "A & B (Chile)"]);
+});

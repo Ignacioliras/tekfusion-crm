@@ -41,7 +41,13 @@ export function useImportableResources(): ImportableResource[] {
       textColumns: ["zipcode", "phone_number", "tax_identifier"],
       processBatch: processCompanies,
     },
-    { name: "deals", sampleCsv: dealsSampleCsv, processBatch: processDeals },
+    {
+      name: "deals",
+      sampleCsv: dealsSampleCsv,
+      // "+56911110001" would otherwise be read as a number, losing its "+"
+      textColumns: ["phone"],
+      processBatch: processDeals,
+    },
   ];
 
   return resources.filter(({ name }) => name in definitions);

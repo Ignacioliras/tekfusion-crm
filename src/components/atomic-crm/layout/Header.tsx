@@ -24,6 +24,7 @@ const NAV_SECTIONS: string[] = [
   "/companies",
   WhatsAppPage.path,
   SettingsPage.path,
+  "/sales",
 ];
 
 const Header = () => {
@@ -102,7 +103,10 @@ const Header = () => {
                     <NavigationTab
                       label={translate("crm.settings.title")}
                       to={SettingsPage.path}
-                      isActive={currentPath === SettingsPage.path}
+                      isActive={
+                        currentPath === SettingsPage.path ||
+                        currentPath === "/sales"
+                      }
                     />
                   </CanAccess>
                 </nav>
@@ -119,7 +123,9 @@ const Header = () => {
                   <CanAccess resource="configuration" action="edit">
                     <SettingsMenu />
                   </CanAccess>
-                  <ImportFromJsonMenuItem />
+                  <CanAccess resource="contacts" action="create">
+                    <ImportFromJsonMenuItem />
+                  </CanAccess>
                   <ChangelogMenuItem />
                   <CreditosMenuItem />
                 </UserMenu>

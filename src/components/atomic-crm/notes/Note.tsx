@@ -7,6 +7,7 @@ import {
   useResourceContext,
   useTranslate,
   useUpdate,
+  CanAccess,
 } from "ra-core";
 import { useEffect, useRef, useState } from "react";
 import type { FieldValues, SubmitHandler } from "react-hook-form";
@@ -123,48 +124,50 @@ export const Note = ({
             <Status className="ml-2" status={note.status} />
           )}
         </div>
-        <span className={`${isHover ? "visible" : "invisible"}`}>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleEnterEditMode}
-                    className="p-1 h-auto cursor-pointer"
-                    aria-label={translate("resources.notes.action.edit")}
-                  />
-                }
-              >
-                <Edit className="w-4 h-4" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{translate("resources.notes.action.edit")}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDelete}
-                    className="p-1 h-auto cursor-pointer"
-                    aria-label={translate("resources.notes.action.delete")}
-                  />
-                }
-              >
-                <Trash2 className="w-4 h-4" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{translate("resources.notes.action.delete")}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </span>
+        <CanAccess resource={resource} action="edit">
+          <span className={`${isHover ? "visible" : "invisible"}`}>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleEnterEditMode}
+                      className="p-1 h-auto cursor-pointer"
+                      aria-label={translate("resources.notes.action.edit")}
+                    />
+                  }
+                >
+                  <Edit className="w-4 h-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{translate("resources.notes.action.edit")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDelete}
+                      className="p-1 h-auto cursor-pointer"
+                      aria-label={translate("resources.notes.action.delete")}
+                    />
+                  }
+                >
+                  <Trash2 className="w-4 h-4" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{translate("resources.notes.action.delete")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </span>
+        </CanAccess>
         <div className="flex-1"></div>
         <span className="text-sm text-muted-foreground">
           <RelativeDate date={note.date} />

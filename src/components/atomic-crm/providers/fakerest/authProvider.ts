@@ -1,7 +1,7 @@
 import type { AuthProvider } from "ra-core";
 
 import type { Sale } from "../../types";
-import { canAccess } from "../commons/canAccess";
+import { canAccess, getAccessRole } from "../commons/canAccess";
 import { dataProvider } from "./dataProvider";
 
 export const DEFAULT_USER = {
@@ -69,8 +69,7 @@ export const authProvider: AuthProvider = {
     if (!localUser) return false;
 
     // Compute access rights from the sale role
-    const role = localUser.administrator ? "admin" : "user";
-    return canAccess(role, params);
+    return canAccess(getAccessRole(localUser), params);
   },
   getIdentity: () => {
     const userItem = localStorage.getItem(USER_STORAGE_KEY);

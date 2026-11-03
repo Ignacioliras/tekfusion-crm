@@ -29,6 +29,8 @@ const getBaseDataProvider = () =>
     apiKey: import.meta.env.VITE_SB_PUBLISHABLE_KEY,
     supabaseClient: getSupabaseClient(),
     sortOrder: "asc,desc.nullslast" as any,
+    // business_lines is keyed by its enum code; every other table uses id.
+    primaryKeys: new Map([["business_lines", ["code"]]]),
   });
 
 const processCompanyLogo = async (params: any) => {
@@ -151,6 +153,7 @@ const getDataProviderWithCustomMethods = () => {
         first_name,
         last_name,
         administrator,
+        role,
         avatar,
         disabled,
       } = data;
@@ -167,6 +170,7 @@ const getDataProviderWithCustomMethods = () => {
             first_name,
             last_name,
             administrator,
+            role,
             disabled,
             avatar,
           },

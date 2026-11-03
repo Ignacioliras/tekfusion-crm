@@ -5,6 +5,7 @@ import {
   ShowBase,
   useShowContext,
   useTranslate,
+  CanAccess,
 } from "ra-core";
 import type { ShowBaseProps } from "ra-core";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,6 +23,7 @@ import { MobileContent } from "../layout/MobileContent";
 import { CompanyAvatar } from "../companies/CompanyAvatar";
 import { NoteCreate, NotesIterator, NotesIteratorMobile } from "../notes";
 import { NoteCreateSheet } from "../notes/NoteCreateSheet";
+import { TagsList } from "./TagsList";
 import { TagsListEdit } from "./TagsListEdit";
 import { ContactEditSheet } from "./ContactEditSheet";
 import { ContactStatusSelector } from "./ContactInputs";
@@ -110,16 +112,18 @@ const ContactShowContentMobile = () => {
             <h1 className="truncate text-xl font-semibold">{defaultTitle}</h1>
           </Link>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          aria-label={translate("ra.action.edit")}
-          onClick={() => setEditOpen(true)}
-        >
-          <Pencil className="size-5" />
-        </Button>
+        <CanAccess resource="contacts" action="edit">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            aria-label={translate("ra.action.edit")}
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil className="size-5" />
+          </Button>
+        </CanAccess>
       </MobileHeader>
       <MobileContent>
         <div className="mb-6">
@@ -187,12 +191,14 @@ const ContactShowContentMobile = () => {
                   <p className="text-muted-foreground mb-4">
                     {translate("resources.notes.empty")}
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => setNoteCreateOpen(true)}
-                  >
-                    {translate("resources.notes.action.add")}
-                  </Button>
+                  <CanAccess resource="contact_notes" action="create">
+                    <Button
+                      variant="outline"
+                      onClick={() => setNoteCreateOpen(true)}
+                    >
+                      {translate("resources.notes.action.add")}
+                    </Button>
+                  </CanAccess>
                 </div>
               }
               loading={false}
@@ -250,7 +256,13 @@ const ContactShowContentMobile = () => {
                 </h3>
                 <Separator />
                 <div className="mt-3">
-                  <TagsListEdit />
+                  <CanAccess
+                    resource="contacts"
+                    action="edit"
+                    accessDenied={<TagsList />}
+                  >
+                    <TagsListEdit />
+                  </CanAccess>
                 </div>
               </div>
             </div>

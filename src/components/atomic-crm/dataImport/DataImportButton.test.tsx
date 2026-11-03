@@ -280,8 +280,8 @@ describe("DataImportButton", () => {
       .getByLabelText("CSV File")
       .upload(
         csvFile("deals.csv", [
-          "name,company,stage,amount,expected_closing_date",
-          "New website,Acme,Cotizado,4500.50,2026-09-30",
+          "name,company,stage,amount,expected_closing_date,sales_email",
+          `New website,Acme,Cotizado,4500.50,2026-09-30,${DEFAULT_USER.email}`,
         ]),
       );
     await screen.getByRole("button", { name: "Start import" }).click();
@@ -292,7 +292,8 @@ describe("DataImportButton", () => {
     expect(deals).toHaveLength(1);
     // The hooks are read through the dialog rather than called directly, so the
     // wiring this feature adds is covered too — the owner in particular, which
-    // the dialog is the only thing to bring in
+    // the dialog is the only thing to bring in. The owner is the user named in
+    // sales_email (TekFusion: never the importer by default, docs/10)
     expect(deals[0]).toMatchObject({
       // A fractional amount would make the bigint column reject the row
       amount: 4501,
