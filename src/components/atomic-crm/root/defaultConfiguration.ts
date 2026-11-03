@@ -2,7 +2,7 @@ import { ETAPAS, ETAPAS_CERRADAS } from "../tekfusion/estados";
 import type { ConfigurationContextValue } from "./ConfigurationContext";
 // Import the logos as module assets so Vite resolves their URL relative to the
 // JS chunk (import.meta.url), not the current route. A plain "./logos/..." path
-// breaks on nested routes like /oauth/consent and under a deployment sub-path.
+// breaks on nested routes and under a deployment sub-path.
 import darkModeLogo from "./logos/logo_atomic_crm_dark.svg";
 import lightModeLogo from "./logos/logo_atomic_crm_light.svg";
 

@@ -593,11 +593,6 @@ export const englishCrmMessages = {
         "You cannot add more than 10 secondary email addresses",
       secondary_emails_help:
         "Other addresses you send emails from. Leave one empty to remove it.",
-      mcp: {
-        title: "MCP Server",
-        description:
-          "Use this URL to connect your AI assistant to your CRM data via the Model Context Protocol (MCP).",
-      },
       password: {
         change: "Change password",
       },

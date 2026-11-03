@@ -5,9 +5,18 @@ import {
   defaultDealCategories,
   defaultDealStages,
 } from "../../../root/defaultConfiguration";
-import type { Deal } from "../../../types";
+import { LINEAS_NEGOCIO } from "../../../tekfusion/lineas";
+import type { Deal, OriginChannel } from "../../../types";
 import type { Db } from "./types";
 import { randomDate } from "./utils";
+
+const ORIGIN_CHANNELS: OriginChannel[] = [
+  "correo",
+  "formulario",
+  "bot",
+  "whatsapp",
+  "manual",
+];
 
 export const generateDeals = (db: Db): Deal[] => {
   const deals = Array.from(Array(50).keys()).map((id) => {
@@ -41,6 +50,10 @@ export const generateDeals = (db: Db): Deal[] => {
       expected_closing_date,
       sales_id: company.sales_id!,
       index: 0,
+      business_line: random.arrayElement(LINEAS_NEGOCIO).value,
+      origin_channel: random.arrayElement(ORIGIN_CHANNELS),
+      last_activity_at: created_at,
+      followups_enabled: true,
     };
   });
   // compute index based on stage

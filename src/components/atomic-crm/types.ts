@@ -8,6 +8,34 @@ import type {
   DEAL_CREATED,
   DEAL_NOTE_CREATED,
 } from "./consts";
+import type { LineaNegocio } from "./tekfusion/lineas";
+
+// TekFusion (Fase 2, supabase/schemas/10_tekfusion_tables.sql). Enum values are
+// in Spanish on purpose: they match the UI constants and the lead classifier.
+export type UserRole = "manager" | "executive" | "reader";
+export type OriginChannel =
+  "correo" | "formulario" | "bot" | "whatsapp" | "manual" | "migracion";
+
+export type BusinessLineConfig = {
+  code: Exclude<LineaNegocio, "indeterminada">;
+  name: string;
+  owner_sales_id?: Identifier | null;
+  substitute_sales_id?: Identifier | null;
+  keywords: string[];
+};
+
+export type LostReason = {
+  name: string;
+  active: boolean;
+  position: number;
+} & Pick<RaRecord, "id">;
+
+export type SalesAbsence = {
+  sales_id: Identifier;
+  starts_on: string;
+  ends_on: string;
+  reason?: string | null;
+} & Pick<RaRecord, "id">;
 
 export type SignUpData = {
   email: string;
@@ -31,6 +59,10 @@ export type Sale = {
   first_name: string;
   last_name: string;
   administrator: boolean;
+  /** Source of truth for permissions; `administrator` is kept in sync by a trigger. */
+  role: UserRole;
+  whatsapp_phone?: string | null;
+  signature?: string | null;
   avatar?: RAFile;
   disabled?: boolean;
   user_id: string;
@@ -101,6 +133,8 @@ export type Contact = {
   status: string;
   background: string;
   phone_jsonb: PhoneNumberAndType[];
+  do_not_contact: boolean;
+  anonymized_at?: string | null;
   nb_tasks?: number;
   company_name?: string;
 } & Pick<RaRecord, "id">;
@@ -128,6 +162,16 @@ export type Deal = {
   expected_closing_date: string;
   sales_id: Identifier;
   index: number;
+  business_line: LineaNegocio;
+  ai_confidence?: number | null;
+  origin_channel: OriginChannel;
+  raw_source?: Record<string, unknown> | null;
+  first_response_at?: string | null;
+  last_activity_at: string;
+  lost_reason_id?: Identifier | null;
+  won_amount?: number | null;
+  previous_deal_id?: Identifier | null;
+  followups_enabled: boolean;
 } & Pick<RaRecord, "id">;
 
 export type DealNote = {

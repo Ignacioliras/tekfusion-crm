@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useDataProvider, useGetIdentity, type DataProvider } from "ra-core";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import { LINEA_INDETERMINADA } from "../tekfusion/lineas";
 import { useCompanyResolver } from "./useCompanyResolver";
 import { createEachRow } from "./createEachRow";
 import {
@@ -71,6 +72,10 @@ export function useDealImport(): ProcessImportBatch {
               index: indexes.get(row) ?? 0,
               created_at: now,
               updated_at: now,
+              business_line: LINEA_INDETERMINADA,
+              origin_channel: "migracion",
+              last_activity_at: now,
+              followups_enabled: true,
             },
           }),
         ),

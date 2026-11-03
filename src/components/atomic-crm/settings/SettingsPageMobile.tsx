@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Check, Copy, LogOut, Moon, Smartphone, Sun } from "lucide-react";
+import { LogOut, Moon, Smartphone, Sun } from "lucide-react";
 import {
   email,
   Form,
@@ -35,12 +35,6 @@ import {
   useTranslate,
 } from "ra-core";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 import { MobileContent } from "../layout/MobileContent";
 import MobileHeader from "../layout/MobileHeader";
@@ -111,7 +105,6 @@ export const SettingsPageMobile = () => {
           <div className="space-y-6">
             <ProfileSection />
             <PreferencesSection />
-            <McpServerSection />
             <AboutSection />
           </div>
 
@@ -543,28 +536,6 @@ const ThemeRow = () => {
   );
 };
 
-const McpServerSection = () => {
-  const translate = useTranslate();
-
-  return (
-    <div>
-      <SectionLabel>
-        {translate("crm.profile.mcp.title", { _: "MCP Server" })}
-      </SectionLabel>
-      <p className="text-sm text-muted-foreground mb-2 px-1">
-        {translate("crm.profile.mcp.description", {
-          _: "Use this URL to connect your AI assistant to your CRM data via the Model Context Protocol (MCP).",
-        })}
-      </p>
-      <SettingsGroup>
-        <CopyPasteRow
-          value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`}
-        />
-      </SettingsGroup>
-    </div>
-  );
-};
-
 const AboutSection = () => {
   const translate = useTranslate();
 
@@ -588,51 +559,5 @@ const AboutSection = () => {
         </Item>
       </SettingsGroup>
     </div>
-  );
-};
-
-const CopyPasteRow = ({ value }: { value: string }) => {
-  const translate = useTranslate();
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    setCopied(true);
-    navigator.clipboard.writeText(value);
-    setTimeout(() => {
-      setCopied(false);
-    }, 1500);
-  };
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Item
-              size="sm"
-              className="cursor-pointer flex-nowrap"
-              onClick={handleCopy}
-            />
-          }
-        >
-          <ItemContent className="overflow-hidden">
-            <ItemTitle className="font-normal truncate">{value}</ItemTitle>
-          </ItemContent>
-          <ItemActions className="shrink-0">
-            {copied ? (
-              <Check className="size-4 text-muted-foreground" />
-            ) : (
-              <Copy className="size-4 text-muted-foreground" />
-            )}
-          </ItemActions>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>
-            {copied
-              ? translate("crm.common.copied")
-              : translate("crm.common.copy")}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 };

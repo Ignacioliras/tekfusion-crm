@@ -50,9 +50,12 @@ describe("i18nProvider", () => {
   it("falls back to english for keys without a spanish translation", async () => {
     await i18nProvider.changeLocale("es");
 
-    // OAuth consent is not used by TekFusion, so it stays untranslated.
-    expect(i18nProvider.translate("ra-supabase.oauth.authorize")).toBe(
-      "Authorize Application",
+    // ra-supabase keys that no TekFusion screen uses stay in English.
+    expect(i18nProvider.translate("ra-supabase.auth.missing_tokens")).toBe(
+      "Faltan los tokens de acceso y de renovación",
+    );
+    expect(i18nProvider.translate("ra.page.not_found")).not.toBe(
+      "ra.page.not_found",
     );
   });
 

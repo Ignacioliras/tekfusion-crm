@@ -83,7 +83,6 @@ export const authProvider: AuthProvider = {
   },
   async getAuthorizationDetails() {
     await new Promise((resolve) => setTimeout(resolve, 500));
-    // return dummy data to avoid errors in OAuthConsentPage
     return {
       data: {
         authorization_id: "dummy",

@@ -84,6 +84,14 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **5 · Empresas visibles para todo usuario interno** (lectura); escritura gerencia y ejecutivos; borrado solo gerencia. Los datos personales viven en `contacts`, que sí queda restringido.
 - **Consecuencias:** las policies `using (true)` de Atomic se eliminan de `05_policies.sql` (no se apilan). Valores de enum en español, iguales a los de la interfaz. "Ganado exige monto" y "perdido exige motivo" se agregan en Fase 3 con su pantalla.
 
+## 2026-11-03 · Endurecimiento tras la revisión de la Fase 2 (security-reviewer + database-reviewer)
+- **Motivo:** los dos agentes de ECC revisaron `main..fase-2/datos` con el encargo de Ignacio. Los 6 puntos pedidos salieron OK; lo que sigue son sus hallazgos, todos corregidos con test pgTAP (`supabase/tests/15_rls_endurecimiento.test.sql` y nuevas aserciones en `14_rls_cobertura`).
+- **Alto (database-reviewer):** un ejecutivo podía traerse un contacto ajeno agregándolo a `contact_ids` de su propio lead y desde ahí leerlo y editarlo. Trigger `guard_deal_contact_ids`: un ejecutivo solo enlaza contactos propios o sin dueño; `protect_contact_owner`: no crea contactos a nombre de otro ni los reasigna (solo gerencia).
+- **Medio (security-reviewer):** un usuario desactivado con JWT vigente podía quitarse su propio ban por la Edge Function `users`; además `disabled ?? false` reactivaba a quien se editara sin ese campo. La función rechaza usuarios desactivados y solo cambia el ban cuando un administrador lo manda explícitamente (`_shared/activeSale.ts`, con test).
+- **Grants:** `anon` queda solo con `select` sobre `init_state` (login); `authenticated` sin `TRUNCATE/REFERENCES/TRIGGER`; en `sales` solo escribe por PostgREST las columnas de perfil más las tres que protege el trigger (`email`, `user_id`, `secondary_emails` quedan fuera); las funciones nuevas no son ejecutables por `anon`/PUBLIC; privilegios por defecto de `postgres` en `public` sin `anon`. Todo en `12_tekfusion_grants.sql`.
+- **Otros:** siempre queda al menos un manager activo (trigger `ensure_active_manager`); `take_deal` excluye leads archivados; la puerta de los triggers de guarda es el rol de conexión, no `auth.uid()`; las policies de Storage exigen usuario interno (el bucket sigue público hasta las URLs firmadas de la Fase 3); `activity_log` ya no expone `raw_source`; las policies usan `contact_ids @> array[id]` (usa el índice GIN) y llaman los helpers como `(select fn())` para evaluarlos una vez por consulta; FKs con `on delete` explícito e índices para las policies.
+- **No se hizo (fuera de alcance):** bucket privado con URLs firmadas (Fase 3); `enable_signup = false` en producción se decide al crear el proyecto; interfaz para el rol lector (ítem "Auth: roles" de la Fase 2).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
