@@ -26,3 +26,5 @@
 - En tests de navegador, no llamar `screen.unmount()` a mano y después dejar que corra el cleanup automático: el doble desmontaje deja estado roto y el test **siguiente** del archivo falla sin razón aparente. Un `it` por render.
 - `buildDeal()` trae `expected_closing_date` con hora ISO; `DealShow` lo rechaza ("Invalid date format. Expected YYYY-MM-DD") y la ficha no se dibuja. En tests de la ficha, pasar `expected_closing_date: "2025-02-01"`. No se corrigió el builder (fuera de la tarea).
 - Los validadores de ra-core reciben la ruta completa del input en `props.finalSource` (`absences.0.ends_on`), no en `props.source`.
+- Cualquier lectura del `formState` de react-hook-form (aunque sea el de `useFormState` local) marca esa clave como rastreada en el formulario raíz. Leer `validatingFields` + un input que se registra tarde = setState en el render de otro componente.
+- React avisa "Cannot update a component while rendering…" una sola vez por par de componentes y por página: en un archivo de tests, solo el primer caso que lo provoca falla.

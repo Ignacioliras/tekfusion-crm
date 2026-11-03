@@ -15,7 +15,13 @@ import {
   warning,
 } from "ra-core";
 import { Loader2, Save } from "lucide-react";
-import { FormProvider, useFormContext, useFormState } from "react-hook-form";
+import {
+  FormProvider,
+  get,
+  useFormContext,
+  useFormState,
+  type FieldError,
+} from "react-hook-form";
 import type { UseMutationOptions } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -33,19 +39,26 @@ const FormItemContext = createContext<FormItemContextValue>(
 );
 
 const useFormField = () => {
-  const { getFieldState, formState } = useFormContext();
   const { id, name } = useContext(FormItemContext);
-
-  const fieldState = getFieldState(name, formState);
+  // Field components only show the error, so they subscribe to `errors` of
+  // this field and nothing else. Reading the whole field state
+  // (getFieldState over formState) made the form track validatingFields: an
+  // input registered after the form mounted — a filter that appears later —
+  // then made react-hook-form re-render the form synchronously during that
+  // input's render ("Cannot update a component while rendering a different
+  // component", seen on the kanban and contact filters).
+  const { errors } = useFormState({ name });
+  const error = get(errors, name) as FieldError | undefined;
 
   return useMemo(
     () => ({
       formItemId: id,
       formDescriptionId: `${id}-description`,
       formMessageId: `${id}-message`,
-      ...fieldState,
+      invalid: !!error,
+      error,
     }),
-    [id, fieldState],
+    [id, error],
   );
 };
 

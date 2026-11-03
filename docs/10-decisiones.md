@@ -114,6 +114,11 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Descartado:** mapeo de columnas en pantalla (el CSV del Sheets se adapta a la plantilla; si hace falta, se cotiza); tabla `importaciones` de `docs/05` (el reporte se muestra, no se guarda); agregar una nota al lead activo en vez de omitir (opción descartada por Ignacio).
 - **Arreglo de paso:** el filtro `@in` del adaptador FakeRest rechazaba nombres entre comillas con puntos ("S.A.", "Ltda."): la importación entera fallaba en modo demo. Ahora acepta cualquier carácter salvo la comilla, como PostgREST.
 
+## 2026-11-03 · Aviso "Cannot update a component while rendering" en los filtros
+- **Causa:** `useFormField` (`src/components/admin/form.tsx`, dependencia mutable de shadcn-admin-kit) leía todo el estado del campo con `getFieldState(name, formState)`. Leer `validatingFields` del proxy hace que react-hook-form 7.90 lo rastree en el formulario raíz; entonces un input que se registra después de montado el formulario (el filtro de ejecutivo del kanban aparece cuando se resuelve el permiso) dispara `_setValid → _updateIsValidating`, que notifica en sincronía al `FilterLiveForm` mientras se renderiza el input. Pasaba también en Contactos. No era de la RLS ni del rol de Andrea.
+- **Arreglo:** los componentes de campo solo muestran el error, así que `useFormField` se suscribe únicamente a `errors` del campo (`useFormState({ name })`). Test de regresión: `misc/FilterRenderWarning.test.tsx` (falla sin el arreglo).
+- **Descartado:** parchar ra-core o react-hook-form en `node_modules`; copiar `FilterLiveForm` para no leer `isValid`.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
