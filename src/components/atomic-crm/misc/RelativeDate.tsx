@@ -25,6 +25,10 @@ import { useLocaleState } from "ra-core";
 export const getDateFnsLocale = (locale: string) =>
   locale.startsWith("es") ? es : locale.startsWith("fr") ? fr : enUS;
 
+// The i18n locale is a language ("es"); dates and numbers follow Chilean conventions.
+export const toIntlLocale = (locale: string): string =>
+  locale === "es" ? "es-CL" : locale;
+
 export const formatLocalizedDate = (date: string, locale = "en") =>
   new Intl.DateTimeFormat(locale, {
     year: "numeric",

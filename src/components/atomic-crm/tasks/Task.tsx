@@ -6,7 +6,9 @@ import {
   useNotify,
   useTranslate,
   useUpdate,
+  useLocaleState,
 } from "ra-core";
+import { toIntlLocale } from "../misc/RelativeDate";
 import { useEffect, useState } from "react";
 import { ReferenceField } from "@/components/admin/reference-field";
 import { DateField } from "@/components/admin/date-field";
@@ -36,6 +38,7 @@ export const Task = ({
   const { taskTypes } = useConfigurationContext();
   const notify = useNotify();
   const translate = useTranslate();
+  const [locale = "es"] = useLocaleState();
   const queryClient = useQueryClient();
   const getContactRepresentation = useGetRecordRepresentation("contacts");
 
@@ -124,7 +127,14 @@ export const Task = ({
             <div className="text-sm text-muted-foreground">
               {translate("resources.tasks.fields.due_short")}
               &nbsp;
-              <DateField source="due_date" record={task} showDate showTime />
+              <DateField
+                source="due_date"
+                record={task}
+                showDate
+                showTime
+                locales={toIntlLocale(locale)}
+                options={{ dateStyle: "short", timeStyle: "short" }}
+              />
               {showContact && (
                 <ReferenceField<TData, Contact>
                   source="contact_id"
