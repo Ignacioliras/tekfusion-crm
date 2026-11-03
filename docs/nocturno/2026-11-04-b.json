@@ -31,12 +31,13 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 22:49:46"
     },
     {
       "id": "T2",
@@ -51,7 +52,9 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db && npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "db reset aplica ambas migraciones; todos los pgTAP pasan, incluido 26_sales_ranking (números contra el seed, cero filas para ejecutivo y lector); suite de app en verde; el ítem 'Vistas SQL' de la Fase 6 en docs/09 queda [x].",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
@@ -116,7 +119,9 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Typecheck y lint limpios; suite de app en verde con metrics.test.ts (fórmulas y ceros) y los tests de componente (totales, % 24 h, cambio de rango, estado vacío); los tests existentes del dashboard de Atomic siguen pasando.",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": false,
       "estado": "pendiente",
       "intentos": 0,
@@ -145,7 +150,10 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests del ranking (gerencia ve y ordena, ejecutivo y lector no ven, rango cambia totales); los tres ítems de la Fase 6 en docs/09 quedan [x].",
-      "depende_de": ["T2", "T4"],
+      "depende_de": [
+        "T2",
+        "T4"
+      ],
       "necesita_supabase": false,
       "estado": "pendiente",
       "intentos": 0,
@@ -153,6 +161,13 @@
       "commit": null,
       "costo_usd": 0,
       "session_id": null
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-03 22:49:43",
+      "modelo": "opus",
+      "simulado": false
     }
   ]
 }

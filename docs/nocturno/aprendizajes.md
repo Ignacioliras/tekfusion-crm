@@ -35,3 +35,4 @@
 - `db diff` no ve las filas de `storage.buckets` ni emite los grants correctos para tablas nuevas (deja los privilegios por defecto, que dan DML a `authenticated`): migración a mano y `revoke all … from authenticated` explícito.
 - Un `security definer` ve `current_user` = dueño: para saber si llama una sesión de API usar `auth.role()`.
 - Reiniciar Supabase local (`stop`/`start`) para que tome cambios de `config.toml` (contraseñas, MFA); `db reset` no basta.
+- 2026-11-04-b T1: en pgTAP, `sum(bigint)` devuelve `numeric` y `is(numeric, bigint)` no existe: castear `sum(...)::bigint` al comparar con `count(*)`. Una vista nueva necesita `revoke all … from authenticated` antes del `grant select` (los privilegios por defecto le darían TRIGGER y rompen el test 14).

@@ -70,7 +70,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Medir precisión del clasificador con los 50 correos etiquetados por TekFusion (objetivo ≥ 90 % en línea correcta; si no, ajustar prompt/palabras clave).
 
 ## Fase 6 · Dashboard de gerencia (3 días)
-- [ ] Vistas SQL (`vista_dashboard_mensual`, `vista_ranking_ejecutivos`).
+- [ ] Vistas SQL (`vista_dashboard_mensual`, `vista_ranking_ejecutivos`). Hecha `dashboard_monthly` (2026-11-04, `13_tekfusion_dashboard.sql`, test `25_dashboard_monthly`); falta el ranking.
 - [ ] Dashboard con filtros de fecha; versión sin ranking para ejecutivo/lector.
 - [ ] Verificar números contra los datos semilla a mano.
 
