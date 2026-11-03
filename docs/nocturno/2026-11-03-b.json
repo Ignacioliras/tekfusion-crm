@@ -116,13 +116,16 @@
       "criterio": "Typecheck y lint limpios; el archivo de test existe.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 05:14:09"
+      "commit": "c230b61ff0e31909ac00c8a1f0cd322b333a9d80",
+      "costo_usd": 0.89166,
+      "session_id": "9767b489-ca86-4953-a252-1d742494b583",
+      "inicio": "2026-11-03 05:14:09",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Creé lineas.ts (LINEAS_NEGOCIO, LineaNegocio, detectarLineaPorPalabras) y lineas.test.ts con 5 casos; typecheck y lint pasan, pero los tests no se pudieron correr (no levanta el navegador y node -e fue denegado).",
+      "fin": "2026-11-03 05:16:06"
     }
   ],
   "corridas": [
