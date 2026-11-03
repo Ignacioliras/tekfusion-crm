@@ -134,13 +134,16 @@
         "T1"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 23:04:30"
+      "commit": "81e02e72d1f8f32ee6b9ed863da046bd9152e513",
+      "costo_usd": 2.3048011,
+      "session_id": "a6f861a3-e15b-4b5e-b0ed-627300d160c9",
+      "inicio": "2026-11-03 23:04:30",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Dashboard de gerencia con filtro de meses, métricas puras con tests (incluidos ceros), tests de componente e integración arriba del dashboard de Atomic; suite completa en verde.",
+      "fin": "2026-11-03 23:10:50"
     },
     {
       "id": "T5",
