@@ -1,4 +1,4 @@
-import { FileText, Import, Settings, User, Users } from "lucide-react";
+import { FileText, Import, Info, Settings, User, Users } from "lucide-react";
 import { CanAccess, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
 import { RefreshButton } from "@/components/admin/refresh-button";
@@ -9,6 +9,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { ImportPage } from "../misc/ImportPage";
 import { ChangelogPage } from "../misc/ChangelogPage";
+import { CreditosPage } from "../creditos/CreditosPage";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
 
 const Header = () => {
@@ -95,6 +96,7 @@ const Header = () => {
                   </CanAccess>
                   <ImportFromJsonMenuItem />
                   <ChangelogMenuItem />
+                  <CreditosMenuItem />
                 </UserMenu>
               </div>
             </div>
@@ -209,6 +211,24 @@ const ChangelogMenuItem = () => {
     >
       <FileText />
       {translate("crm.changelog.title")}
+    </DropdownMenuItem>
+  );
+};
+
+const CreditosMenuItem = () => {
+  const userMenuContext = useUserMenu();
+  if (!userMenuContext) {
+    throw new Error("<CreditosMenuItem> must be used inside <UserMenu>");
+  }
+  return (
+    <DropdownMenuItem
+      onClick={userMenuContext.onClose}
+      render={
+        <Link to={CreditosPage.path} className="flex items-center gap-2" />
+      }
+    >
+      <Info />
+      Créditos
     </DropdownMenuItem>
   );
 };
