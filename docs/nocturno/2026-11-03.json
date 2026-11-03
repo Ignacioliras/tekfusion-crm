@@ -55,13 +55,16 @@
         "T1"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 04:48:55"
+      "commit": "6fc855605e5366b2563adf90171f2b2e49295182",
+      "costo_usd": 2.0185110000000006,
+      "session_id": "5eb1d372-08dc-4c2f-8ad5-80d365b8bba4",
+      "inicio": "2026-11-03 04:48:55",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé estados.ts con las seis etapas TekFusion, las conecté a la configuración por defecto, el gráfico, el pipeline y el formulario de leads, y actualicé los tests; typecheck, lint y build pasan.",
+      "fin": "2026-11-03 04:56:44"
     },
     {
       "id": "T3",
