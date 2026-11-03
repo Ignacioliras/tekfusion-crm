@@ -33,6 +33,7 @@ export const createTestAuthProvider = (): AuthProvider => ({
 
 const baseSale: Sale = {
   administrator: true,
+  role: "manager",
   avatar: DEFAULT_USER.avatar as Sale["avatar"],
   disabled: false,
   email: DEFAULT_USER.email,
@@ -91,6 +92,7 @@ export const buildContact = (overrides: Partial<Contact> = {}): Contact => ({
   background: "",
   company_id: null,
   company_name: undefined,
+  do_not_contact: false,
   email_jsonb: [{ email: "ada@example.com", type: "Work" }],
   first_name: "Ada",
   first_seen: "2025-01-01T09:00:00.000Z",
@@ -112,6 +114,10 @@ export const buildContact = (overrides: Partial<Contact> = {}): Contact => ({
 export const buildDeal = (overrides: Partial<Deal> = {}): Deal => ({
   amount: 1000,
   archived_at: undefined,
+  business_line: "indeterminada",
+  origin_channel: "manual",
+  last_activity_at: "2025-01-01T09:00:00.000Z",
+  followups_enabled: true,
   categories: ["other"],
   company_id: 1,
   contact_ids: [],

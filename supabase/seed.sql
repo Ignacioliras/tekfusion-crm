@@ -307,7 +307,8 @@ select
     case when st.s[(g.i - 1) % 6 + 1] = 'archivado'
          then created.at + ((10 + g.i % 20) || ' days')::interval end,
     (created.at + ((30 + g.i % 30) || ' days')::interval)::date,
-    ex.ids[(g.i - 1) % 2 + 1],
+    -- alterna el ejecutivo por bloques de 6 para que cada uno tenga leads en todas las etapas
+    ex.ids[((g.i - 1) / 6) % 2 + 1],
     ((g.i - 1) / 6)::smallint
 from generate_series(1, 60) as g(i)
 cross join company_ids ci
