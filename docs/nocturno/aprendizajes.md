@@ -1,3 +1,4 @@
 - T6: 10 tests unitarios importan `*.stories.tsx` como fixtures (vía `src/test/StoryWrapper.tsx` + FakeRest): borrar Storybook rompe `test:unit:app`. Y `.husky/pre-commit` corre `registry:gen`: quitar esa línea antes de borrar `scripts/generate-registry.mjs`.
 - T7: el proyecto vitest 'functions' solo resuelve los `npm:`/`jsr:` con alias en vitest.config.ts (no hay alias para `npm:zod`), y `npm run typecheck` no cubre supabase/functions/. Por eso leadClassification.ts valida a mano, sin zod.
 - T8: `npm run typecheck` no revisa supabase/functions/; para tipar un archivo de ahí: `npx tsc --noEmit --strict --skipLibCheck --target es2022 --lib es2022,dom --module esnext --moduleResolution bundler --types vitest/globals <archivos>`.
+- T9: `npx supabase test db` necesita el stack local arriba; la 1ª vez baja la imagen pg_prove (~segundos). anon no tiene políticas pero sí `grant all` en tablas: solo RLS lo frena.

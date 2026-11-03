@@ -93,12 +93,13 @@
       "criterio": "`supabase test db` pasa con el test nuevo y el de humo.",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-03 05:13:17"
     },
     {
       "id": "T10",
