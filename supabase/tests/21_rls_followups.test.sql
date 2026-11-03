@@ -1,7 +1,7 @@
 -- Seguimientos (docs/08): se ven con el lead; los programa, ajusta y cancela
 -- gerencia o el ejecutivo dueño; cancelar es un update, nunca un delete.
 begin;
-select plan(15);
+select plan(16);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -51,6 +51,8 @@ select lives_ok(format('insert into public.followups (deal_id, step, scheduled_a
     (select own_deal from f)), 'ejecutivo programa un seguimiento en su lead');
 select throws_ok(format('insert into public.followups (deal_id, step, scheduled_at, channels) values (%s, 3, now(), ''{correo}'')',
     (select foreign_deal from f)), '42501', null, 'ejecutivo no programa seguimientos en un lead ajeno');
+select throws_ok(format('update public.followups set deal_id = (select max(id) from public.deals where sales_id = %s) where id = %s',
+    (select camila from fx), (select own_followup from f)), '42501', null, 'ejecutivo no mueve un seguimiento a otro lead');
 select throws_ok(format('delete from public.followups where id = %s', (select own_followup from f)),
   '42501', null, 'nadie borra seguimientos (cancelar es un update)');
 reset role;

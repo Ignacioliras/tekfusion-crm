@@ -187,7 +187,7 @@ create table public.quotes (
     constraint quotes_deal_version_key unique (deal_id, version),
     constraint quotes_version_positive check (version > 0),
     constraint quotes_amount_positive check (amount >= 0),
-    constraint quotes_pdf_path_in_deal_folder check (pdf_path ~ ('^deals/' || deal_id || '/[0-9a-f-]{36}\.pdf$')),
+    constraint quotes_pdf_path_in_deal_folder check (pdf_path ~ ('^deals/' || deal_id || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$')),
     constraint quotes_sent_has_channel check (sent_at is null or cardinality(sent_channels) > 0)
 );
 

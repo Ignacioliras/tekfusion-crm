@@ -2,7 +2,7 @@
 -- ejecutivo dueño del lead; nunca se borran. El PDF vive en el bucket privado
 -- "quotes" bajo deals/<id>/<uuid>.pdf (solo PDF, 15 MB).
 begin;
-select plan(20);
+select plan(23);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -61,11 +61,24 @@ select throws_ok(format('insert into public.quotes (deal_id, version, amount, pd
     (select own_deal from q), format('deals/%s/00000000-0000-4000-8000-000000000005.pdf', (select own_deal from q)), (select diego from fx)),
   '42501', null, 'ejecutivo no firma una cotización a nombre de otro');
 update public.quotes set amount = 1 where id = (select foreign_quote from q);
+select throws_ok(format('update public.quotes set sales_id = %s where deal_id = %s and version = 9', (select diego from fx), (select own_deal from q)),
+  '42501', null, 'ejecutivo no cambia el autor de una cotización');
+select throws_ok(format('update public.quotes set version = 8 where deal_id = %s and version = 9', (select own_deal from q)),
+  '42501', null, 'ejecutivo no cambia la versión de una cotización');
 select throws_ok(format('delete from public.quotes where deal_id = %s', (select own_deal from q)),
   '42501', null, 'nadie borra cotizaciones (sin grant de delete)');
 reset role;
 select isnt((select amount from public.quotes where id = (select foreign_quote from q)), 1::bigint,
   'ejecutivo no modifica la cotización de un lead ajeno');
+
+-- Un lector que quedó dueño de un lead (p. ej. lo bajaron de rol) no escribe en él.
+update public.deals set sales_id = (select id from public.sales where email = 'pablo.herrera@tekfusion-demo.cl') where id = (select foreign_deal from q);
+select pg_temp.login_as('pablo.herrera@tekfusion-demo.cl');
+select throws_ok(format('insert into public.quotes (deal_id, version, amount, pdf_path, is_current) values (%s, 12, 1000, %L, false)',
+    (select foreign_deal from q), format('deals/%s/00000000-0000-4000-8000-00000000000c.pdf', (select foreign_deal from q))),
+  '42501', null, 'lector dueño de un lead no cotiza en él');
+reset role;
+update public.deals set sales_id = (select diego from fx) where id = (select foreign_deal from q);
 
 -- Restricciones -------------------------------------------------------------------
 select throws_ok(format('insert into public.quotes (deal_id, version, amount, pdf_path) values (%s, 11, 1000, %L)',

@@ -2,7 +2,7 @@
 -- destinatario las marca leídas (y solo puede tocar read_at); las crea el
 -- sistema (n8n, service role); la misma alerta abierta no se repite.
 begin;
-select plan(14);
+select plan(15);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -46,6 +46,8 @@ select throws_ok(format('update public.alerts set recipient_sales_id = %s where 
   '42501', null, 'el destinatario no reasigna su alerta');
 select throws_ok(format('update public.alerts set message = ''otro'' where id = %s', (select own_alert from a)),
   '42501', null, 'el destinatario solo cambia read_at');
+select throws_ok(format('update public.alerts set read_at = null where id = %s', (select own_alert from a)),
+  '42501', null, 'una alerta leída no se vuelve a abrir');
 select throws_ok(format('delete from public.alerts where id = %s', (select own_alert from a)),
   '42501', null, 'nadie borra alertas');
 reset role;

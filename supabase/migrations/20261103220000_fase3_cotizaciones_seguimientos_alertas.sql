@@ -56,7 +56,7 @@ create table public.quotes (
     constraint quotes_deal_version_key unique (deal_id, version),
     constraint quotes_version_positive check (version > 0),
     constraint quotes_amount_positive check (amount >= 0),
-    constraint quotes_pdf_path_in_deal_folder check (pdf_path ~ ('^deals/' || deal_id || '/[0-9a-f-]{36}\.pdf$')),
+    constraint quotes_pdf_path_in_deal_folder check (pdf_path ~ ('^deals/' || deal_id || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$')),
     constraint quotes_sent_has_channel check (sent_at is null or cardinality(sent_channels) > 0)
 );
 
@@ -122,6 +122,20 @@ values ('quotes', 'quotes', false, 15728640, array['application/pdf'])
 on conflict (id) do update
 set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
+-- A reader that owns a lead must not write its quotes, follow-ups, notes or
+-- attachments (database-reviewer): can_edit_deal now requires an executive.
+CREATE OR REPLACE FUNCTION "public"."can_edit_deal"("deal_id" bigint) RETURNS boolean
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO ''
+    AS $$
+  select (select public.is_manager()) or (
+    (select public.current_user_role()) = 'executive' and exists (
+      select 1 from public.deals d
+      where d.id = deal_id and d.sales_id = (select public.current_sales_id())
+    )
+  )
+$$;
+
 -- Fase 3 -------------------------------------------------------------------
 -- quotes and followups follow their lead (docs/08): visible with the lead
 -- (deals RLS), written by managers and the lead's owner, never deleted.
@@ -130,6 +144,37 @@ set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_typ
 create or replace trigger set_quote_sales_id_trigger
     before insert on public.quotes
     for each row execute function public.set_sales_id_default();
+
+-- An executive edits its quotes and follow-ups but cannot move them to another
+-- lead, nor change a quote's author or version (ra-core sends whole records,
+-- so unchanged values pass). Managers and the system are not limited.
+CREATE OR REPLACE FUNCTION "public"."guard_deal_child"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+begin
+  if current_user not in ('anon', 'authenticated') or public.is_manager() then
+    return new;
+  end if;
+  if new.deal_id is distinct from old.deal_id then
+    raise exception 'only managers can move a % to another lead', tg_table_name using errcode = '42501';
+  end if;
+  -- Nested: plpgsql does not short-circuit, and followups has no sales_id.
+  if tg_table_name = 'quotes' then
+    if (new.sales_id, new.version) is distinct from (old.sales_id, old.version) then
+      raise exception 'only managers can change the author or version of a quote' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create or replace trigger guard_quote_update_trigger
+    before update on public.quotes
+    for each row execute function public.guard_deal_child();
+create or replace trigger guard_followup_update_trigger
+    before update on public.followups
+    for each row execute function public.guard_deal_child();
 
 create policy quotes_select on public.quotes for select to authenticated
     using (exists (select 1 from public.deals d where d.id = deal_id));
@@ -151,9 +196,11 @@ create policy followups_update on public.followups for update to authenticated
 -- read (12_ grants update on read_at alone); the system inserts them.
 create policy alerts_select on public.alerts for select to authenticated
     using (recipient_sales_id = (select public.current_sales_id()) or (select public.is_manager()));
+-- with check read_at not null: an alert is never reopened (it would clash
+-- with a newer open one in alerts_open_key).
 create policy alerts_update on public.alerts for update to authenticated
     using (recipient_sales_id = (select public.current_sales_id()))
-    with check (recipient_sales_id = (select public.current_sales_id()));
+    with check (recipient_sales_id = (select public.current_sales_id()) and read_at is not null);
 
 -- templates and quick replies: configuration, everyone reads, managers write.
 create policy templates_select on public.templates for select to authenticated
@@ -173,7 +220,7 @@ create policy quotes_files_select on storage.objects for select to authenticated
         and (storage.foldername(name))[1] = 'deals' and public.can_read_attachment(name));
 create policy quotes_files_insert on storage.objects for insert to authenticated
     with check (bucket_id = 'quotes' and (select public.is_internal_user())
-        and name ~ '^deals/[0-9]{1,15}/[0-9a-f-]{36}\.pdf$' and public.can_write_attachment(name));
+        and name ~ '^deals/[1-9][0-9]{0,14}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$' and public.can_write_attachment(name));
 
 -- Fase 3. Default privileges would grant authenticated everything (TRUNCATE
 -- included) on new tables: spell out each one. quotes and followups are never
@@ -192,3 +239,4 @@ grant all on sequence public.quotes_id_seq, public.followups_id_seq, public.temp
 
 -- New tables never reach anon (default privileges already exclude it; explicit for remote).
 revoke all on table public.quotes, public.followups, public.alerts, public.templates, public.quick_replies from anon;
+revoke execute on function public.guard_deal_child() from public, anon;

@@ -72,3 +72,4 @@ revoke all on sequence public.alerts_id_seq from authenticated;
 grant all on sequence public.alerts_id_seq to service_role;
 grant all on sequence public.quotes_id_seq, public.followups_id_seq, public.templates_id_seq, public.quick_replies_id_seq
     to authenticated, service_role;
+revoke execute on function public.guard_deal_child() from public, anon;
