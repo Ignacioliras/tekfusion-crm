@@ -1,0 +1,52 @@
+{
+  "fecha": "AAAA-MM-DD",
+  "fase": 1,
+  "modelo": "opus",
+  "limites": {
+    "turnos_por_tarea": 60,
+    "usd_por_tarea": 4,
+    "usd_total": 20,
+    "hora_fin": "07:00",
+    "intentos": 2,
+    "minutos_verificacion": 15
+  },
+  "tareas": [
+    {
+      "id": "T1",
+      "titulo": "Constantes de etapas del pipeline con etiquetas en español",
+      "descripcion": "Crear src/components/atomic-crm/tekfusion/estados.ts exportando ETAPAS (nuevo, contactado, cotizado, ganado, perdido, archivado) con value, label en español y color, y un test unitario que verifique que no hay etapas duplicadas y que todas tienen label.",
+      "archivos": [
+        "src/components/atomic-crm/tekfusion/estados.ts",
+        "src/components/atomic-crm/tekfusion/estados.test.ts"
+      ],
+      "verificacion": "npm run typecheck && npx vitest run src/components/atomic-crm/tekfusion",
+      "criterio": "Typecheck limpio; el test pasa; ninguna etapa como string suelto en el archivo.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T2",
+      "titulo": "Seed ficticio de TekFusion",
+      "descripcion": "Reemplazar supabase/seed.sql por datos ficticios de TekFusion: 3 líneas de negocio, 4 usuarios (2 ejecutivos, 1 gerencia, 1 lector), 12 empresas, 20 contactos, 60 deals repartidos en todas las etapas con fechas de los últimos 90 días. Nombres inventados, nunca reales.",
+      "archivos": [
+        "supabase/seed.sql"
+      ],
+      "verificacion": "npx supabase db reset --local",
+      "criterio": "db reset termina sin error (si el SQL falla, el comando falla).",
+      "depende_de": [],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    }
+  ]
+}

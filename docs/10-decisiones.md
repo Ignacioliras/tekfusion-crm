@@ -1,0 +1,70 @@
+# 10 · Registro de decisiones (ADR)
+
+Formato: fecha · decisión · motivo · alternativas descartadas · consecuencias. Las nuevas van al final.
+
+## 2026-10-09 · WhatsApp con Evolution API (Baileys), no API oficial de Meta
+- **Motivo:** evitar plantillas aprobadas por Meta para seguimientos y simplificar la puesta en marcha.
+- **Descartado:** Cloud API oficial (plantillas obligatorias fuera de 24 h; verificación de Meta Business).
+- **Consecuencias:** riesgo de bloqueo del número (aceptado por TekFusion y escrito en el acuerdo); reglas anti-bloqueo obligatorias; fallback a Cloud API vía Evolution documentado.
+
+## 2026-10-09 · Bandeja de WhatsApp dentro del CRM, uso desde computador
+- **Motivo:** una sola pantalla para el ejecutivo; medición real de tiempos de respuesta; experiencia previa negativa con chats móviles de plataformas.
+- **Descartado:** Chatwoot aparte (dos pantallas; sin pipeline); responder desde el celular vía dispositivos vinculados (queda como opción futura).
+- **Consecuencias:** el celular solo recibe avisos; no se construye app móvil.
+
+## 2026-10-13 · Modelo comercial
+- Desarrollo $1.200.000 + IVA (50/50), **el sistema queda a nombre de TekFusion**; plan de mantención opcional $100.000 + IVA/mes (plataforma + mantención + soporte), 2 primeros meses incluidos desde la entrega; sin permanencia; mejoras se cotizan aparte. Si no toman el plan, asumen plataforma y fallas sin soporte de Libux.
+- **Consecuencia técnica:** todas las cuentas a nombre de TekFusion desde el inicio; checklist de traspaso.
+
+## 2026-10-14 · Base del CRM: Atomic CRM (MIT)
+- **Motivo:** mismo stack (React + Supabase), licencia MIT que permite rediseñar y entregar como propio, base pequeña y activa.
+- **Descartado:** GoHighLevel (WhatsApp oficial, costo mensual alto, no es propiedad del cliente); Twenty (AGPL, permisos por fila de pago); Frappe (AGPL, Python); NocoBase y Evo CRM (licencia/marca impiden entregarlo como propio); EspoCRM/SuiteCRM (obligan a mostrar su marca). Ver informe "CRM open source para TekFusion".
+- **Consecuencias:** reemplazar las RLS por defecto de Atomic antes de cargar datos; página Créditos con componentes de terceros.
+
+## 2026-10-14 · Stack definitivo
+- Supabase Pro + Edge Functions para el receptor de WhatsApp; n8n en VPS para automatizaciones; Cloudflare Pages para hosting (Vercel Free no permite uso comercial); Claude Haiku para clasificación; Uptime Kuma para monitoreo.
+- **Regla:** mensajes de WhatsApp no pasan por n8n para guardarse.
+
+## 2026-10-28 · Correo de ejecutivos por IMAP/SMTP (VíaRed) y Gmail por contraseña de aplicación
+- **Motivo:** seguimientos a nombre del ejecutivo y detección de respuestas; Gmail por IMAP evita el vencimiento de OAuth en modo prueba.
+- **Pendiente:** confirmar que el plan de VíaRed permite IMAP y que SPF/DKIM están activos.
+
+## 2026-11-01 · Rol de Grok Bot en el proyecto
+- Grok Bot no construye el CRM. Se usa solo como herramienta interna de Libux: QA en staging, scribe de decisiones en Notion, redacción del manual, reporte narrativo semanal, borradores. Nunca toca producción, clientes reales ni credenciales. Datos de TekFusion no entran al cerebro de Libux. Clasificación de leads se queda con Haiku vía n8n. Ver `12-equipo-agentes.md`.
+
+## 2026-11-02 · Seguridad ampliada y controles automáticos
+- **Motivo:** la base de `08` cubría RLS, secretos y datos, pero no servidor, cuentas, contenido externo, correo ni respaldos fuera del proveedor. Un CRM que muestra correos y WhatsApp de desconocidos necesita sanitización explícita.
+- **Decisiones:** 2FA en cuentas y TOTP para gerencia; VPS sin puertos públicos; sanitización de contenido externo; Turnstile; SPF/DKIM/DMARC como requisito previo a seguimientos; respaldos semanales a Cloudflare R2 con prueba de restauración cronometrada; Sentry; plan de incidente; RF-17 (ley 21.719) incluido sin costo.
+- **Controles:** hooks de Claude Code (`.claude/hooks/`), lefthook + gitleaks, CI con pgTAP, Dependabot, plantilla de PR. Tareas 🔒 con nombre en `09`.
+- **Consecuencias:** +1 día en Fase 1, +0,5 en Fase 3 y Fase 5. Dentro de las 7 semanas.
+
+## 2026-11-02 · Cuentas creadas por Libux mientras TekFusion no entregue accesos
+- **Motivo:** no detener la Fase 1 por la tarjeta o el DNS. GitHub, Supabase (free para staging) y Cloudflare se crean en cuenta de Libux y se **transfieren** a TekFusion (GitHub: transferir repo; Supabase: transferir proyecto a su organización; Cloudflare: cambiar de cuenta antes de producción).
+- **Regla:** producción jamás se crea en cuenta de Libux. Registrar aquí la fecha de cada transferencia.
+
+## 2026-11-02 · Mejoras propuestas, no comprometidas
+- Las 11 mejoras listadas en `02-requisitos-funcionales.md` quedan fuera del alcance hasta que Ignacio decida cuáles entran. No se construyen "porque es fácil".
+
+## 2026-11-03 · Repo creado sobre Atomic CRM y fusión con su tooling
+- **Base:** marmelab/atomic-crm @ `251d3cccf4dc35c9f53036057bdf558dc2e108ba` (2 nov 2026), sin su historial. `LICENSE.md` (MIT) se conserva tal cual.
+- **Hallazgo:** Atomic ahora trae su propio sistema de agentes para Claude Code (orquestador + 6 agentes, ~30 hooks, reglas y skills), pensado para su devcontainer Linux. Sus reglas exigen inglés en todo archivo commiteado y prohíben correr validaciones a mano.
+- **Decisión:** se desactiva la orquestación (movida a `.claude/_atomic-harness/`, no se carga) y se conservan sus skills de código (`backend-dev`, `frontend-dev`, `shadcn-customization`, `update-branding`, `e2e-conventions`, `playwright-testing`, `ponytail*`) y sus hooks útiles (`bash-guard`, `pre-pr-checks`, `format-on-write`, `check-typescript-shortcuts`). Metodología: sigue siendo agent-skills (Addy Osmani).
+- **Ajustes:** pre-commit con husky + lint-staged de Atomic (no lefthook) + gitleaks; `make` reemplazado por scripts npm (Windows); CI = `check.yml` de Atomic + `seguridad.yml` nuestro (gitleaks, pgTAP, npm audit); se retiran `deploy.yml` (doc de Atomic en GH Pages) y `claude.yml` (bot @claude) — guardados en `docs/atomic/`.
+- **Modelo de datos:** reutilizar tablas de Atomic (`deals`=lead, `sales`=ejecutivo, `contacts`, `companies`) y nombres nuevos en inglés; esquema declarativo en `supabase/schemas/`. Mapeo en `05-modelo-datos.md`. Se confirma en Fase 2.
+- **Idioma:** código en inglés; interfaz en español vía i18n (Atomic trae inglés y francés con `ra-i18n-polyglot`; agregar mensajes `es` en Fase 3); docs y commits en español.
+- **Entorno:** Windows nativo en `D:\Tekfusion\tekfusion-crm`. Plan B si algún hook o script falla en Windows: el `.devcontainer/` de Atomic o WSL2.
+- **Node:** 24 (`.nvmrc` de Atomic), no 20.
+
+## 2026-11-03 · Sesiones nocturnas como loop por tareas
+- **Motivo:** un solo `claude -p` con toda la lista se traba a la mitad y se pierde el resto; además el contexto se degrada. El patrón probado en la comunidad ("Ralph loop") es una corrida por tarea con contexto limpio, estado en disco y verificación fuera del agente.
+- **Decisión:** `scripts/tekfusion/nocturno.mjs` (Node, Windows y Mac): cola JSON por noche, una corrida de `claude -p --output-format json` por tarea con `--max-turns`, `--max-budget-usd`, `--permission-prompts none` y herramientas acotadas; verificación la corre el script; commit si pasa, `reset --hard` + reintento con el error si falla; `BLOQUEADA:` para decisiones; dependencias entre tareas; reporte y `session_id` para retomar. Comandos `/nocturno` (arma la cola desde `docs/09`) y `/manana` (revisión).
+- **Descartado:** plugin `ralph-loop` oficial (menos control sobre verificación y reporte) y `--dangerously-skip-permissions` (en un PC real, no).
+- **Probado:** con un `claude` simulado, los casos hecha / falla+reintento / bloqueada / dependencia caída / Supabase apagado / Claude que no arranca.
+
+## Plantilla para nuevas decisiones
+```
+## AAAA-MM-DD · Título
+- **Motivo:**
+- **Descartado:**
+- **Consecuencias:**
+```

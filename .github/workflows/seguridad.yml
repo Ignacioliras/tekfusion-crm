@@ -1,0 +1,61 @@
+name: Seguridad
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secretos:
+    name: Escaneo de secretos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  rls:
+    name: Migraciones + tests de RLS (pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx supabase start -x studio,imgproxy,inbucket,edge-runtime,logflare,vector
+      - run: npx supabase db reset
+      - name: Tests de RLS
+        run: |
+          if ls supabase/tests/*.sql >/dev/null 2>&1; then
+            npx supabase test db
+          else
+            echo "Todavía no hay tests en supabase/tests (se crean en la Fase 2)."
+          fi
+      - if: always()
+        run: npx supabase stop --no-backup
+
+  dependencias:
+    name: npm audit (alto/crítico)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true   # pasa a bloqueante al cerrar la Fase 3
