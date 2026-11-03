@@ -86,13 +86,16 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos de alertas (contador, grupos, marcar una, marcar todas, enlace); Header.test.tsx sigue pasando; ítem 'Panel de alertas' de la Fase 3 en docs/09 marcado [x] con fecha, anotando que la captura se toma en la mañana.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-03 22:18:59"
+      "commit": "980fa68e861266e6453f09e8526947f24138c064",
+      "costo_usd": 1.9816646000000002,
+      "session_id": "c8e5952a-9550-4d47-8563-b2a1711e6e02",
+      "inicio": "2026-11-03 22:18:59",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: campana de alertas con contador de no leídas propias, panel agrupado por tipo con enlace a la ficha y marcar leída/todas (solo `read_at`), en headers de escritorio y móvil, con 5 tests y docs/09 actualizado.",
+      "fin": "2026-11-03 22:24:01"
     },
     {
       "id": "T4",
