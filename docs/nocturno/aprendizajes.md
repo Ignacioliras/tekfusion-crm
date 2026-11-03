@@ -8,3 +8,5 @@
 - Los tests del proyecto vitest `app` necesitan Chromium de Playwright (no instalado: falla `npx playwright install`); los tests puros corren con una config node temporal en el scratchpad (`environment: "node"` + alias `@`).
 - PENDIENTE: `src/components/atomic-crm/dataImport/deals_sample.csv` todavía usa etapas de Atomic ("Opportunity", "Proposal Sent"); al importarlo caen a `nuevo`. Además el comentario de `parseCell.ts:55` cita "proposal-sent".
 - PENDIENTE: el gráfico `DealsChart.tsx` pondera los leads abiertos con multiplicadores heredados de Atomic (nuevo 0,2 / contactado 0,5 / cotizado 0,8) y cuenta `archivado` como perdido; falta que gerencia confirme ese criterio.
+- 2026-11-03 T3: `ls` con `2>&1` en Bash se rechaza; para explorar `node_modules` usa Glob (con `path` a node_modules) y Read. Las fuentes de `ra-language-english` están en `node_modules/ra-language-english/src/index.ts`.
+- PENDIENTE: `src/lib/i18n/es.ts` solo traduce las claves `ra.*`; los textos propios de Atomic (escritos directo en los componentes o con claves fuera de `ra.*`, no revisado) seguirían en inglés.
