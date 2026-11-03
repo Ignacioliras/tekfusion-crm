@@ -23,7 +23,7 @@ export const authMessages: PartialCrmMessages = {
         creating: "Creando...",
         initial_user_created: "Usuario inicial creado",
       },
-      welcome_title: "Bienvenido al CRM",
+      welcome_title: "Bienvenido a CRM TekFusion",
     },
   },
 };

@@ -26,7 +26,7 @@ export const dashboardMessages: PartialCrmMessages = {
       latest_notes: "Mis últimas notas",
       latest_notes_added_ago: "agregada %{timeAgo}",
       stepper: {
-        install: "Instalar el CRM",
+        install: "Instalar CRM TekFusion",
         progress: "%{step}/3 listos",
         whats_next: "¿Qué sigue?",
       },
