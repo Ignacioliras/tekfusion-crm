@@ -66,9 +66,9 @@ Deno.serve(async (req: Request) =>
 // Returns the files that no row uses anymore, among the given ones.
 //
 // A file counts as used when its number (`0.8262106278726917` for
-// `0.8262106278726917.pdf`) appears anywhere in one of the columns listed in
-// `refs`. We search for the number only, because the extension may be
-// URL-encoded in a stored URL.
+// `deals/12/0.8262106278726917.pdf`) appears anywhere in one of the columns
+// listed in `refs`. We search for the number only, because the extension may
+// be URL-encoded in a stored URL.
 //
 // This runs after the note change is saved, so the edited note is checked with
 // its new attachments: a file the note still has is kept.
@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) =>
 const getUnreferencedNames = async (names: string[]): Promise<string[]> => {
   const { rows } = await sql<{ name: string }>`
     with candidates as (
-      select name, substring(name from '^0\\.[0-9]+') as stem
+      select name, substring(name from '(0\\.[0-9]+)[^/]*$') as stem
       from jsonb_array_elements_text(${JSON.stringify(names)}::jsonb) as name
     ),
     refs as (

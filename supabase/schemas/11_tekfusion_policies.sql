@@ -414,12 +414,47 @@ create policy audit_log_select on public.audit_log for select to authenticated
 create policy favicons_excluded_domains_all on public.favicons_excluded_domains for all to authenticated
     using ((select public.is_internal_user())) with check ((select public.is_internal_user()));
 
--- storage: attachments only for internal users; managers and executives
--- upload and delete (docs/08). The bucket is still public (Atomic builds
--- public URLs): signed URLs come in Fase 3.
+-- storage: the attachments bucket is private; a user signs (reads) only the
+-- files of the leads and contacts it can see. Files are stored under the folder
+-- of their owner (uploadToBucket in the supabase dataProvider):
+--   deals/<deal_id>/…        the lead must be visible (deals RLS)
+--   contacts/<contact_id>/…  the contact must be visible (contacts RLS)
+--   companies/…, sales/…, config/…  any internal user (logos, avatars)
+--   anything else (files Atomic left at the root)  managers only
+-- Security invoker on purpose: the subselects run under the caller's RLS.
+CREATE OR REPLACE FUNCTION "public"."can_read_attachment"("object_name" text) RETURNS boolean
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+declare
+  parts text[] := string_to_array(object_name, '/');
+  owner_id bigint;
+begin
+  if not public.is_internal_user() then
+    return false;
+  end if;
+  if coalesce(array_length(parts, 1), 0) < 2 then
+    return public.is_manager();
+  end if;
+  if parts[1] in ('companies', 'sales', 'config') then
+    return true;
+  end if;
+  if parts[1] in ('deals', 'contacts') and array_length(parts, 1) >= 3 and parts[2] ~ '^[0-9]+$' then
+    owner_id := parts[2]::bigint;
+    if parts[1] = 'deals' then
+      return exists (select 1 from public.deals d where d.id = owner_id);
+    end if;
+    return exists (select 1 from public.contacts c where c.id = owner_id);
+  end if;
+  return public.is_manager();
+end;
+$$;
+
 create policy attachments_select on storage.objects for select to authenticated
-    using (bucket_id = 'attachments' and (select public.is_internal_user()));
+    using (bucket_id = 'attachments' and (select public.is_internal_user()) and public.can_read_attachment(name));
+-- Uploads go under a known folder; managers and executives only (docs/08).
 create policy attachments_insert on storage.objects for insert to authenticated
-    with check (bucket_id = 'attachments' and (select public.current_user_role()) in ('manager', 'executive'));
+    with check (bucket_id = 'attachments' and (select public.current_user_role()) in ('manager', 'executive')
+        and (storage.foldername(name))[1] in ('deals', 'contacts', 'companies', 'sales', 'config'));
 create policy attachments_delete on storage.objects for delete to authenticated
     using (bucket_id = 'attachments' and (select public.current_user_role()) in ('manager', 'executive'));

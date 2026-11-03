@@ -32,7 +32,7 @@ Función auxiliar: `fn_rol()` devuelve el rol del `auth.uid()`; `fn_es_gerencia(
 - **Correos y mensajes de WhatsApp son HTML/texto de desconocidos.** Nunca se renderizan crudos. Correos: convertir a texto o sanitizar con DOMPurify (lista blanca: p, br, b, i, a sin javascript:, ul/li). WhatsApp: siempre texto plano. **[Fase 3]**
 - **Clasificador (Haiku):** el texto del correo puede intentar manipular al modelo. La salida se valida contra el esquema JSON exacto (zod); cualquier otra cosa → `indeterminada`. El resultado solo clasifica y asigna; nunca ejecuta acciones, envía mensajes ni cambia configuración. **[Fase 5]**
 - **Formulario web:** Cloudflare Turnstile (gratis) para que los bots no llenen el CRM. **[Fase 1]**
-- **Adjuntos:** tipos permitidos (PDF, JPG, PNG, XLSX, DOCX), tamaño máximo 15 MB, nombre de archivo regenerado (UUID) al guardar en Storage. **[Fase 3]**
+- **Adjuntos:** tipos permitidos (PDF, JPG, PNG, XLSX, DOCX), tamaño máximo 15 MB, nombre de archivo regenerado (UUID) al guardar en Storage. **[Fase 3]** Bucket privado, URLs firmadas de 60 minutos y policy por lead/contacto visible: **hecho en Fase 2** (2026-11-03, `can_read_attachment`, test `18_storage_adjuntos`).
 - **Edge Functions:** validación de entrada con zod; respuesta 401 sin `apikey`; límite de tamaño del body; rate limit básico por IP (Supabase lo trae en Edge Functions). **[Fase 4]**
 
 ## Storage

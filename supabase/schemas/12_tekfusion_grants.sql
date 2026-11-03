@@ -37,6 +37,8 @@ grant update (first_name, last_name, avatar, signature, whatsapp_phone, role, ad
 -- Helpers and RPCs: never for anon or PUBLIC.
 revoke execute on function public.take_deal(bigint) from public, anon;
 revoke execute on function public.offboard_sale(bigint) from public, anon;
+revoke execute on function public.can_read_attachment(text) from public, anon;
+grant execute on function public.can_read_attachment(text) to authenticated, service_role;
 grant execute on function public.offboard_sale(bigint) to authenticated, service_role;
 revoke execute on function public.current_sales_id() from public, anon;
 revoke execute on function public.current_user_role() from public, anon;

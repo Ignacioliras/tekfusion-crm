@@ -129,6 +129,13 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Pendiente de otras fases:** rotar clave SMTP/IMAP (Fase 5, cuando exista `sales_mail_accounts`) y reasignar conversaciones de WhatsApp (Fase 4, tabla `wa_conversations`): agregar ambos pasos a `offboard_sale` en su fase.
 - **Aprendizaje:** dentro de una función `security definer`, `current_user` es el dueño (postgres): para distinguir sesión de API de backend hay que usar `auth.role()` (claim del JWT).
 
+## 2026-11-03 · Adjuntos privados: bucket cerrado y URLs firmadas
+- **Decisión:** el bucket `attachments` deja de ser público (migración `adjuntos_privados`, escrita a mano porque `db diff` ignora las filas de `storage.buckets`). Lo que se guarda en la base sigue siendo la URL pública (referencia estable, y la función `delete_note_attachments` la entiende); al **leer**, el data provider de Supabase la cambia por una URL firmada de 60 minutos (`providers/supabase/signedUrls.ts`, hook `afterRead` de notas, empresas, contactos, usuarios; `activity_log` y los logos de configuración a mano). Las firmas se recuerdan en memoria hasta 5 minutos antes de vencer.
+- **Policy:** `can_read_attachment(name)` (security invoker: sus subconsultas pasan por la RLS de quien llama). Cada archivo vive bajo la carpeta de su dueño, que `uploadToBucket` fija al subir: `deals/<id>/…` exige ver el lead, `contacts/<id>/…` ver el contacto, `companies/`, `sales/`, `config/` cualquier usuario interno, y lo que Atomic dejó en la raíz solo gerencia. Subir: gerencia y ejecutivos, solo bajo una carpeta conocida. Test pgTAP `18_storage_adjuntos`; verificado en pantalla como Andrea (`docs/capturas/adjunto-firmado.png`): la imagen carga por `/object/sign/` y la URL pública responde 400.
+- **Límite conocido:** react-query persiste su caché 24 h en localStorage; tras una hora la URL guardada vence y el adjunto no abre hasta que la vista vuelve a pedir los datos (al montarse). Si molesta, bajar `gcTime` de las notas o firmar al hacer clic.
+- **Descartado:** firmar al subir y guardar la URL firmada (vence); un bucket aparte por tipo (los archivos de Atomic ya están todos en `attachments`); mover a Storage los avatares de contactos (vienen de Gravatar, URL externa, no se tocan).
+- **Aprendizaje:** en un script de Node, `String.replace` con reemplazo de texto convierte `$$` en `$` (rompe los cuerpos de funciones SQL); pasar una función como reemplazo.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

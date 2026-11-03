@@ -39,6 +39,20 @@ describe("getCandidateNames", () => {
     ]);
   });
 
+  it("keeps the owner folder of a file, from its path or its URL", () => {
+    const payload = payloadWith([
+      { path: "deals/12/0.41.pdf" },
+      { src: `${BUCKET_URL}/contacts/7/0.42.png` },
+      { src: `${BUCKET_URL}/companies/0.43.png` },
+    ]);
+
+    expect(getCandidateNames(payload)).toEqual([
+      "deals/12/0.41.pdf",
+      "contacts/7/0.42.png",
+      "companies/0.43.png",
+    ]);
+  });
+
   it("ignores names that do not look like files uploaded by the app", () => {
     const payload = payloadWith([
       { path: "../0.1.txt" },

@@ -29,6 +29,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Auth: login, recuperación, creación de usuarios desde Configuración, roles. 🔒 TOTP obligatorio para gerencia; contraseña mínima 12; protección contra contraseñas filtradas activada. *En progreso (2026-11-03, fase-2/usuarios): Configuración → Usuarios con rol, línea, suplente y ausencias, editable solo por gerencia; el lector no ve botones de crear, editar ni borrar. Faltan TOTP, contraseña mínima y HaveIBeenPwned.*
 - [ ] Importador CSV (RF-15) con mapeo, dedupe y reporte de resultado; probar con una copia **anonimizada** del Sheets. *En progreso (2026-11-03, fase-2/usuarios): importador de leads con línea, etapa, ejecutivo por correo, dedupe por correo/teléfono y reporte; probado con `test-data/leads-30.csv` (30 filas ficticias: 25 creadas, 3 duplicadas, 2 errores). Falta probar con la copia anonimizada del Sheets real.*
 - [ ] Revisar Security Advisor de Supabase: cero avisos de nivel error.
+- [x] 🔒 Adjuntos privados: bucket cerrado, URLs firmadas de 60 min, policy por lead/contacto visible (2026-11-03, fase-2/seguridad; adelantado de la Fase 3).
 
 ## Fase 3 · CRM (7 días)
 - [ ] Rediseño visual: identidad TekFusion, navegación (Pipeline, Leads, WhatsApp, Dashboard, Configuración), estados vacíos y mensajes en español.
