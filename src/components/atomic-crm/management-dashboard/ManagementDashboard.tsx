@@ -31,6 +31,7 @@ import {
   within24hRate,
   type Totals,
 } from "./metrics";
+import { SalesRanking } from "./SalesRanking";
 
 const CURRENCY = "CLP";
 // ponytail: one page of rows; the view has at most 24 rows per month (4 lines × 6 channels).
@@ -46,6 +47,7 @@ const monthLabel = (month: string): string =>
 /**
  * Commercial metrics over the dashboard_monthly view (RF-11). The view applies
  * the RLS: an executive sees their own leads, managers and readers see all.
+ * Managers also get the executive ranking for the same range.
  */
 export const ManagementDashboard = () => {
   const translate = useTranslate();
@@ -139,6 +141,7 @@ export const ManagementDashboard = () => {
                 labelFor={(value) => labelOf(CANALES_ORIGEN, value)}
               />
             </div>
+            <SalesRanking from={from} to={to} />
           </div>
         )}
       </CardContent>

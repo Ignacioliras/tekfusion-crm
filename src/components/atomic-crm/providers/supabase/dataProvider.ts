@@ -49,6 +49,7 @@ const getBaseDataProvider = () =>
     primaryKeys: new Map([
       ["business_lines", ["code"]],
       ["dashboard_monthly", ["month", "business_line", "origin_channel"]],
+      ["sales_ranking", ["month", "sales_id"]],
     ]),
   });
 

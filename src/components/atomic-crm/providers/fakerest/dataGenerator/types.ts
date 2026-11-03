@@ -14,6 +14,7 @@ import type {
   Template,
   Sale,
   SalesAbsence,
+  SalesRankingRow,
   Tag,
   Task,
 } from "../../../types";
@@ -40,5 +41,6 @@ export interface Db {
   send_queue: Array<{ id: number; quote_id: number; channel: string }>;
   // A view in Supabase; FakeRest has no views, so it stays empty in the demo.
   dashboard_monthly: DashboardMonthlyRow[];
+  sales_ranking: SalesRankingRow[];
   configuration: Array<{ id: number; config: ConfigurationContextValue }>;
 }

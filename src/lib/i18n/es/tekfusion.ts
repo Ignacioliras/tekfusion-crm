@@ -156,6 +156,16 @@ export const tekfusionMessages = {
       close_rate_by_channel: "Tasa de cierre por canal",
       close_rate_by_month: "Tasa de cierre por mes",
       won_lost: "Ganados / perdidos",
+      ranking: {
+        title: "Ranking de ejecutivos",
+        empty: "No hay leads asignados en el período elegido.",
+        sales: "Ejecutivo",
+        leads_attended: "Leads atendidos",
+        avg_first_response: "Primera respuesta promedio",
+        quotes_sent: "Cotizaciones enviadas",
+        won: "Ganados",
+        won_amount: "Monto ganado",
+      },
     },
   },
 };

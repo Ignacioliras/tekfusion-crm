@@ -1,4 +1,4 @@
-import { buildRow } from "./ManagementDashboard.fixtures";
+import { buildRankingRow, buildRow } from "./ManagementDashboard.fixtures";
 import {
   EMPTY_VALUE,
   avgFirstResponseHours,
@@ -9,6 +9,7 @@ import {
   funnel,
   inRange,
   previousRange,
+  rankSales,
   shiftMonth,
   sumRows,
   totalsBy,
@@ -126,5 +127,63 @@ describe("metrics del dashboard de gerencia", () => {
     expect(currentMonth(new Date("2026-12-01T02:00:00Z"))).toBe("2026-11");
     expect(inRange(rows[0], "2026-10", "2026-10")).toBe(true);
     expect(inRange(rows[1], "2026-10", "2026-10")).toBe(false);
+  });
+
+  it("ranks executives by won amount over the months in range", () => {
+    const ranking = [
+      buildRankingRow({
+        month: "2026-10-01",
+        sales_id: 1,
+        leads: 3,
+        leads_attended: 2,
+        avg_first_response_hours: 10,
+        quotes_sent: 2,
+        won: 1,
+        won_amount: 1_000_000,
+      }),
+      buildRankingRow({
+        month: "2026-11-01",
+        sales_id: 1,
+        leads: 2,
+        leads_attended: 2,
+        avg_first_response_hours: 4,
+        quotes_sent: 1,
+        won: 1,
+        won_amount: 500_000,
+      }),
+      buildRankingRow({
+        month: "2026-11-01",
+        sales_id: 2,
+        leads: 4,
+        leads_attended: 1,
+        avg_first_response_hours: 2,
+        quotes_sent: 3,
+        won: 2,
+        won_amount: 4_000_000,
+      }),
+      buildRankingRow({
+        month: "2026-09-01",
+        sales_id: 3,
+        leads: 9,
+        won: 9,
+        won_amount: 9_000_000,
+      }),
+    ];
+
+    const result = rankSales(ranking, "2026-10", "2026-11");
+
+    expect(result.map((line) => line.salesId)).toEqual([2, 1]);
+    // (10 h × 2 + 4 h × 2) / 4 = 7 h
+    expect(result[1]).toEqual({
+      salesId: 1,
+      leads: 5,
+      leadsAttended: 4,
+      avgFirstResponseHours: 7,
+      quotesSent: 3,
+      won: 2,
+      wonAmount: 1_500_000,
+    });
+    expect(rankSales(ranking, "2026-11", "2026-11")[1].wonAmount).toBe(500_000);
+    expect(rankSales(ranking, "2026-12", "2026-12")).toEqual([]);
   });
 });
