@@ -1,0 +1,3 @@
+# Falsos positivos revisados a mano. Formato: <commit>:<archivo>:<regla>:<línea>
+# Dato de prueba del test del webhook de Evolution (T8, 2026-11-03), no es un secreto.
+986ba13a052b793769c809d19cbc092695e56665:supabase/functions/_shared/evolutionWebhook.test.ts:generic-api-key:9
