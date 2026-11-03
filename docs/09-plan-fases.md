@@ -37,7 +37,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Cotizaciones: subir PDF, monto, versiones; "Enviar cotización" por correo (Edge `email-send`) y WhatsApp (Edge `whatsapp-send`); cambio automático a `cotizado` y programación de seguimientos (RF-06). 🔒 Validación de tipo/tamaño de adjuntos, nombre regenerado.
 - [ ] Programador de seguimientos por lead: ver, ajustar, cancelar; plantillas (RF-07, parte UI).
 - [ ] Panel de alertas (campana) y marcado de leídas (RF-09, parte UI).
-- [ ] Configuración completa (RF-14) salvo WhatsApp. 🔒 "Dar de baja usuario" con el checklist de `08`.
+- [ ] Configuración completa (RF-14) salvo WhatsApp. 🔒 "Dar de baja usuario" con el checklist de `08`. *"Dar de baja" hecho en Fase 2 (2026-11-03, fase-2/seguridad): `offboard_sale` + Edge `users` DELETE + `audit_log`; tests pgTAP `17_baja_usuario` y de componente.*
 - [ ] Ingreso manual de lead.
 - [ ] 🔒 RF-17: "Anonimizar contacto" (gerencia) y aviso de privacidad para el formulario web.
 - [ ] 🔒 Sentry en el frontend.

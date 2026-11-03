@@ -8,7 +8,7 @@ Base: documentación oficial de Supabase (checklist de seguridad), RLS por defec
 - Sesiones: expiración 12 h; cierre de sesión al cambiar contraseña.
 - **2FA (TOTP) obligatorio para gerencia**, opcional para ejecutivos. Supabase Auth MFA. **[Fase 2]**
 - Contraseña mínima 12 caracteres; activar en Supabase la protección contra contraseñas filtradas (HaveIBeenPwned). **[Fase 2]**
-- Baja de un usuario (checklist): desactivar en Auth, cerrar sus sesiones, rotar su clave SMTP/IMAP, reasignar sus leads y conversaciones, anotar en `actividades`. Vive en Configuración → Usuarios → "Dar de baja". **[Fase 3]**
+- Baja de un usuario (checklist): desactivar en Auth, cerrar sus sesiones, rotar su clave SMTP/IMAP, reasignar sus leads y conversaciones, anotar en `audit_log`. Vive en Configuración → Usuarios → "Dar de baja". **[Hecho en Fase 2** (2026-11-03): RPC `offboard_sale` + Edge `users` DELETE; faltan SMTP/IMAP (Fase 5) y conversaciones (Fase 4)**]**
 
 ## RLS (políticas por tabla)
 Función auxiliar: `fn_rol()` devuelve el rol del `auth.uid()`; `fn_es_gerencia()`.

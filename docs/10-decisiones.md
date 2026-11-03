@@ -121,6 +121,14 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Arreglo:** los componentes de campo solo muestran el error, así que `useFormField` se suscribe únicamente a `errors` del campo (`useFormState({ name })`). Test de regresión: `misc/FilterRenderWarning.test.tsx` (falla sin el arreglo).
 - **Descartado:** parchar ra-core o react-hook-form en `node_modules`; copiar `FilterLiveForm` para no leer `isValid`.
 
+## 2026-11-03 · "Dar de baja usuario" (checklist de docs/08)
+- **Decisión:** la baja es una RPC transaccional `offboard_sale(sale_id)` (`11_tekfusion_policies.sql`, security definer, solo gerencia vía `auth.role()` + `is_manager()`, nunca sobre uno mismo): desactiva la fila de `sales`, reasigna los leads abiertos (`nuevo`/`contactado`/`cotizado`, no archivados) al suplente de sus líneas, le traspasa las líneas que tenía a cargo y lo quita como suplente, borra sus sesiones (`auth.sessions`, cascada a refresh tokens) y escribe en `audit_log`. La Edge Function `users` (método `DELETE`) banea primero en Auth y luego llama la RPC con service role; si la RPC rechaza, levanta el ban. Los leads cerrados conservan al dueño (métricas).
+- **Sin suplente** (o suplente desactivado/lector): los leads quedan sin asignar y las líneas sin dueño.
+- **Registro:** tabla nueva `audit_log` (`actor_sales_id`, `action`, `target_sales_id`, `deal_id`, `details`): es la "actividades" de eventos de sistema que `docs/05` llamaba `deal_events`, generalizada para que sirva también a eventos de usuario. Lee gerencia; escribe solo el sistema (RPC, service role). Las filas con `deal_id` (`deal.reassigned`) alimentan la línea de tiempo del lead en la Fase 3.
+- **Interfaz:** botón "Dar de baja" en la ficha del usuario (Configuración → Usuarios) con confirmación; el interruptor "Desactivado" de Atomic solo aparece para **reactivar**, así la desactivación siempre pasa por el checklist.
+- **Pendiente de otras fases:** rotar clave SMTP/IMAP (Fase 5, cuando exista `sales_mail_accounts`) y reasignar conversaciones de WhatsApp (Fase 4, tabla `wa_conversations`): agregar ambos pasos a `offboard_sale` en su fase.
+- **Aprendizaje:** dentro de una función `security definer`, `current_user` es el dueño (postgres): para distinguir sesión de API de backend hay que usar `auth.role()` (claim del JWT).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

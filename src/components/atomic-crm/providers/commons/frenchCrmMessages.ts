@@ -318,6 +318,14 @@ export const frenchCrmMessages = {
         substitute:
           "Reçoit les nouveaux leads pendant l'absence de cet utilisateur.",
       },
+      offboard: {
+        button: "Désactiver l'utilisateur",
+        title: "Désactiver %{name} ?",
+        content:
+          "Son accès est désactivé et ses sessions fermées ; ses leads ouverts et ses lignes passent à son remplaçant, ou restent non attribués. Le compte peut être réactivé ensuite.",
+        success: "Utilisateur désactivé",
+        error: "L'utilisateur n'a pas pu être désactivé. Veuillez réessayer.",
+      },
       validation: {
         self_substitute:
           "Un utilisateur ne peut pas être son propre remplaçant",

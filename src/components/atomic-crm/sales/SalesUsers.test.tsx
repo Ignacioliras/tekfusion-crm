@@ -1,5 +1,12 @@
 import { render } from "vitest-browser-react";
-import { buildSale, StoryWrapper } from "@/test/StoryWrapper";
+import { createDataProvider } from "@/components/atomic-crm/providers/fakerest";
+import type { Deal } from "@/components/atomic-crm/types";
+import {
+  buildDeal,
+  buildSale,
+  createCrmDb,
+  StoryWrapper,
+} from "@/test/StoryWrapper";
 
 import { canAccess } from "../providers/commons/canAccess";
 
@@ -133,6 +140,73 @@ describe("Configuración → Usuarios", () => {
         screen.getByText("The end date must be on or after the start date"),
       )
       .toBeVisible();
+  });
+
+  it("offboards a user: disabled, open leads and lines handed to the substitute", async () => {
+    const dataProvider = createDataProvider({
+      db: createCrmDb({
+        ...data,
+        deals: [
+          buildDeal({
+            id: 1,
+            name: "Lead abierto de Diego",
+            sales_id: 3,
+            stage: "cotizado",
+          }),
+          buildDeal({
+            id: 2,
+            name: "Lead ganado de Diego",
+            sales_id: 3,
+            stage: "ganado",
+          }),
+        ],
+      }),
+      latency: 0,
+      silent: true,
+    });
+    const screen = await render(
+      <StoryWrapper initialEntries={["/sales/3"]} dataProvider={dataProvider}>
+        {null}
+      </StoryWrapper>,
+    );
+
+    await screen.getByRole("button", { name: "Offboard user" }).click();
+    const dialog = screen.getByRole("dialog");
+    await expect
+      .element(dialog.getByText("Offboard Diego Muñoz?"))
+      .toBeVisible();
+    await dialog.getByRole("button", { name: "Offboard user" }).click();
+
+    const diego = screen.getByRole("row", { name: /^Diego Muñoz/ });
+    await expect.element(diego.getByText("Disabled")).toBeVisible();
+    await expect.element(diego.getByText("—").first()).toBeVisible();
+    // the line and the substitute's seat moved to Camila
+    const camila = screen.getByRole("row", { name: /^Camila Rojas/ });
+    await expect.element(camila.getByText(/Tuberías/)).toBeVisible();
+
+    const { data: deals } = await dataProvider.getList<Deal>("deals", {
+      filter: {},
+      pagination: { page: 1, perPage: 10 },
+      sort: { field: "id", order: "ASC" },
+    });
+    expect(deals.map(({ name, sales_id }) => ({ name, sales_id }))).toEqual([
+      { name: "Lead abierto de Diego", sales_id: 2 },
+      { name: "Lead ganado de Diego", sales_id: 3 },
+    ]);
+  });
+
+  it("offers no offboarding on oneself", async () => {
+    const screen = await render(
+      <StoryWrapper initialEntries={["/sales/0"]} data={data}>
+        {null}
+      </StoryWrapper>,
+    );
+    await expect
+      .element(screen.getByRole("heading", { name: /^Edit / }))
+      .toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Offboard user" }).elements(),
+    ).toHaveLength(0);
   });
 
   it("is not available to an executive", async () => {

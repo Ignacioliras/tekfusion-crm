@@ -26,11 +26,10 @@ export function SalesInputs() {
         readOnly={record?.id === identity?.id}
         helperText={false}
       />
-      <BooleanInput
-        source="disabled"
-        readOnly={record?.id === identity?.id}
-        helperText={false}
-      />
+      {/* Deactivation goes through "Dar de baja" (OffboardButton); the switch only reactivates. */}
+      {record?.disabled && (
+        <BooleanInput source="disabled" helperText={false} />
+      )}
     </div>
   );
 }

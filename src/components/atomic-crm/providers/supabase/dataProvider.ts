@@ -195,6 +195,21 @@ const getDataProviderWithCustomMethods = () => {
 
       return updatedData.data;
     },
+    /** "Dar de baja": disables the user through the users Edge Function (docs/08). */
+    async salesOffboard(id: Identifier): Promise<void> {
+      const { error } = await getSupabaseClient().functions.invoke("users", {
+        method: "DELETE",
+        body: { sales_id: id },
+      });
+      if (error) {
+        console.error("salesOffboard.error", error);
+        const details = await error?.context?.json?.().catch(() => ({}));
+        throw Object.assign(
+          new Error(details?.message || "Failed to offboard the user"),
+          { code: details?.code },
+        );
+      }
+    },
     async updatePassword(id: Identifier) {
       const { data: passwordUpdated, error } =
         await getSupabaseClient().functions.invoke<boolean>("update_password", {

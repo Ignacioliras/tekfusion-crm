@@ -313,6 +313,14 @@ export const englishCrmMessages = {
         substitute:
           "Receives this user's new leads while they are away. Applies to all their lines.",
       },
+      offboard: {
+        button: "Offboard user",
+        title: "Offboard %{name}?",
+        content:
+          "Their access is disabled and their sessions closed; their open leads and business lines go to their substitute, or stay unassigned. The account can be reactivated later.",
+        success: "User offboarded",
+        error: "The user could not be offboarded. Please try again.",
+      },
       validation: {
         self_substitute: "A user cannot be their own substitute",
         absence_range: "The end date must be on or after the start date",

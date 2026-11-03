@@ -99,6 +99,79 @@ begin
 end;
 $$;
 
+-- "Dar de baja" a user (docs/08 checklist, Fase 2). Managers only, never on
+-- oneself. Disables the user, hands their open leads and their business lines
+-- to their substitute (or leaves them unassigned), closes every session and
+-- writes the audit trail. The Auth ban is set by the users Edge Function, which
+-- calls this through the service role. Reactivation: Atomic's "disabled" switch.
+-- Not here yet: SMTP/IMAP keys (Fase 5) and WhatsApp conversations (Fase 4).
+CREATE OR REPLACE FUNCTION "public"."offboard_sale"("sale_id" bigint) RETURNS "public"."audit_log"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  me bigint := public.current_sales_id();
+  target public.sales;
+  substitute bigint;
+  reassigned bigint[];
+  entry public.audit_log;
+begin
+  -- auth.role(), not current_user: inside a security definer function
+  -- current_user is the owner. API sessions must be managers; the service
+  -- role (users Edge Function) and backend roles pass.
+  if coalesce(auth.role(), '') in ('anon', 'authenticated') and not public.is_manager() then
+    raise exception 'only managers can offboard a user' using errcode = '42501';
+  end if;
+  select * into target from public.sales where id = sale_id for update;
+  if not found then
+    raise exception 'user % does not exist', sale_id using errcode = 'P0002';
+  end if;
+  if target.id = me then
+    raise exception 'a user cannot offboard itself' using errcode = '42501';
+  end if;
+  if target.disabled then
+    raise exception 'user % is already disabled', sale_id using errcode = 'P0001';
+  end if;
+
+  -- The substitute of the lines the user owns (one per user, Configuración →
+  -- Usuarios); only an active executive or manager can receive leads.
+  select l.substitute_sales_id into substitute
+    from public.business_lines l
+    join public.sales s on s.id = l.substitute_sales_id
+   where l.owner_sales_id = target.id and not s.disabled and s.role <> 'reader'
+   order by l.code limit 1;
+
+  -- Open leads (ETAPAS_ABIERTAS of estados.ts); closed and archived ones keep their owner.
+  with moved as (
+    update public.deals
+       set sales_id = substitute, updated_at = now(), last_activity_at = now()
+     where sales_id = target.id and archived_at is null
+       and stage in ('nuevo', 'contactado', 'cotizado')
+    returning id
+  )
+  select coalesce(array_agg(id order by id), '{}') into reassigned from moved;
+
+  update public.business_lines set owner_sales_id = substitute, substitute_sales_id = null
+   where owner_sales_id = target.id;
+  update public.business_lines set substitute_sales_id = null
+   where substitute_sales_id = target.id;
+
+  -- ensure_active_manager_trigger refuses to disable the last active manager.
+  update public.sales set disabled = true where id = target.id;
+  delete from auth.sessions where user_id = target.user_id;
+
+  insert into public.audit_log (actor_sales_id, action, target_sales_id, deal_id, details)
+  select me, 'deal.reassigned', target.id, d,
+         jsonb_build_object('from', target.id, 'to', substitute, 'reason', 'offboarding')
+    from unnest(reassigned) as d;
+  insert into public.audit_log (actor_sales_id, action, target_sales_id, details)
+  values (me, 'sale.offboarded', target.id,
+          jsonb_build_object('substitute_sales_id', substitute, 'reassigned_deal_ids', to_jsonb(reassigned)))
+  returning * into entry;
+  return entry;
+end;
+$$;
+
 -- Guard triggers -----------------------------------------------------------
 -- They run for API sessions only: service role (Edge Functions), postgres
 -- (migrations, seed) and other backend roles pass. The gate is the connection
@@ -332,6 +405,10 @@ create policy sales_absences_select on public.sales_absences for select to authe
     using ((select public.is_internal_user()));
 create policy sales_absences_write on public.sales_absences for all to authenticated
     using ((select public.is_manager())) with check ((select public.is_manager()));
+
+-- audit_log: managers read it; only the system writes (offboard_sale, service role).
+create policy audit_log_select on public.audit_log for select to authenticated
+    using ((select public.is_manager()));
 
 -- Lookup table used by the favicon trigger; harmless, but never for outsiders.
 create policy favicons_excluded_domains_all on public.favicons_excluded_domains for all to authenticated

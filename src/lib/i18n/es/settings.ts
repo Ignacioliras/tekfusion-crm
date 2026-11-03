@@ -36,6 +36,14 @@ export const settingsMessages: PartialCrmMessages = {
         substitute:
           "Recibe los leads nuevos mientras este usuario está ausente. Vale para todas sus líneas.",
       },
+      offboard: {
+        button: "Dar de baja",
+        title: "¿Dar de baja a %{name}?",
+        content:
+          "Se desactiva su acceso y se cierran sus sesiones; sus leads abiertos y sus líneas pasan a su suplente, o quedan sin asignar. La cuenta se puede reactivar después.",
+        success: "Usuario dado de baja",
+        error: "No se pudo dar de baja al usuario. Inténtalo de nuevo.",
+      },
       validation: {
         self_substitute: "Un usuario no puede ser su propio suplente",
         absence_range: "La fecha de término debe ser igual o posterior a la de inicio",

@@ -18,6 +18,11 @@ grant select, insert, update, delete on table public.lost_reasons to authenticat
 grant all on table public.lost_reasons to service_role;
 grant select, insert, update, delete on table public.sales_absences to authenticated;
 grant all on table public.sales_absences to service_role;
+-- Only the system writes the audit trail (default privileges would grant DML).
+revoke all on table public.audit_log from authenticated;
+grant select on table public.audit_log to authenticated;
+grant all on table public.audit_log to service_role;
+grant all on sequence public.audit_log_id_seq to service_role;
 grant all on sequence public.lost_reasons_id_seq to authenticated, service_role;
 grant all on sequence public.sales_absences_id_seq to authenticated, service_role;
 
@@ -31,6 +36,8 @@ grant update (first_name, last_name, avatar, signature, whatsapp_phone, role, ad
 
 -- Helpers and RPCs: never for anon or PUBLIC.
 revoke execute on function public.take_deal(bigint) from public, anon;
+revoke execute on function public.offboard_sale(bigint) from public, anon;
+grant execute on function public.offboard_sale(bigint) to authenticated, service_role;
 revoke execute on function public.current_sales_id() from public, anon;
 revoke execute on function public.current_user_role() from public, anon;
 revoke execute on function public.is_manager() from public, anon;

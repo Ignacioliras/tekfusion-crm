@@ -451,6 +451,64 @@ async function patchUser(req: Request, currentUserSale: any) {
   }
 }
 
+/**
+ * "Dar de baja" (docs/08 checklist): bans the user in Auth, then offboard_sale()
+ * disables the sales row, hands open leads and lines to the substitute, closes
+ * sessions and writes audit_log. The ban comes first because it is the only
+ * step not in the database transaction: if the RPC refuses, the ban is lifted.
+ */
+async function offboardUser(req: Request, currentUserSale: any) {
+  const { sales_id } = await req.json();
+  if (!currentUserSale.administrator) {
+    return createErrorResponse(401, "Not Authorized");
+  }
+  const { data: sale } = await supabaseAdmin
+    .from("sales")
+    .select("id, user_id, disabled")
+    .eq("id", sales_id)
+    .single();
+  if (!sale) {
+    return createErrorResponse(404, "Not Found");
+  }
+  if (sale.id === currentUserSale.id) {
+    return createErrorResponse(400, "A user cannot offboard itself", {
+      code: "offboard_self",
+    });
+  }
+  if (sale.disabled) {
+    return createErrorResponse(409, "User is already disabled", {
+      code: "already_disabled",
+    });
+  }
+
+  const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(
+    sale.user_id,
+    { ban_duration: "87600h" },
+  );
+  if (banError) {
+    console.error("Error banning user:", banError);
+    return createErrorResponse(500, "Internal Server Error");
+  }
+
+  const { data, error } = await supabaseAdmin.rpc("offboard_sale", {
+    sale_id: sale.id,
+  });
+  if (error) {
+    console.error("Error offboarding user:", error);
+    await supabaseAdmin.auth.admin.updateUserById(sale.user_id, {
+      ban_duration: "none",
+    });
+    return createErrorResponse(
+      error.code === "42501" ? 401 : 500,
+      error.message,
+      { code: error.code },
+    );
+  }
+  return new Response(JSON.stringify({ data }), {
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
+
 Deno.serve(async (req: Request) =>
   OptionsMiddleware(req, async (req) =>
     AuthMiddleware(req, async (req) =>
@@ -468,6 +526,11 @@ Deno.serve(async (req: Request) =>
 
           if (req.method === "PATCH") {
             return await patchUser(req, currentUserSale);
+          }
+
+          // DELETE never deletes a user (Atomic disables, AGENTS.md): it offboards.
+          if (req.method === "DELETE") {
+            return await offboardUser(req, currentUserSale);
           }
         } catch (e) {
           console.error("Unhandled error in the users function:", e);

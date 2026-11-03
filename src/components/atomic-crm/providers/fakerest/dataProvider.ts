@@ -28,6 +28,7 @@ import { getCompanyAvatar } from "../commons/getCompanyAvatar";
 import { getContactAvatar } from "../commons/getContactAvatar";
 import { mergeContacts } from "../commons/mergeContacts";
 import { getSearchResults } from "./search";
+import { ETAPAS_ABIERTAS, type Etapa } from "../../tekfusion/estados";
 import type { CrmDataProvider } from "../types";
 import {
   authProvider as defaultAuthProvider,
@@ -278,6 +279,51 @@ export const createDataProvider = ({
         previousData,
       });
       return { ...sale, user_id: sale.id.toString() };
+    },
+    // Mirrors offboard_sale() (supabase/schemas/11_tekfusion_policies.sql).
+    salesOffboard: async (id: Identifier): Promise<void> => {
+      const { data: sale } = await dataProvider.getOne<Sale>("sales", { id });
+      const { data: lines } = await dataProvider.getList("business_lines", {
+        filter: {},
+        pagination: { page: 1, perPage: 10 },
+        sort: { field: "code", order: "ASC" },
+      });
+      const owned = lines.filter((line) => line.owner_sales_id == id);
+      const substitute = owned[0]?.substitute_sales_id ?? null;
+      const { data: deals } = await dataProvider.getList<Deal>("deals", {
+        filter: { sales_id: id },
+        pagination: { page: 1, perPage: 1000 },
+        sort: { field: "id", order: "ASC" },
+      });
+      for (const deal of deals) {
+        if (deal.archived_at || !ETAPAS_ABIERTAS.includes(deal.stage as Etapa))
+          continue;
+        await dataProvider.update("deals", {
+          id: deal.id,
+          data: { sales_id: substitute },
+          previousData: deal,
+        });
+      }
+      for (const line of lines) {
+        const data =
+          line.owner_sales_id == id
+            ? { owner_sales_id: substitute, substitute_sales_id: null }
+            : line.substitute_sales_id == id
+              ? { substitute_sales_id: null }
+              : null;
+        if (data) {
+          await dataProvider.update("business_lines", {
+            id: line.id,
+            data,
+            previousData: line,
+          });
+        }
+      }
+      await dataProvider.update("sales", {
+        id,
+        data: { disabled: true },
+        previousData: sale,
+      });
     },
     isInitialized: async (): Promise<boolean> => {
       const sales = await dataProvider.getList<Sale>("sales", {
