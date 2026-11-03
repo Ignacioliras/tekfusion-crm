@@ -24,6 +24,8 @@ export const DataImportProgressToast = ({
   const rowCount = importer.state === "running" ? importer.rowCount : 0;
   const importCount = importer.state === "running" ? importer.importCount : 0;
   const errorCount = importer.state === "running" ? importer.errorCount : 0;
+  const duplicateCount =
+    importer.state === "running" ? importer.duplicateCount : 0;
   const remainingTime =
     importer.state === "running" ? importer.remainingTime : null;
 
@@ -58,7 +60,10 @@ export const DataImportProgressToast = ({
             <>
               <Progress
                 value={
-                  rowCount ? ((importCount + errorCount) / rowCount) * 100 : 0
+                  rowCount
+                    ? ((importCount + errorCount + duplicateCount) / rowCount) *
+                      100
+                    : 0
                 }
                 aria-label={translate("crm.data_import.in_progress")}
               />
@@ -88,6 +93,7 @@ export const DataImportProgressToast = ({
     importCount,
     rowCount,
     errorCount,
+    duplicateCount,
     remainingTime,
     translate,
     onStop,

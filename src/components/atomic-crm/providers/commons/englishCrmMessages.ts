@@ -498,6 +498,30 @@ export const englishCrmMessages = {
       stopped:
         "Import stopped. Imported %{importCount} records, with %{errorCount} errors",
       title: "Import data",
+      report: {
+        title: "Import result",
+        created: "Created",
+        duplicates: "Duplicates",
+        errors: "Errors",
+        line: "Line",
+        kind: "Type",
+        reason: "Reason",
+        close: "Close",
+        kinds: {
+          duplicate: "Duplicate",
+          error: "Error",
+        },
+        reasons: {
+          missing_name: "The lead has no name",
+          invalid_email: "Invalid e-mail: %{value}",
+          invalid_phone: "Invalid phone: %{value}",
+          unknown_business_line: "Unknown business line: %{value}",
+          unknown_stage: "Unknown stage: %{value}",
+          unknown_sales: "No active user with e-mail %{value}",
+          duplicate: "The contact already has an open lead: %{lead}",
+          refused: "The database refused the row",
+        },
+      },
     },
     header: {
       import_data: "Import from JSON",

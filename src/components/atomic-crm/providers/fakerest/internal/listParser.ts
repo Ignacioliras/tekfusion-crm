@@ -1,5 +1,7 @@
 export const UNQUOTED_ALLOWED_CHARS = "[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+";
-export const QUOTED_ALLOWED_CHARS = "[A-Za-zÀ-ÖØ-öø-ÿ0-9, -]+";
+// A quoted item holds anything but a quote: company names such as
+// "Aguas del Norte S.A." or "Pehuén Ltda." must match, as PostgREST accepts them.
+export const QUOTED_ALLOWED_CHARS = '[^"]+';
 export const LIST_REGEX_BASE = `(${UNQUOTED_ALLOWED_CHARS}|"${QUOTED_ALLOWED_CHARS}")(,(${UNQUOTED_ALLOWED_CHARS}|"${QUOTED_ALLOWED_CHARS}"))*`;
 
 /**

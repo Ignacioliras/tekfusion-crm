@@ -508,6 +508,30 @@ export const frenchCrmMessages = {
       stopped:
         "Import arrêté. %{importCount} enregistrements importés, %{errorCount} erreurs",
       title: "Importer des données",
+      report: {
+        title: "Résultat de l'import",
+        created: "Créés",
+        duplicates: "Doublons",
+        errors: "Erreurs",
+        line: "Ligne",
+        kind: "Type",
+        reason: "Motif",
+        close: "Fermer",
+        kinds: {
+          duplicate: "Doublon",
+          error: "Erreur",
+        },
+        reasons: {
+          missing_name: "Le lead n'a pas de nom",
+          invalid_email: "E-mail invalide : %{value}",
+          invalid_phone: "Téléphone invalide : %{value}",
+          unknown_business_line: "Ligne d'activité inconnue : %{value}",
+          unknown_stage: "Étape inconnue : %{value}",
+          unknown_sales: "Aucun utilisateur actif avec l'e-mail %{value}",
+          duplicate: "Le contact a déjà un lead ouvert : %{lead}",
+          refused: "La base de données a refusé la ligne",
+        },
+      },
     },
     header: {
       import_data: "Importer depuis JSON",

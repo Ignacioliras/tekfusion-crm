@@ -106,6 +106,14 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **"Tomar":** todavía no hay botón en la interfaz (la RPC `take_deal` existe). Cuando se construya (leads sin asignar, Fase 3; bandeja, Fase 4) debe ir dentro de `<CanAccess resource="deals" action="edit">`.
 - **Descartado:** un `<CanWrite>` propio: `<CanAccess>` de ra-core ya lo hace.
 
+## 2026-11-03 · Importador CSV de leads (RF-15)
+- **Decisiones de negocio (Ignacio, 2026-11-03):** una fila cuyo contacto (mismo correo o teléfono, `docs/03`) ya tiene un lead activo **se omite y se reporta** como duplicada, sin tocar el lead existente. Si la columna de ejecutivo viene vacía, el lead va al **dueño de la línea**; sin línea o sin dueño, queda sin asignar. Un correo de ejecutivo que no corresponde a un usuario activo es error.
+- **Técnicas:** se extiende el importador de deals de Atomic (`dataImport/useDealImport.ts`); columnas en inglés como los otros importadores de Atomic (`deals_sample.csv`, descargable desde el mismo diálogo): `name, company, contact_first_name, contact_last_name, email, phone, business_line, stage, sales_email, amount, expected_closing_date, description`. Línea y etapa aceptan valor o etiqueta ("tuberias" o "Tuberías"). Un valor dado pero no entendido es error (antes la etapa desconocida caía en "nuevo" en silencio); una celda vacía usa el valor por defecto. Teléfonos en E.164 (`tekfusion/phone.ts`, reglas chilenas). Si el contacto solo tiene leads cerrados, el nuevo lead se enlaza con `previous_deal_id` ("cliente recurrente"). Todo lead importado queda `origin_channel = migracion`.
+- **Reporte:** al terminar, un diálogo con creados, duplicados y errores, y el detalle por línea del CSV (línea, tipo, motivo). El lote puede devolver un reporte además de la cuenta (`ImportBatchReport`); contactos y empresas siguen igual.
+- **Deduplicación:** el índice (contactos, leads, usuarios, dueños de línea) se carga una vez por importación y se actualiza con cada fila creada, así también detecta un contacto repetido dentro del mismo CSV. Las filas se escriben de a una.
+- **Descartado:** mapeo de columnas en pantalla (el CSV del Sheets se adapta a la plantilla; si hace falta, se cotiza); tabla `importaciones` de `docs/05` (el reporte se muestra, no se guarda); agregar una nota al lead activo en vez de omitir (opción descartada por Ignacio).
+- **Arreglo de paso:** el filtro `@in` del adaptador FakeRest rechazaba nombres entre comillas con puntos ("S.A.", "Ltda."): la importación entera fallaba en modo demo. Ahora acepta cualquier carácter salvo la comilla, como PostgREST.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
