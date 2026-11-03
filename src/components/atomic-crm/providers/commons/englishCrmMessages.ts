@@ -267,9 +267,6 @@ export const englishCrmMessages = {
         error_loading: "Error loading notes",
       },
       note_for_contact: "Note for %{name}",
-      stepper: {
-        hint: "Go to a contact page and add a note",
-      },
       added: "Note added",
       inputs: {
         add_note: "Add a note",
@@ -454,11 +451,6 @@ export const englishCrmMessages = {
       latest_activity_error: "Error loading latest activity",
       latest_notes: "My Latest Notes",
       latest_notes_added_ago: "added %{timeAgo}",
-      stepper: {
-        install: "Install CRM TekFusion",
-        progress: "%{step}/3 done",
-        whats_next: "What's next?",
-      },
       upcoming_tasks: "Upcoming Tasks",
     },
     data_import: {

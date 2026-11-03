@@ -25,11 +25,6 @@ export const dashboardMessages: PartialCrmMessages = {
       latest_activity_error: "Error al cargar la última actividad",
       latest_notes: "Mis últimas notas",
       latest_notes_added_ago: "agregada %{timeAgo}",
-      stepper: {
-        install: "Instalar CRM TekFusion",
-        progress: "%{step}/3 listos",
-        whats_next: "¿Qué sigue?",
-      },
       upcoming_tasks: "Próximas tareas",
     },
   },

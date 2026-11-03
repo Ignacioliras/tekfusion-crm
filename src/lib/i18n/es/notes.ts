@@ -36,9 +36,6 @@ export const notesMessages: PartialCrmMessages = {
         error_loading: "Error al cargar las notas",
       },
       note_for_contact: "Nota para %{name}",
-      stepper: {
-        hint: "Entra a la ficha de un contacto y agrega una nota",
-      },
       added: "Nota agregada",
       inputs: {
         add_note: "Agregar una nota",

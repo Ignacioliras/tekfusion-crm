@@ -271,9 +271,6 @@ export const frenchCrmMessages = {
         error_loading: "Erreur lors du chargement des notes",
       },
       note_for_contact: "Note pour %{name}",
-      stepper: {
-        hint: "Accédez à une page de contact et ajoutez une note",
-      },
       added: "Note ajoutée",
       inputs: {
         add_note: "Ajouter une note",
@@ -461,11 +458,6 @@ export const frenchCrmMessages = {
         "Erreur lors du chargement de la dernière activité",
       latest_notes: "Mes dernières notes",
       latest_notes_added_ago: "ajouté %{timeAgo}",
-      stepper: {
-        install: "Installer CRM TekFusion",
-        progress: "%{step}/3 terminé",
-        whats_next: "Et ensuite ?",
-      },
       upcoming_tasks: "Tâches à venir",
     },
     data_import: {

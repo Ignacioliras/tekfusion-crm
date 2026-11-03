@@ -51,11 +51,11 @@ Cada paso en su propio PR (`fase-1/limpia-<item>`) con `npm run typecheck`, `npm
 
 ### Storybook: qué habría que cambiar (no se hizo)
 
-**12 tests** (no 10) importan `*.stories` como fixtures:
-`contacts/ContactCreate`, `contacts/ContactEdit`, `contacts/ContactList`, `contacts/ContactShow`, `dashboard/DashboardStepper`, `dataImport/DataImportButton`, `deals/DealInputs`, `deals/DealList`, `notes/NoteInputs`, `notes/NoteInputsMobile`, `notes/NotesIteratorMobile`, `tasks/TaskCreateSheet` (todos `*.test.tsx` bajo `src/components/atomic-crm/`).
+**11 tests** (no 10) importan `*.stories` como fixtures (el de `DashboardStepper` se borró con el asistente):
+`contacts/ContactCreate`, `contacts/ContactEdit`, `contacts/ContactList`, `contacts/ContactShow`, `dataImport/DataImportButton`, `deals/DealInputs`, `deals/DealList`, `notes/NoteInputs`, `notes/NoteInputsMobile`, `notes/NotesIteratorMobile`, `tasks/TaskCreateSheet` (todos `*.test.tsx` bajo `src/components/atomic-crm/`).
 
 Orden propuesto:
-1. Reescribir esos 12 tests para montar los componentes con `StoryWrapper` (de `src/test/StoryWrapper.tsx`, que **no** depende de Storybook) y sus datos inline, como ya hacen `layout/Header.test.tsx` y `deals/DealTableList.test.tsx`.
-2. Borrar las 15 `*.stories.tsx`.
+1. Reescribir esos 11 tests para montar los componentes con `StoryWrapper` (de `src/test/StoryWrapper.tsx`, que **no** depende de Storybook) y sus datos inline, como ya hacen `layout/Header.test.tsx` y `deals/DealTableList.test.tsx`.
+2. Borrar las 14 `*.stories.tsx`.
 3. Quitar el servidor: `.storybook/`, scripts `storybook` y `build-storybook` de `package.json`, target `storybook` del `makefile`, dependencias `storybook`, `@storybook/react-vite` y `eslint-plugin-storybook`, el import y `storybook.configs["flat/recommended"]` de `eslint.config.js`, `/storybook-static` de `.prettierignore` y `*storybook.log` de `.gitignore`.
 4. Revisar `scripts/generate-registry.mjs` (ítem 5) por si lista stories.
