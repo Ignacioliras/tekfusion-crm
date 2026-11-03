@@ -1,0 +1,107 @@
+{
+  "fecha": "2026-11-03-b",
+  "fase": 1,
+  "modelo": "opus",
+  "esfuerzo": "high",
+  "limites": {
+    "turnos_por_tarea": 60,
+    "usd_por_tarea": 4,
+    "usd_total": 20,
+    "hora_fin": "07:30",
+    "intentos": 2,
+    "minutos_verificacion": 15,
+    "modelo_reintento": "fable",
+    "esfuerzo_reintento": "high"
+  },
+  "tareas": [
+    {
+      "id": "T6",
+      "titulo": "Inventario de lo que Atomic trae y no usamos",
+      "descripcion": "Escribir docs/atomic/inventario-limpieza.md: una tabla con cada cosa que Atomic CRM trae y que el CRM TekFusion no necesita (ver CLAUDE.md §4 último punto: doc/ sitio Astro, demo/, Storybook, registro shadcn, Postmark/correo entrante, FakeRest si no se usa en demo, el MCP de supabase/functions/mcp, deal categories, company sectors, contact gender, etc.). Para cada ítem: ruta(s), qué otros archivos dependen de él (usar grep en src/, supabase/, package.json, makefile, .github/), qué pasaría si se borra, y una recomendación (borrar en Fase 1 / dejar / decidir con Ignacio). No borrar nada: solo documentar. Terminar con una sección 'Orden sugerido de limpieza' de menor a mayor riesgo.",
+      "archivos": ["docs/atomic/inventario-limpieza.md"],
+      "verificacion": "node -e \"const s=require('fs').readFileSync('docs/atomic/inventario-limpieza.md','utf8'); if(!/\\|.*Ruta/i.test(s)||s.length<2500) process.exit(1)\"",
+      "criterio": "El documento existe, tiene una tabla con columna Ruta y más de 2.500 caracteres.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T7",
+      "titulo": "Esquema zod del clasificador de leads + tests",
+      "descripcion": "Crear supabase/functions/_shared/leadClassification.ts con un esquema zod (zod ya está disponible en el proyecto; si no, usar validación manual sin dependencias nuevas) que valide la salida JSON del clasificador descrita en n8n/prompts/clasificar-lead.md: linea ('valvulas'|'tuberias'|'geoceldas'|'indeterminada'), confianza (0 a 1), empresa/nombre/correo/telefono (string o null), necesidad (string, máximo 200), es_spam (boolean). Exportar parseLeadClassification(text: string) que: extrae el primer objeto JSON del texto (el modelo a veces agrega texto alrededor), valida, y si algo falla devuelve { linea: 'indeterminada', confianza: 0, ..., es_spam: false, error: '<motivo>' } en vez de lanzar. Además, si confianza > 0.6 y el texto menciona productos de más de una línea (usar las palabras clave del prompt), bajar confianza a 0.6. Crear supabase/functions/_shared/leadClassification.test.ts con al menos 8 casos siguiendo el estilo de los tests existentes de supabase/functions/postmark/*.test.ts (vitest, proyecto 'functions'): salida válida, JSON con texto alrededor, JSON inválido, campo fuera de rango, línea desconocida, spam, multi-línea baja confianza, teléfono sin normalizar.",
+      "archivos": [
+        "supabase/functions/_shared/leadClassification.ts",
+        "supabase/functions/_shared/leadClassification.test.ts"
+      ],
+      "verificacion": "npm run test:unit:functions -- --run supabase/functions/_shared/leadClassification.test.ts && npm run typecheck",
+      "criterio": "Los tests pasan en el proyecto 'functions' de vitest y typecheck sigue limpio.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T8",
+      "titulo": "Validación pura del webhook de Evolution + tests",
+      "descripcion": "Crear supabase/functions/_shared/evolutionWebhook.ts con funciones PURAS (sin acceso a base de datos ni red) para el receptor de WhatsApp descrito en docs/07-whatsapp-evolution.md: (1) isAuthorized(headers, secret): compara el header 'apikey' con el secreto en tiempo constante; (2) parseEvolutionEvent(body): valida la forma mínima de un evento MESSAGES_UPSERT de Evolution API v2 (event, instance, data.key.id, data.key.remoteJid, data.key.fromMe, data.messageTimestamp, data.message con conversation o extendedTextMessage.text o imageMessage/documentMessage/audioMessage) y devuelve un objeto normalizado { waMessageId, remoteJid, phone (E.164 derivado de remoteJid, ignorando @s.whatsapp.net; si es @g.us marcar isGroup true), fromMe, timestamp (Date), type ('text'|'image'|'document'|'audio'|'other'), text (string|null), mediaMimeType (string|null) } o { ignore: true, reason } para eventos que no son mensajes o son de grupos; (3) dedupeKey(evt) que devuelve waMessageId (la clave UNIQUE de docs/05). Documentar en comentarios el formato de Evolution que se asumió. Crear supabase/functions/_shared/evolutionWebhook.test.ts con al menos 10 casos (apikey correcta/incorrecta/ausente, texto simple, extendedTextMessage, imagen, audio, grupo ignorado, evento que no es MESSAGES_UPSERT ignorado, fromMe true, body malformado). Estilo: igual que los tests existentes en supabase/functions/postmark/.",
+      "archivos": [
+        "supabase/functions/_shared/evolutionWebhook.ts",
+        "supabase/functions/_shared/evolutionWebhook.test.ts"
+      ],
+      "verificacion": "npm run test:unit:functions -- --run supabase/functions/_shared/evolutionWebhook.test.ts && npm run typecheck",
+      "criterio": "Tests pasan; typecheck limpio; ninguna función toca Supabase ni hace fetch.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T9",
+      "titulo": "Tests pgTAP de las políticas RLS actuales de Atomic",
+      "descripcion": "Documentar con tests el punto de partida de seguridad antes de reemplazar las políticas en la Fase 2. Leer supabase/schemas/05_policies.sql y 06_grants.sql. Crear supabase/tests/05_rls_atomic_actual.test.sql con pgTAP que verifique, para las tablas deals, contacts, companies, sales, tasks, contact_notes y deal_notes: que RLS está activada (relrowsecurity), que existe al menos una política para authenticated, y que el rol anon NO tiene política de select (o documentar en un comentario si la tiene). Usar has_table, policies_are o policy_cmd_is / is() sobre pg_policies según lo que pgTAP ofrezca en esta versión; mirar supabase/tests/00_humo.test.sql para el formato (begin; select plan(N); ... select * from finish(); rollback;). Ajustar plan(N) al número exacto de aserciones. No cambiar ninguna política.",
+      "archivos": ["supabase/tests/05_rls_atomic_actual.test.sql"],
+      "verificacion": "npx supabase test db",
+      "criterio": "`supabase test db` pasa con el test nuevo y el de humo.",
+      "depende_de": [],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T10",
+      "titulo": "Constantes de líneas de negocio",
+      "descripcion": "Crear src/components/atomic-crm/tekfusion/lineas.ts exportando LINEAS_NEGOCIO con las tres líneas de TekFusion (docs/01-contexto-negocio.md y n8n/prompts/clasificar-lead.md): value ('valvulas','tuberias','geoceldas'), label en español ('Válvulas','Tuberías','Geoceldas y geosintéticos'), descripción corta y lista de palabras clave (las del prompt), más 'indeterminada' como valor especial con label 'Por clasificar'. Exportar tipo LineaNegocio y una función detectarLineaPorPalabras(texto): devuelve la primera línea cuyas palabras clave aparecen en el texto (sin tildes y en minúsculas) o 'indeterminada'. Crear src/components/atomic-crm/tekfusion/lineas.test.ts con 5 casos de detectarLineaPorPalabras. NOTA: los tests del proyecto 'app' corren en navegador; si `npm run test:unit:app` no puede levantar el navegador en esta máquina, deja el test escrito igual y verifica solo con typecheck y lint (anótalo en aprendizajes.md).",
+      "archivos": [
+        "src/components/atomic-crm/tekfusion/lineas.ts",
+        "src/components/atomic-crm/tekfusion/lineas.test.ts"
+      ],
+      "verificacion": "npm run typecheck && npm run lint",
+      "criterio": "Typecheck y lint limpios; el archivo de test existe.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    }
+  ]
+}
