@@ -27,6 +27,7 @@ Completar a medida que lleguen. Mientras un dato esté `[PENDIENTE]`, el código
 - [ ] Textos de seguimiento: Libux propone, TekFusion aprueba.
 - [ ] Correo de facturación para el aviso de ganado.
 - [ ] Reporte semanal: día, hora y destinatarios.
+- [ ] Gráfico de leads del dashboard: ¿cómo se pondera lo "pendiente" y qué cuenta como "perdido"? Hoy (heredado de Atomic): los leads abiertos pesan nuevo 20 %, contactado 50 % y cotizado 80 % de su monto, y "perdido" suma `perdido` + `archivado`. Confirmar o dar el criterio de TekFusion (ver `10-decisiones.md`, 2026-11-03).
 
 ## Accesos técnicos
 - [ ] DNS de tekfusion.cl (quién lo administra) para `crm.` y `staging.crm.`.

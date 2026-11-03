@@ -61,6 +61,15 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Descartado:** plugin `ralph-loop` oficial (menos control sobre verificación y reporte) y `--dangerously-skip-permissions` (en un PC real, no).
 - **Probado:** con un `claude` simulado, los casos hecha / falla+reintento / bloqueada / dependencia caída / Supabase apagado / Claude que no arranca.
 
+## 2026-11-03 · Decisiones de las colas nocturnas (T2, T3, T5, T7, T8)
+- **Motivo:** de noche, Claude tomó decisiones que no estaban registradas; Ignacio las revisó en la mañana.
+- **T7/T8 · zod:** `supabase/functions/_shared/leadClassification.ts` y `evolutionWebhook.ts` quedaron con validación manual porque el proyecto vitest `functions` no tiene alias para `npm:zod`. **Decisión:** se migran a zod hoy (alias de `npm:zod` en `vitest.config.ts`), como pide CLAUDE.md §4 y la tarea de la Fase 4.
+- **T2 · DealsChart:** la barra "pendiente" pondera los leads abiertos con la rampa heredada de Atomic (nuevo 0,2 / contactado 0,5 / cotizado 0,8) y la barra "perdido" suma `perdido` + `archivado`. **Decisión:** queda así hasta que TekFusion defina el criterio; la pregunta está en `11-pendientes-kickoff.md` (Reglas).
+- **T3 · Idioma:** el español como idioma por defecto se adelanta a la Fase 1 (la decisión anterior lo ubicaba en Fase 3) y **queda**. Por ahora solo traduce las claves `ra.*`; el resto de los textos se traduce en el rediseño de la Fase 3.
+- **T5 · Seed:** mientras `sales` no tenga `role`, "lector" y "ejecutivo" solo se distinguen por `administrator=false`; se resuelve con la RLS de la Fase 2. Contraseña local de los 4 usuarios ficticios: `demo-tekfusion` (solo local/staging). El trigger `20_contact_saved` (Gravatar por HTTP) se desactiva durante la carga para no llamar a servicios externos.
+- **Gitleaks:** el dato de prueba `secreto-de-prueba-123` del test del webhook (T8) es un falso positivo de la regla `generic-api-key`. Se marca con `gitleaks:allow` en la línea y su huella histórica (commit 986ba13) se registra en `.gitleaksignore`.
+- **Consecuencias:** `test:unit:app` incluye el proyecto vitest `claude` (tests de los hooks del harness de Atomic, desactivado), que falla entero también en `main`. Se verifica la app con `--project app --project functions` hasta decidir qué hacer con esos tests en la limpieza de la Fase 1.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
