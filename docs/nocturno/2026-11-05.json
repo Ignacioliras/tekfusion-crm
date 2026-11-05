@@ -61,13 +61,16 @@
       "criterio": "Typecheck y lint sin errores; suite de app en verde con los tests nuevos de DealCreate (empresa existente, empresa nueva, línea sugerida y respetada, producto obligatorio, canal manual, selector de dueño solo para gerencia); ítem 'Ingreso manual de lead' de la Fase 3 marcado [x] en docs/09 con fecha.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-05 21:15:43"
+      "commit": "6c8e846732bd60d5c3bf2d651ab635a78c236ad3",
+      "costo_usd": 3.5032516000000005,
+      "session_id": "f38525ba-5838-46ea-b394-99d472d17350",
+      "inicio": "2026-11-05 21:15:43",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: diálogo \"Nuevo lead\" con producto obligatorio, empresa y contacto con alta al vuelo, línea sugerida, canal manual, etapa nuevo y selector de ejecutivo solo para gerencia; 7 tests nuevos y docs/09 marcado.",
+      "fin": "2026-11-05 21:26:25"
     },
     {
       "id": "T3",
