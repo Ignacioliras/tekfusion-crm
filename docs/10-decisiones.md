@@ -206,6 +206,11 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Móvil:** la página de Configuración de escritorio se incrusta en la de móvil para gerencia (regla 9: se reutiliza la pantalla, sin flujo propio), con la barra de guardar en el flujo.
 - **Pendiente de revisar:** las etapas siguen editables en Configuración aunque el código las trata como constantes (`tekfusion/estados.ts`); renombrarlas o borrarlas rompería reglas. Proponer dejarlas de solo lectura.
 
+## 2026-11-05 · offboard_sale por línea: detalles de implementación (fase-3/ajustes)
+- **Reglas:** las de Ignacio del 2026-11-03 (leads por línea, contactos por mayoría con empate al menor id, tareas pendientes con su contacto).
+- **Implícito, decidido aquí:** cada **línea** que tenía a cargo pasa a su propio suplente (antes, todas al único suplente); el usuario dado de baja nunca cuenta como suplente válido de sí mismo; los leads que quedan sin asignar no cuentan para la mayoría de un contacto.
+- **Test aparte:** el escenario de dos líneas va en `28_baja_por_linea.test.sql` y no en el 17: cada archivo de pgTAP corre en su transacción y en el 17 Diego ya queda desactivado.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

@@ -45,7 +45,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] 🔒 RF-17: "Anonimizar contacto" (gerencia) y aviso de privacidad para el formulario web.
 - [ ] 🔒 Sentry en el frontend.
 - [x] Limpiar la caché persistida de react-query (localStorage, 24 h) al cerrar sesión: en un PC compartido el siguiente usuario ve datos del anterior hasta el refetch (viene de Atomic; hallazgo B2 de la revisión de seguridad, `docs/10`). — 2026-11-04: `root/clearPersistedCache.ts` vacía el `queryClient` (registrado por `CRM.tsx`) y borra `REACT_QUERY_OFFLINE_CACHE`; lo llaman los `logout` de Supabase y FakeRest. Tests en `clearPersistedCache.test.ts`.
-- [ ] Completar `offboard_sale` ("Dar de baja"): reasignar también contactos y tareas del usuario, y un suplente por línea cuando tiene varias (hoy todos los leads van al suplente de la primera línea). Hallazgos Info de la revisión, `docs/10`.
+- [x] Completar `offboard_sale` ("Dar de baja"): reasignar también contactos y tareas del usuario, y un suplente por línea cuando tiene varias (hoy todos los leads van al suplente de la primera línea). Hallazgos Info de la revisión, `docs/10`. *Hecho (2026-11-05, fase-3/ajustes; T2 de la cola nocturna 2026-11-04, que falló de noche): cada lead abierto al suplente de su línea (o al de la primera línea), contactos al que recibió la mayoría de sus leads, tareas pendientes con su contacto, cada línea a su suplente; audit_log con leads, contactos y tareas. Migración `offboard_suplente_por_linea`, pgTAP `28_baja_por_linea` (el 17 sigue igual).*
 - [ ] Tests e2e (Playwright) de: login, crear lead, mover en kanban, enviar cotización con seed.
 
 ## Fase 4 · Bandeja de WhatsApp (6 días)
