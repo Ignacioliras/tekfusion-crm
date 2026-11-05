@@ -1,9 +1,10 @@
-// Pure calculations of the management dashboard (RF-11) over dashboard_monthly
+// Pure calculations of the management dashboard (RF-11) over dashboard_daily
 // rows. Every ratio returns null when its denominator is zero; the UI shows "—".
 import type { Identifier } from "ra-core";
 
-import type { DashboardMonthlyRow, SalesRankingRow } from "../types";
+import type { DashboardDailyRow, SalesRankingRow } from "../types";
 import type { Etapa } from "../tekfusion/estados";
+import { addDays, santiagoDay } from "../tekfusion/santiago";
 
 export const EMPTY_VALUE = "—";
 
@@ -34,7 +35,7 @@ const ZERO: Totals = {
   wonAmount: 0,
 };
 
-const addRow = (totals: Totals, row: DashboardMonthlyRow): Totals => ({
+const addRow = (totals: Totals, row: DashboardDailyRow): Totals => ({
   leads: totals.leads + row.leads,
   contacted: totals.contacted + row.contacted,
   quoted: totals.quoted + row.quoted,
@@ -50,17 +51,19 @@ const addRow = (totals: Totals, row: DashboardMonthlyRow): Totals => ({
   wonAmount: totals.wonAmount + row.won_amount,
 });
 
-export const sumRows = (rows: readonly DashboardMonthlyRow[]): Totals =>
+export const sumRows = (rows: readonly DashboardDailyRow[]): Totals =>
   rows.reduce(addRow, ZERO);
 
 /** Totals per value of a column, e.g. per business_line. */
 export const totalsBy = (
-  rows: readonly DashboardMonthlyRow[],
+  rows: readonly DashboardDailyRow[],
   key: "business_line" | "origin_channel" | "month",
 ): Map<string, Totals> =>
   rows.reduce((groups, row) => {
+    // "month": "YYYY-MM" of the row's day.
+    const group = key === "month" ? row.day.slice(0, 7) : row[key];
     const next = new Map(groups);
-    next.set(row[key], addRow(groups.get(row[key]) ?? ZERO, row));
+    next.set(group, addRow(groups.get(group) ?? ZERO, row));
     return next;
   }, new Map<string, Totals>());
 
@@ -98,46 +101,59 @@ const hoursFormat = new Intl.NumberFormat("es-CL", {
 export const formatHours = (value: number | null): string =>
   value === null ? EMPTY_VALUE : `${hoursFormat.format(value)} h`;
 
-// Months are "YYYY-MM" (the value of <input type="month">).
-export const shiftMonth = (month: string, delta: number): string => {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const date = new Date(Date.UTC(year, monthNumber - 1 + delta, 1));
-  return date.toISOString().slice(0, 7);
+// Ranges are calendar days in America/Santiago, "YYYY-MM-DD", both ends included.
+export type DayRange = { from: string; to: string };
+
+export const PRESETS = [
+  "this_month",
+  "last_month",
+  "last_30_days",
+  "last_90_days",
+  "this_year",
+] as const;
+export type Preset = (typeof PRESETS)[number];
+
+// Decision of 2026-11-05 (docs/10): the dashboard opens on the last 30 days.
+export const DEFAULT_PRESET: Preset = "last_30_days";
+
+/** The range a shortcut stands for, as of today in Santiago. */
+export const presetRange = (
+  preset: Preset,
+  now: Date = new Date(),
+): DayRange => {
+  const today = santiagoDay(now);
+  const firstOfMonth = `${today.slice(0, 7)}-01`;
+  switch (preset) {
+    case "this_month":
+      return { from: firstOfMonth, to: today };
+    case "last_month": {
+      const lastDay = addDays(firstOfMonth, -1);
+      return { from: `${lastDay.slice(0, 7)}-01`, to: lastDay };
+    }
+    case "last_30_days":
+      return { from: addDays(today, -29), to: today };
+    case "last_90_days":
+      return { from: addDays(today, -89), to: today };
+    case "this_year":
+      return { from: `${today.slice(0, 4)}-01-01`, to: today };
+  }
 };
 
-const monthIndex = (month: string): number => {
-  const [year, monthNumber] = month.split("-").map(Number);
-  return year * 12 + monthNumber;
+const dayNumber = (day: string): number =>
+  Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10)) /
+  86_400_000;
+
+/** The range of the same number of days right before it. */
+export const previousRange = ({ from, to }: DayRange): DayRange => {
+  const length = dayNumber(to) - dayNumber(from) + 1;
+  return { from: addDays(from, -length), to: addDays(from, -1) };
 };
 
-/** The range of the same length right before [from, to]. */
-export const previousRange = (
-  from: string,
-  to: string,
-): { from: string; to: string } => {
-  const length = monthIndex(to) - monthIndex(from) + 1;
-  return { from: shiftMonth(from, -length), to: shiftMonth(to, -length) };
-};
-
-/** Current month in America/Santiago, "YYYY-MM". */
-export const currentMonth = (now: Date = new Date()): string =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Santiago",
-    year: "numeric",
-    month: "2-digit",
-  })
-    .format(now)
-    .slice(0, 7);
-
-/** Whether a view row ("YYYY-MM-01") falls in [from, to] ("YYYY-MM"). */
+/** Whether a view row ("YYYY-MM-DD") falls in the range. */
 export const inRange = (
-  row: { month: string },
-  from: string,
-  to: string,
-): boolean => {
-  const month = row.month.slice(0, 7);
-  return month >= from && month <= to;
-};
+  row: { day: string },
+  { from, to }: DayRange,
+): boolean => row.day >= from && row.day <= to;
 
 export type SalesRankingTotals = {
   salesId: Identifier;
@@ -152,15 +168,14 @@ export type SalesRankingTotals = {
 /**
  * One line per executive over the sales_ranking rows within [from, to], sorted
  * by won amount (then won leads) descending. The average first response is
- * weighted by the attended leads of each month.
+ * weighted by the attended leads of each day.
  */
 export const rankSales = (
   rows: readonly SalesRankingRow[],
-  from: string,
-  to: string,
+  range: DayRange,
 ): SalesRankingTotals[] => {
   const groups = rows
-    .filter((row) => inRange(row, from, to))
+    .filter((row) => inRange(row, range))
     .reduce((acc, row) => {
       const prev = acc.get(row.sales_id);
       const next = new Map(acc);

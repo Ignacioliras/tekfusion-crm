@@ -4,7 +4,7 @@ import { page, type Locator } from "vitest/browser";
 import {
   DashboardForManager,
   DashboardForRole,
-  LAST_MONTH,
+  EARLIER,
 } from "./ManagementDashboard.fixtures";
 
 const RANKING = "Ranking de ejecutivos";
@@ -50,9 +50,9 @@ describe("Ranking de ejecutivos en el dashboard, solo gerencia", () => {
     const rows = screen.getByRole("region", { name: RANKING }).getByRole("row");
     await expect.element(rows.nth(1).getByText("Tomás Fuentes")).toBeVisible();
 
-    await screen.getByLabelText("Desde").fill(LAST_MONTH);
+    await screen.getByLabelText("Desde").fill(EARLIER);
 
-    // Valentina adds last month's $5.000.000 and goes first.
+    // Valentina adds the earlier $5.000.000 and goes first.
     await expectCells(rows.nth(1), [
       "Valentina Soto",
       "4",

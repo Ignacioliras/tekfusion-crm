@@ -1,14 +1,33 @@
 import { CheckSquare } from "lucide-react";
-import { useTranslate } from "ra-core";
+import { useGetIdentity, useGetList, useTranslate } from "ra-core";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import { AddTask } from "../tasks/AddTask";
 import { TasksListContent } from "../tasks/TasksListContent";
+import { isDone, isRecentlyDone } from "../tasks/tasksPredicate";
 
-export const TasksList = () => {
+/**
+ * The user's upcoming tasks; nothing at all while there are none (no Atomic
+ * help text). Same query as TasksListByDueDate, so it is fetched once.
+ */
+export const TasksList = ({ className }: { className?: string }) => {
   const translate = useTranslate();
+  const { identity } = useGetIdentity();
+  const { data: tasks, isPending } = useGetList(
+    "tasks",
+    {
+      pagination: { page: 1, perPage: 1000 },
+      sort: { field: "due_date", order: "ASC" },
+      filter: { sales_id: identity?.id },
+    },
+    { enabled: !!identity },
+  );
+  const hasTasks = tasks?.some((task) => !isDone(task) || isRecentlyDone(task));
+  if (isPending || !hasTasks) return null;
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center">
         <div className="mr-3 flex">
           <CheckSquare className="text-muted-foreground w-6 h-6" />

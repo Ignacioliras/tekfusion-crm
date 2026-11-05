@@ -12,16 +12,15 @@ import {
 import { useGetSalesName } from "../sales/useGetSalesName";
 import { formatAmount } from "../tekfusion/money";
 import type { SalesRankingRow } from "../types";
-import { formatHours, rankSales } from "./metrics";
+import { formatHours, rankSales, type DayRange } from "./metrics";
 
 const CURRENCY = "CLP";
-// ponytail: one page of rows; one row per executive and month.
+// ponytail: one page of rows; one row per executive and day (a year ≈ 6 × 250).
 const MAX_ROWS = 1000;
 
 interface SalesRankingProps {
-  /** "YYYY-MM", same range as the metrics above. */
-  from: string;
-  to: string;
+  /** Same range as the metrics above. */
+  range: DayRange;
 }
 
 /**
@@ -29,7 +28,7 @@ interface SalesRankingProps {
  * criterion as LeadActions: only managers may list sales (canAccess.ts).
  * Executives and readers render nothing and never query the view.
  */
-export const SalesRanking = ({ from, to }: SalesRankingProps) => {
+export const SalesRanking = ({ range }: SalesRankingProps) => {
   const translate = useTranslate();
   const { canAccess: isManager = false } = useCanAccess({
     resource: "sales",
@@ -39,15 +38,15 @@ export const SalesRanking = ({ from, to }: SalesRankingProps) => {
     "sales_ranking",
     {
       pagination: { page: 1, perPage: MAX_ROWS },
-      sort: { field: "month", order: "ASC" },
-      filter: { "month@gte": `${from}-01`, "month@lte": `${to}-01` },
+      sort: { field: "day", order: "ASC" },
+      filter: { "day@gte": range.from, "day@lte": range.to },
     },
     { enabled: isManager },
   );
   if (!isManager) return null;
 
   const title = translate("tekfusion.dashboard.ranking.title");
-  const ranking = rankSales(data, from, to);
+  const ranking = rankSales(data, range);
   const column = (key: string) =>
     translate(`tekfusion.dashboard.ranking.${key}`);
 

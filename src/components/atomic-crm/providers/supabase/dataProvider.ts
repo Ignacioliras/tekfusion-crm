@@ -44,12 +44,12 @@ const getBaseDataProvider = () =>
     apiKey: import.meta.env.VITE_SB_PUBLISHABLE_KEY,
     supabaseClient: getSupabaseClient(),
     sortOrder: "asc,desc.nullslast" as any,
-    // business_lines is keyed by its enum code and the dashboard_monthly view
+    // business_lines is keyed by its enum code and the dashboard_daily view
     // by its grouping columns; every other table uses id.
     primaryKeys: new Map([
       ["business_lines", ["code"]],
-      ["dashboard_monthly", ["month", "business_line", "origin_channel"]],
-      ["sales_ranking", ["month", "sales_id"]],
+      ["dashboard_daily", ["day", "business_line", "origin_channel"]],
+      ["sales_ranking", ["day", "sales_id"]],
     ]),
   });
 

@@ -1,12 +1,13 @@
 --
--- TekFusion dashboard (Fase 6, RF-11). "vista_dashboard_mensual" of docs/05.
+-- TekFusion dashboard (Fase 6, RF-11). "vista_dashboard_mensual" of docs/05,
+-- by day since 2026-11-05 (free date range in the dashboard, docs/10).
 -- security_invoker: the view aggregates only the deals (and quotes) the
 -- caller can read, so an executive gets their own leads plus the unassigned
 -- ones; managers and readers get everything.
 --
--- One row per (month, business_line, origin_channel). Archived leads count as
+-- One row per (day, business_line, origin_channel). Archived leads count as
 -- archived; nothing is excluded. Metrics (also in docs/05, "Vistas"):
---   month                    first day of the month of created_at in America/Santiago
+--   day                      calendar day of created_at in America/Santiago
 --   leads                    count of deals
 --   contacted                stage <> 'nuevo' or first_response_at not null
 --   quoted                   stage = 'cotizado' or at least one quote (a closed lead
@@ -19,7 +20,7 @@
 --   quoted_amount            sum of the current quote (quotes.is_current) of each lead, CLP
 --   won_amount               sum of deals.won_amount, CLP
 --
-create or replace view public.dashboard_monthly with (security_invoker = on) as
+create or replace view public.dashboard_daily with (security_invoker = on) as
 with lead_quotes as (
     select deal_id,
            count(*) as quote_count,
@@ -28,7 +29,7 @@ with lead_quotes as (
     group by deal_id
 )
 select
-    (date_trunc('month', d.created_at at time zone 'America/Santiago'))::date as month,
+    (d.created_at at time zone 'America/Santiago')::date as day,
     d.business_line,
     d.origin_channel,
     count(*) as leads,
@@ -48,8 +49,8 @@ group by 1, 2, 3;
 
 -- Grants by hand (db diff does not emit them): default privileges would give
 -- authenticated everything (TRIGGER included) and anon has no business here.
-revoke all on table public.dashboard_monthly from anon, public, authenticated;
-grant select on table public.dashboard_monthly to authenticated, service_role;
+revoke all on table public.dashboard_daily from anon, public, authenticated;
+grant select on table public.dashboard_daily to authenticated, service_role;
 
 --
 -- Executive ranking (RF-11). "vista_ranking_ejecutivos" of docs/05.
@@ -57,8 +58,8 @@ grant select on table public.dashboard_monthly to authenticated, service_role;
 -- itself filters on is_manager() and executives / readers get zero rows.
 -- security_invoker so the subqueries still go through RLS for the caller.
 --
--- One row per (month, sales_id) over the deals that have an owner. Metrics:
---   month                    first day of the month of created_at in America/Santiago
+-- One row per (day, sales_id) over the deals that have an owner. Metrics:
+--   day                      calendar day of created_at in America/Santiago
 --   sales_id                 the executive (owner of the lead)
 --   leads                    count of deals
 --   leads_attended           first_response_at not null
@@ -78,7 +79,7 @@ with sent_quotes as (
     group by q.deal_id
 )
 select
-    (date_trunc('month', d.created_at at time zone 'America/Santiago'))::date as month,
+    (d.created_at at time zone 'America/Santiago')::date as day,
     d.sales_id,
     count(*) as leads,
     count(*) filter (where d.first_response_at is not null) as leads_attended,

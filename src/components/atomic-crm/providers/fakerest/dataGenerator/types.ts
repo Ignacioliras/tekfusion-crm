@@ -3,7 +3,7 @@ import type {
   Company,
   Contact,
   ContactNote,
-  DashboardMonthlyRow,
+  DashboardDailyRow,
   Alert,
   AuditLogEntry,
   Deal,
@@ -42,7 +42,7 @@ export interface Db {
   audit_log: AuditLogEntry[];
   send_queue: Array<{ id: number; quote_id: number; channel: string }>;
   // A view in Supabase; FakeRest has no views, so it stays empty in the demo.
-  dashboard_monthly: DashboardMonthlyRow[];
+  dashboard_daily: DashboardDailyRow[];
   sales_ranking: SalesRankingRow[];
   configuration: Array<{ id: number; config: ConfigurationContextValue }>;
 }

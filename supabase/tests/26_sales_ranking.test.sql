@@ -17,7 +17,7 @@ end $$;
 -- Cálculo a mano (como postgres, sin RLS: es lo que gerencia debe ver).
 create temp table expected as
 select
-  (date_trunc('month', d.created_at at time zone 'America/Santiago'))::date as month,
+  (d.created_at at time zone 'America/Santiago')::date as day,
   d.sales_id,
   count(*) as leads,
   count(*) filter (where d.first_response_at is not null) as leads_attended,
@@ -43,8 +43,8 @@ select ok((select count(*) from expected) > 0
 -- (a) gerencia: la vista completa = cálculo a mano ------------------------------------
 select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
 select results_eq(
-  'select month, sales_id, leads, leads_attended, avg_first_response_hours, quotes_sent, won, won_amount, lost from public.sales_ranking order by month, sales_id',
-  'select month, sales_id, leads, leads_attended, avg_first_response_hours, quotes_sent, won, won_amount, lost from expected order by month, sales_id',
+  'select day, sales_id, leads, leads_attended, avg_first_response_hours, quotes_sent, won, won_amount, lost from public.sales_ranking order by day, sales_id',
+  'select day, sales_id, leads, leads_attended, avg_first_response_hours, quotes_sent, won, won_amount, lost from expected order by day, sales_id',
   'gerencia: cada fila (mes, ejecutivo) cuadra con el cálculo a mano');
 select is((select count(*) from public.sales_ranking where sales_id is null), 0::bigint, 'los leads sin asignar quedan fuera');
 

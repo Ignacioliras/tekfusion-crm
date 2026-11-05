@@ -70,9 +70,9 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Medir precisión del clasificador con los 50 correos etiquetados por TekFusion (objetivo ≥ 90 % en línea correcta; si no, ajustar prompt/palabras clave).
 
 ## Fase 6 · Dashboard de gerencia (3 días)
-- [x] Vistas SQL (`vista_dashboard_mensual`, `vista_ranking_ejecutivos`). Hechas `dashboard_monthly` y `sales_ranking` (2026-11-04, `13_tekfusion_dashboard.sql`, tests `25_dashboard_monthly` y `26_sales_ranking`).
+- [x] Vistas SQL (`vista_dashboard_mensual`, `vista_ranking_ejecutivos`). Hechas `dashboard_monthly` y `sales_ranking` (2026-11-04, `13_tekfusion_dashboard.sql`, tests `25_dashboard_monthly` y `26_sales_ranking`); por día (`dashboard_daily`, `sales_ranking.day`, test `25_dashboard_daily`) el 2026-11-05 en `fase-3/ajustes`.
 - [ ] Dashboard con filtros de fecha; versión sin ranking para ejecutivo/lector. Métricas (2026-11-04, `management-dashboard/ManagementDashboard.tsx` + `metrics.ts`, arriba del dashboard de Atomic para todos los roles, filtro desde/hasta por mes vs período anterior) y ranking de ejecutivos (2026-11-04, `management-dashboard/SalesRanking.tsx` + `rankSales` en `metrics.ts`, mismo rango, ordenado por monto ganado; solo gerencia con `useCanAccess({ resource: 'sales', action: 'list' })`: ejecutivo y lector no ven la sección ni consultan `sales_ranking`). Tests `SalesRanking.test.tsx` y `metrics.test.ts`. Mergeado a `main` el 2026-11-05. Reabierto: el filtro pasa a rango por días con atajos y defecto "Últimos 30 días" (decisión de Ignacio, 2026-11-05, `docs/10`) → `fase-3/ajustes`.
-- [x] Verificar números contra los datos semilla a mano. Cubierto por pgTAP `25_dashboard_monthly` y `26_sales_ranking` (vistas contra el seed). Capturas como Andrea y Camila tomadas el 2026-11-05 (revisión de la mañana).
+- [x] Verificar números contra los datos semilla a mano. Cubierto por pgTAP `25_dashboard_daily` y `26_sales_ranking` (vistas contra el seed). Capturas como Andrea y Camila tomadas el 2026-11-05 (revisión de la mañana).
 
 ## Fase 7 · Pruebas, marcha blanca y entrega (6 días)
 - [ ] Pruebas end-to-end en staging (flujo completo: entra correo → lead → asignación → cotización → seguimientos → respuesta → ganado → facturación).
