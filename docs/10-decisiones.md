@@ -181,6 +181,11 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Arreglo en shadcn-admin-kit:** `SelectInput` no mostraba el mensaje de error en su rama principal (solo en la de carga): se agregó `<FormError />`.
 - **Kanban:** cada columna es una `section` con `aria-label` (accesible y localizable en tests).
 
+## 2026-11-04 · Dashboard de gerencia (decisiones implícitas de la cola nocturna 2026-11-04-b, anotadas en la revisión de la mañana)
+- **Filtro (decisión de Ignacio, 2026-11-05):** rango libre **por días** con atajos (Este mes, Mes pasado, Últimos 30 días, Últimos 90 días, Este año); por defecto **Últimos 30 días**, comparado con el período anterior de igual largo. La cola nocturna lo había hecho por meses (las métricas salían de `dashboard_monthly`, agregada por mes); se corrige en `fase-3/ajustes`.
+- **Ranking privado en la vista:** `sales_ranking` filtra con `where (select public.is_manager())` dentro de la vista (`security_invoker`): ejecutivo y lector reciben 0 filas sin policy nueva. La interfaz además oculta la sección con `canAccess`.
+- **Ubicación:** el bloque "Métricas comerciales" va arriba del dashboard de Atomic (contactos calientes, ingresos proyectados, última actividad, próximas tareas), que se mantiene. Ejecutivos y lectores ven las métricas sin ranking (RF-11).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
