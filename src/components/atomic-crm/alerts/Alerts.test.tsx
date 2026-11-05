@@ -44,6 +44,31 @@ describe("Panel de alertas", () => {
     ).toHaveLength(0);
   });
 
+  it("says company, line and what happened, with the lead underneath", async () => {
+    const screen = await openPanel();
+
+    const noContact = screen.getByRole("region", {
+      name: "Sin contacto en 24 h",
+    });
+    await expect
+      .element(
+        noContact.getByText(
+          "Edificaciones Cordillera · Geoceldas: sin contacto hace 26 h",
+        ),
+      )
+      .toBeVisible();
+    await expect
+      .element(
+        noContact.getByText(
+          "Minera Ficticia · Válvulas: sin contacto hace 30 h",
+        ),
+      )
+      .toBeVisible();
+    await expect
+      .element(noContact.getByText(/Geoceldas para talud norte/))
+      .toBeVisible();
+  });
+
   it("links each alert to its lead file", async () => {
     const screen = await openPanel();
 

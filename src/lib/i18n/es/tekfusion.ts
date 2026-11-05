@@ -147,6 +147,16 @@ export const tekfusionMessages = {
       mark_all_read: "Marcar todas como leídas",
       open_lead: "Ver lead",
       error: "No se pudo marcar la alerta. Intenta de nuevo.",
+      elapsed_hours: "%{hours} h",
+      elapsed_days: "%{days} días",
+      what: {
+        no_contact: "sin contacto hace %{elapsed}",
+        unassigned: "sin asignar hace %{elapsed}",
+        to_archive: "sin movimiento hace %{elapsed}, se archiva en 48 h",
+        seguimiento_vencido: "seguimiento vencido",
+        cliente_respondio: "el cliente respondió",
+        whatsapp_desconectado: "WhatsApp desconectado",
+      },
       types: {
         sin_contacto_24h: "Sin contacto en 24 h",
         sin_contacto_48h: "Sin contacto en 48 h",

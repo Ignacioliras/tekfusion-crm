@@ -1,4 +1,4 @@
-import { StoryWrapper } from "@/test/StoryWrapper";
+import { buildCompany, buildDeal, StoryWrapper } from "@/test/StoryWrapper";
 import { DEFAULT_USER } from "../providers/fakerest/authProvider";
 import type { Alert } from "../types";
 import { AlertsBell } from "./AlertsBell";
@@ -55,8 +55,30 @@ const alertsData: Alert[] = [
   },
 ];
 
+// The leads behind the alerts: the text names company, line and elapsed time.
+const companies = [
+  buildCompany({ id: 1, name: "Minera Ficticia" }),
+  buildCompany({ id: 2, name: "Edificaciones Cordillera" }),
+];
+const deals = [
+  buildDeal({
+    id: 1,
+    name: "Válvulas para planta Antofagasta",
+    company_id: 1,
+    business_line: "valvulas",
+    created_at: hoursAgo(30),
+  }),
+  buildDeal({
+    id: 2,
+    name: "Geoceldas para talud norte",
+    company_id: 2,
+    business_line: "geoceldas",
+    created_at: hoursAgo(26.5),
+  }),
+];
+
 export const Alerts = () => (
-  <StoryWrapper data={{ alerts: alertsData }}>
+  <StoryWrapper data={{ alerts: alertsData, companies, deals }}>
     <AlertsBell />
   </StoryWrapper>
 );
