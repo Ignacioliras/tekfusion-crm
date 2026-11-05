@@ -229,6 +229,20 @@ const getDataProviderWithCustomMethods = () => {
 
       return updatedData.data;
     },
+    /** Records a CSV export with its author (RPC log_export, docs/08). */
+    async logExport(
+      resource: string,
+      rowCount: number,
+      filters: Record<string, unknown>,
+    ): Promise<void> {
+      const { error } = await getSupabaseClient().rpc("log_export", {
+        resource,
+        row_count: rowCount,
+        filters,
+      });
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+    },
     /** "Tomar": an executive takes an unassigned lead (RPC take_deal). */
     async takeDeal(dealId: Identifier): Promise<Deal> {
       const { data, error } = await getSupabaseClient().rpc("take_deal", {

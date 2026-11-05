@@ -143,4 +143,63 @@ describe("CSV export", () => {
       },
     );
   });
+
+  it("records a manager's export with the resource, the rows and the filters", async () => {
+    const recorded: unknown[][] = [];
+    const screen = await render(
+      <StoryWrapper
+        initialEntries={["/companies"]}
+        data={data}
+        dataProvider={{
+          logExport: async (...args: unknown[]) => {
+            recorded.push(args);
+          },
+        }}
+        authProvider={{
+          canAccess: async (params) => canAccess("admin", params),
+        }}
+      >
+        {null}
+      </StoryWrapper>,
+    );
+    await expect
+      .element(screen.getByText("Minera Ficticia").first())
+      .toBeVisible();
+
+    await screen.getByRole("button", { name: "Export" }).click();
+
+    await expect.poll(() => recorded).toEqual([["companies", 1, {}]]);
+  });
+
+  it("warns, without blocking the download, when the record fails", async () => {
+    const screen = await render(
+      <StoryWrapper
+        initialEntries={["/companies"]}
+        data={data}
+        dataProvider={{
+          logExport: async () => {
+            throw new Error("network down");
+          },
+        }}
+        authProvider={{
+          canAccess: async (params) => canAccess("admin", params),
+        }}
+      >
+        {null}
+      </StoryWrapper>,
+    );
+    await expect
+      .element(screen.getByText("Minera Ficticia").first())
+      .toBeVisible();
+
+    await screen.getByRole("button", { name: "Export" }).click();
+
+    await expect
+      .element(
+        screen.getByText(
+          "El archivo se descargó, pero no se pudo registrar la exportación.",
+        ),
+      )
+      .toBeVisible();
+  });
 });

@@ -256,6 +256,10 @@ export const tekfusionMessages = {
     activity: {
       system: "El sistema",
     },
+    export: {
+      log_error:
+        "El archivo se descargó, pero no se pudo registrar la exportación.",
+    },
     dashboard: {
       title: "Métricas comerciales",
       from: "Desde",

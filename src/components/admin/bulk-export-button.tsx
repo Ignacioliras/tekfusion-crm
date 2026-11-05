@@ -3,12 +3,16 @@ import type { RaRecord, UseBulkExportOptions } from "ra-core";
 import {
   useBulkExport,
   useCanAccess,
+  useDataProvider,
+  useListContext,
+  useNotify,
   useGetResourceLabel,
   useResourceContext,
   useResourceTranslation,
 } from "ra-core";
 
 import { Button } from "../ui/button";
+import { logExport } from "./log-export";
 
 /**
  * Export the selected rows
@@ -43,6 +47,9 @@ export const BulkExportButton = <T extends RaRecord>({
 }: BulkExportButtonProps<T>) => {
   const bulkExport = useBulkExport(props);
   const resource = useResourceContext(props);
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const { selectedIds } = useListContext();
   const getResourceLabel = useGetResourceLabel();
   const label = useResourceTranslation({
     resourceI18nKey: resource
@@ -61,6 +68,15 @@ export const BulkExportButton = <T extends RaRecord>({
     >[0],
   ) => {
     bulkExport();
+    if (resource) {
+      logExport(
+        dataProvider,
+        resource,
+        selectedIds.length,
+        { ids: selectedIds },
+        () => notify("tekfusion.export.log_error", { type: "warning" }),
+      );
+    }
     onClick?.(event);
   };
 

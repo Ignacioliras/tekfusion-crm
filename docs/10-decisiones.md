@@ -211,6 +211,11 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Implícito, decidido aquí:** cada **línea** que tenía a cargo pasa a su propio suplente (antes, todas al único suplente); el usuario dado de baja nunca cuenta como suplente válido de sí mismo; los leads que quedan sin asignar no cuentan para la mayoría de un contacto.
 - **Test aparte:** el escenario de dos líneas va en `28_baja_por_linea.test.sql` y no en el 17: cada archivo de pgTAP corre en su transacción y en el 17 Diego ya queda desactivado.
 
+## 2026-11-05 · Export CSV: oculto y registrado desde el botón (fase-3/ajustes)
+- **Decisión:** `ExportButton` y `BulkExportButton` (shadcn-admin-kit) son el único camino de un export: ellos consultan `canAccess(export)` (se ocultan a ejecutivo y lector en toda lista) y, después de generar el CSV, llaman `dataProvider.logExport(recurso, filas, filtros)` (`admin/log-export.ts`). Si el registro falla, el archivo ya se descargó y se avisa.
+- **Base:** RPC `log_export(resource, row_count, filters)`, security definer, solo gerencia (42501), recurso en lista cerrada (22023), escribe `audit_log` con `action = 'export'`.
+- **Descartado:** envolver el `exporter` de cada lista (lo que proponía la cola): el exporter no conoce los filtros y una lista nueva podía olvidarlo.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
