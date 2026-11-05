@@ -216,6 +216,12 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Base:** RPC `log_export(resource, row_count, filters)`, security definer, solo gerencia (42501), recurso en lista cerrada (22023), escribe `audit_log` con `action = 'export'`.
 - **Descartado:** envolver el `exporter` de cada lista (lo que proponía la cola): el exporter no conoce los filtros y una lista nueva podía olvidarlo.
 
+## 2026-11-05 · Decisiones de Ignacio para la cola nocturna 2026-11-05
+- **Etapas de solo lectura en Configuración:** el código las trata como constantes (`tekfusion/estados.ts`, reglas de ganado/perdido/archivado); renombrarlas o borrarlas desde la pantalla rompería reglas. Se muestran, no se editan.
+- **Dashboard sumado en la base:** ningún rango puede chocar con el tope de PostgREST (`max_rows = 1000`). Las vistas por día se agregan por rango en funciones `security invoker` (`dashboard_summary`, `sales_ranking_summary`); el navegador recibe filas por mes, línea y canal, no por día.
+- **Retención (RF-17):** configurable por gerencia en `configuration.config.dataRetentionMonths`; **24 meses por defecto** (docs/08), **0 la desactiva**.
+- **Tarea programada con `pg_cron`:** la anonimización por retención corre a diario dentro de la base (no en n8n): no depende del VPS y queda con su pgTAP. Sentry: `@sentry/react` (instalado de día porque el loop nocturno no instala) y `npm:@sentry/deno` en las Edge Functions; ambos apagados con DSN vacío.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
