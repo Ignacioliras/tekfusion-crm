@@ -1,10 +1,19 @@
 import { render } from "vitest-browser-react";
-import { page, userEvent } from "vitest/browser";
+import { page, userEvent, type Locator } from "vitest/browser";
 
 import { PipelineWithQuotedLead } from "./CloseDeal.fixtures";
 import { LeadFile } from "./LeadFile.fixtures";
 
 const LEAD = "Válvulas mariposa para planta";
+const DRAG_HANDLE = "[data-rfd-drag-handle-draggable-id]";
+
+// The card is draggable only once canAccess resolves (DealCard's
+// isDragDisabled): until then it is visible but has no drag handle. Wait for
+// the handle itself, not for the text, before starting a keyboard drag.
+const dragHandleOf = async (card: Locator): Promise<HTMLElement> => {
+  await expect.poll(() => card.element().closest(DRAG_HANDLE)).not.toBeNull();
+  return card.element().closest(DRAG_HANDLE) as HTMLElement;
+};
 
 describe("Cerrar un lead: ganado exige monto, perdido exige motivo", () => {
   beforeAll(() => {
@@ -73,11 +82,7 @@ describe("Cerrar un lead: ganado exige monto, perdido exige motivo", () => {
     await expect.element(card).toBeVisible();
 
     // Keyboard drag (hello-pangea/dnd): lift, two columns right, drop.
-    (
-      card
-        .element()
-        .closest("[data-rfd-drag-handle-draggable-id]") as HTMLElement
-    ).focus();
+    (await dragHandleOf(card)).focus();
     await userEvent.keyboard(" ");
     await userEvent.keyboard("{ArrowRight}");
     await userEvent.keyboard("{ArrowRight}");
@@ -100,11 +105,7 @@ describe("Cerrar un lead: ganado exige monto, perdido exige motivo", () => {
       .getByText(LEAD);
     await expect.element(card).toBeVisible();
 
-    (
-      card
-        .element()
-        .closest("[data-rfd-drag-handle-draggable-id]") as HTMLElement
-    ).focus();
+    (await dragHandleOf(card)).focus();
     await userEvent.keyboard(" ");
     await userEvent.keyboard("{ArrowRight}");
     await userEvent.keyboard(" ");
