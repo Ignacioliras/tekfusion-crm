@@ -25,6 +25,8 @@ export interface ConfigurationContextValue {
   businessHours: BusinessHours;
   billingEmail: string;
   weeklyReport: WeeklyReport;
+  /** Months before lost/archived leads are anonymized (RF-17); 0 = off. */
+  dataRetentionMonths: number;
   companySectors: LabeledValue[];
   currency: string;
   dealCategories: LabeledValue[];

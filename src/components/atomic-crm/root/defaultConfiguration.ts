@@ -72,11 +72,16 @@ export const defaultWeeklyReport = {
   recipients: [] as string[],
 };
 
+// docs/08-seguridad-roles.md (RF-17): lost/archived leads are anonymized after
+// this many months; 0 turns it off.
+export const defaultDataRetentionMonths = 24;
+
 export const defaultConfiguration: ConfigurationContextValue = {
   followupCadenceDays: defaultFollowupCadenceDays,
   businessHours: defaultBusinessHours,
   billingEmail: "",
   weeklyReport: defaultWeeklyReport,
+  dataRetentionMonths: defaultDataRetentionMonths,
   companySectors: defaultCompanySectors,
   currency: defaultCurrency,
   dealCategories: defaultDealCategories,

@@ -5,14 +5,13 @@ import {
   EditBase,
   Form,
   useDataProvider,
-  useGetList,
   useInput,
   useNotify,
   useRefresh,
   useSaveContext,
   useTranslate,
 } from "ra-core";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -150,7 +149,8 @@ const transformFormValues = (data: Record<string, any>) => ({
     companySectors: ensureValues(data.companySectors),
     dealCategories: ensureValues(data.dealCategories),
     taskTypes: ensureValues(data.taskTypes),
-    dealStages: ensureValues(data.dealStages),
+    // Read only in the form: saved exactly as they come from the configuration.
+    dealStages: data.dealStages,
     dealPipelineStatuses: data.dealPipelineStatuses,
     noteStatuses: ensureValues(data.noteStatuses),
     ...followupFromForm(data as FollowupFormValues),
@@ -246,29 +246,7 @@ const SettingsFormFields = ({ embedded }: { embedded: boolean }) => {
     formState: { isSubmitting },
   } = useFormContext();
 
-  const stageDisplayName = translate("crm.settings.validation.entities.stages");
-
-  const { data: deals } = useGetList("deals", {
-    pagination: { page: 1, perPage: 1000 },
-  });
-
-  const validateDealStages = useCallback(
-    (stages: { value: string; label: string }[] | undefined) =>
-      validateItemsInUse(stages, deals, "stage", stageDisplayName, {
-        duplicate: (displayName, duplicates) =>
-          translate("crm.settings.validation.duplicate", {
-            display_name: displayName,
-            items: duplicates.join(", "),
-          }),
-        inUse: (displayName, inUse) =>
-          translate("crm.settings.validation.in_use", {
-            display_name: displayName,
-            items: inUse.join(", "),
-          }),
-        validating: translate("crm.settings.validation.validating"),
-      }),
-    [deals, stageDisplayName, translate],
-  );
+  const { dealStages } = useConfigurationContext();
 
   return (
     <div
@@ -393,16 +371,15 @@ const SettingsFormFields = ({ embedded }: { embedded: boolean }) => {
             <h3 className="text-lg font-medium text-muted-foreground">
               {translate("crm.settings.deals.stages")}
             </h3>
-            <ArrayInput
-              source="dealStages"
-              label={false}
-              helperText={false}
-              validate={validateDealStages}
-            >
-              <SimpleFormIterator disableClear>
-                <TextInput source="label" label={false} />
-              </SimpleFormIterator>
-            </ArrayInput>
+            {/* Fixed stages (docs/10, 2026-11-05): read only, saved as they are. */}
+            <ol className="list-decimal pl-6 space-y-1 text-sm">
+              {dealStages.map((stage) => (
+                <li key={stage.value}>{stage.label}</li>
+              ))}
+            </ol>
+            <p className="text-sm text-muted-foreground">
+              {translate("tekfusion.settings.stages.read_only_help")}
+            </p>
           </CardContent>
         </Card>
 

@@ -193,6 +193,12 @@ export const tekfusionMessages = {
         weekly_time: "Hora del reporte semanal",
         weekly_recipients: "Destinatarios del reporte",
         weekly_recipients_help: "Correos separados por coma.",
+        data_retention: "Retención de leads perdidos/archivados (meses)",
+        data_retention_help:
+          "Pasado ese plazo, sus contactos se anonimizan. 0 la desactiva.",
+      },
+      stages: {
+        read_only_help: "Las etapas son fijas: las usan las reglas del CRM.",
       },
       catalogs: {
         add: "Agregar",
@@ -251,6 +257,9 @@ export const tekfusionMessages = {
         hours_order: "La hora de término debe ser posterior a la de inicio",
         email_invalid: "Ingresa un correo válido",
         recipients_invalid: "Correo no válido: %{email}",
+        retention_integer: "Ingresa un número entero de meses",
+        retention_negative: "La retención no puede ser negativa",
+        retention_max: "La retención admite como máximo 120 meses",
       },
     },
     activity: {
