@@ -91,13 +91,16 @@
       "criterio": "Typecheck, lint y build sin errores; suite de app en verde con sentry.test.ts (sin DSN no inicializa; beforeSend limpia datos personales); las dos Edge Functions usan withSentry; ítem de Sentry marcado [x] en docs/09 anotando que se activa al poner el DSN en la nube.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-05 21:26:26"
+      "commit": "c2b812d44345d40c7db85aa32975a763560b3be8",
+      "costo_usd": 1.7338352000000001,
+      "session_id": "df85c5f8-1006-4ba6-965c-fd636a465769",
+      "inicio": "2026-11-05 21:26:26",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Sentry en frontend (initSentry + ErrorBoundary condicional) y en las Edge users/delete_note_attachments (withSentry con import dinámico), apagado sin DSN, con test, docs y verificación en verde.",
+      "fin": "2026-11-05 21:32:16"
     },
     {
       "id": "T4",
