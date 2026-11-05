@@ -193,6 +193,12 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Ranking privado en la vista:** `sales_ranking` filtra con `where (select public.is_manager())` dentro de la vista (`security_invoker`): ejecutivo y lector reciben 0 filas sin policy nueva. La interfaz además oculta la sección con `canAccess`.
 - **Ubicación:** el bloque "Métricas comerciales" va arriba del dashboard de Atomic (contactos calientes, ingresos proyectados, última actividad, próximas tareas), que se mantiene. Ejecutivos y lectores ven las métricas sin ranking (RF-11).
 
+## 2026-11-05 · Seguimiento con texto por canal (fase-3/ajustes)
+- **Decisión:** `followups.messages jsonb` guarda, por cada canal marcado, la plantilla elegida y el texto final que dejó el ejecutivo: `{"correo": {"template_id", "subject", "body"}, "whatsapp": {"template_id", "body"}}`. Restricción `followups_messages_channels`: objeto con solo esas dos claves. `template_id` se mantiene (la cadencia de `send_quote` lo usa) y en un seguimiento manual queda con la plantilla del primer canal.
+- **Contrato con n8n (Fase 5):** si `messages.<canal>.body` existe, se envía tal cual (ya viene con las variables resueltas y es texto plano); si no, se renderiza `template_id` como hasta ahora.
+- **Interfaz:** un bloque por canal marcado con su selector de plantillas filtrado por canal; elegir plantilla rellena el texto, que es editable. Uno automático exige texto (y asunto en correo); un recordatorio no. Fecha por defecto: próximo día hábil (`businessHours.days`) a las 10:00 de Santiago (`tekfusion/santiago.ts`). Sin "Paso N" al programar a mano.
+- **Descartado:** columnas sueltas por canal (cinco columnas nuevas, la mitad nulas) y una tabla hija (más joins para algo que se lee siempre junto).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

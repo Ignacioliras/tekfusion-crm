@@ -118,6 +118,13 @@ export const tekfusionMessages = {
       no_template: "Sin plantilla",
       preview: "Vista previa",
       preview_subject: "Asunto",
+      message: "Mensaje",
+      message_help:
+        "Se rellena con la plantilla: puedes retocarlo o escribirlo desde cero.",
+      message_correo: "Mensaje por correo",
+      message_whatsapp: "Mensaje por WhatsApp",
+      message_required: "Escribe el mensaje o elige una plantilla",
+      subject_required: "Escribe el asunto del correo",
       adjust: "Ajustar",
       cancel: "Cancelar seguimiento",
       cancel_reason: "Motivo de la cancelación",

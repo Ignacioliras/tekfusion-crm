@@ -208,7 +208,14 @@ create table public.followups (
     job_id text unique,
     attempts smallint not null default 0,
     cancel_reason text,
+    -- Per channel: template picked and the final text to send, as the executive
+    -- left it in the preview: {"correo": {"template_id", "subject", "body"},
+    -- "whatsapp": {"template_id", "body"}}. Empty = render template_id (cadence).
+    messages jsonb not null default '{}'::jsonb,
     constraint followups_step_positive check (step > 0),
+    constraint followups_messages_channels check (
+        jsonb_typeof(messages) = 'object' and messages - array['correo', 'whatsapp'] = '{}'::jsonb
+    ),
     constraint followups_has_channel check (cardinality(channels) > 0),
     constraint followups_attempts_positive check (attempts >= 0),
     constraint followups_sent_at check (status <> 'enviado' or sent_at is not null),

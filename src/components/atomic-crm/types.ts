@@ -98,7 +98,14 @@ export type Followup = {
   sent_at?: string | null;
   attempts: number;
   cancel_reason?: string | null;
+  messages?: FollowupMessages;
 } & Pick<RaRecord, "id">;
+
+/** Per channel: template picked and the final text to send (followups.messages). */
+export type FollowupMessages = {
+  correo?: { template_id: Identifier | null; subject: string; body: string };
+  whatsapp?: { template_id: Identifier | null; body: string };
+};
 
 export type Template = {
   name: string;
