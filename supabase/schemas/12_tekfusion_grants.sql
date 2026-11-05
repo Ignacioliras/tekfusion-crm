@@ -43,6 +43,13 @@ grant execute on function public.offboard_sale(bigint, bigint) to service_role;
 -- log_export: any signed-in user may call it; the function itself lets only managers in.
 revoke execute on function public.log_export(text, integer, jsonb) from public, anon;
 grant execute on function public.log_export(text, integer, jsonb) to authenticated, service_role;
+-- RF-17: anonymize_contact lets only managers in; the retention run is for the
+-- scheduler (pg_cron) and the service role; the shared worker is internal.
+revoke execute on function public.anonymize_contact_data(bigint, bigint) from public, anon, authenticated, service_role;
+revoke execute on function public.anonymize_contact(bigint) from public, anon;
+grant execute on function public.anonymize_contact(bigint) to authenticated, service_role;
+revoke execute on function public.anonymize_expired_contacts() from public, anon, authenticated;
+grant execute on function public.anonymize_expired_contacts() to service_role;
 revoke execute on function public.can_read_attachment(text) from public, anon;
 grant execute on function public.can_read_attachment(text) to authenticated, service_role;
 revoke execute on function public.can_write_attachment(text) from public, anon;

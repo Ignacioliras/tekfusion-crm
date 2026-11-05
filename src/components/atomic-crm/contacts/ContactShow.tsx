@@ -31,6 +31,7 @@ import { ContactPersonalInfo } from "./ContactPersonalInfo";
 import { ContactBackgroundInfo } from "./ContactBackgroundInfo";
 import { ContactTasksList } from "./ContactTasksList";
 import type { Contact } from "../types";
+import { AnonymizeContactButton } from "./AnonymizeContactButton";
 import { Avatar } from "./Avatar";
 import { ContactAside } from "./ContactAside";
 import { MobileBackButton } from "../misc/MobileBackButton";
@@ -333,6 +334,9 @@ const ContactShowContent = () => {
             </InfiniteListBase>
           </CardContent>
         </Card>
+        <div className="mt-4 flex justify-end">
+          <AnonymizeContactButton />
+        </div>
       </div>
       <ContactAside />
     </div>

@@ -243,6 +243,27 @@ const getDataProviderWithCustomMethods = () => {
       if (error)
         throw Object.assign(new Error(error.message), { code: error.code });
     },
+    /**
+     * "Anonimizar contacto" (RF-17, RPC anonymize_contact; managers only), then
+     * removes the files its notes held. A failed file removal does not undo the
+     * anonymization: it is reported with filesRemoved = false.
+     */
+    async anonymizeContact(
+      contactId: Identifier,
+    ): Promise<{ filesRemoved: boolean }> {
+      const { data, error } = await getSupabaseClient().rpc(
+        "anonymize_contact",
+        { contact_id: contactId },
+      );
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      const paths = (data ?? []) as string[];
+      if (paths.length === 0) return { filesRemoved: true };
+      const { error: storageError } = await getSupabaseClient()
+        .storage.from(ATTACHMENTS_BUCKET)
+        .remove(paths);
+      return { filesRemoved: !storageError };
+    },
     /** "Tomar": an executive takes an unassigned lead (RPC take_deal). */
     async takeDeal(dealId: Identifier): Promise<Deal> {
       const { data, error } = await getSupabaseClient().rpc("take_deal", {

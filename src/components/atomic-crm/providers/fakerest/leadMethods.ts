@@ -37,6 +37,74 @@ export const createLeadMethods = (
     _filters: Record<string, unknown>,
   ): Promise<void> => undefined,
 
+  /** In-memory mirror of anonymize_contact() (RF-17); no files to remove here. */
+  anonymizeContact: async (
+    contactId: Identifier,
+  ): Promise<{ filesRemoved: boolean }> => {
+    const dataProvider = getDataProvider();
+    const everything = {
+      pagination: { page: 1, perPage: 1000 },
+      sort: { field: "id", order: "ASC" as const },
+    };
+    const emptyNote = { text: "[contenido anonimizado]", attachments: [] };
+    const { data: contact } = await dataProvider.getOne("contacts", {
+      id: contactId,
+    });
+    await dataProvider.update("contacts", {
+      id: contactId,
+      data: {
+        first_name: "Contacto",
+        last_name: `anonimizado #${contactId}`,
+        email_jsonb: [],
+        phone_jsonb: [],
+        avatar: null,
+        title: null,
+        background: null,
+        linkedin_url: null,
+      },
+      previousData: contact,
+    });
+    const { data: contactNotes } = await dataProvider.getList("contact_notes", {
+      ...everything,
+      filter: { contact_id: contactId },
+    });
+    const { data: deals } = await dataProvider.getList<Deal>("deals", {
+      ...everything,
+      filter: {},
+    });
+    // Only the leads whose single contact is this one, as in the SQL function.
+    const soleDealIds = deals
+      .filter(
+        (deal) =>
+          deal.contact_ids?.length > 0 &&
+          deal.contact_ids.every((id) => id === contactId),
+      )
+      .map((deal) => deal.id);
+    const { data: dealNotes } = await dataProvider.getList("deal_notes", {
+      ...everything,
+      filter: {},
+    });
+    await Promise.all([
+      ...contactNotes.map((note) =>
+        dataProvider.update("contact_notes", {
+          id: note.id,
+          data: emptyNote,
+          previousData: note,
+        }),
+      ),
+      ...dealNotes
+        .filter((note) => soleDealIds.includes(note.deal_id))
+        .map((note) =>
+          dataProvider.update("deal_notes", {
+            id: note.id,
+            data: emptyNote,
+            previousData: note,
+          }),
+        ),
+    ]);
+    return { filesRemoved: true };
+  },
+
   takeDeal: async (dealId: Identifier): Promise<Deal> => {
     const dataProvider = getDataProvider();
     const me = await getIdentity();

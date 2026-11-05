@@ -284,6 +284,20 @@ export const tekfusionMessages = {
     activity: {
       system: "El sistema",
     },
+    contacts: {
+      anonymize: {
+        button: "Anonimizar contacto",
+        title: "¿Anonimizar este contacto?",
+        content:
+          "Se reemplazan su nombre, correo y teléfono, y se borran el texto y los adjuntos de sus notas. Sus leads, montos y etapas se conservan para las métricas. Esta acción no se puede deshacer.",
+        confirm: "Sí, anonimizar",
+        cancel: "Cancelar",
+        success: "Contacto anonimizado",
+        files_error:
+          "El contacto quedó anonimizado, pero no se pudieron borrar sus archivos adjuntos. Avisa a soporte.",
+        error: "No se pudo anonimizar el contacto",
+      },
+    },
     export: {
       log_error:
         "El archivo se descargó, pero no se pudo registrar la exportación.",
