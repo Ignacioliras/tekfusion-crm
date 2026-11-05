@@ -61,12 +61,13 @@
       "criterio": "Typecheck y lint sin errores; suite de app en verde con los tests nuevos de DealCreate (empresa existente, empresa nueva, línea sugerida y respetada, producto obligatorio, canal manual, selector de dueño solo para gerencia); ítem 'Ingreso manual de lead' de la Fase 3 marcado [x] en docs/09 con fecha.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-05 21:15:43"
     },
     {
       "id": "T3",
