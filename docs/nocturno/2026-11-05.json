@@ -195,13 +195,16 @@
       "criterio": "npm run test:e2e resetea la base, levanta la app en 5180, pasa los cuatro flujos (login, crear lead, perder con diálogo, enviar cotización, programar seguimiento) y termina con código 0 dejando el puerto libre; ítem e2e de la Fase 3 marcado [x] en docs/09.",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-05 21:49:24"
+      "commit": "97c2363e29c0c97aa2813a79052534fbaea9b061",
+      "costo_usd": 2.524127,
+      "session_id": "1f38d4d5-b854-4e6e-a039-651cd5ce70f0",
+      "inicio": "2026-11-05 21:49:24",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: npm run test:e2e resetea la base, levanta Vite en 5180, pasa los flujos (login, crear lead, perder con diálogo, cotizar por correo, programar seguimiento) y apaga Vite; además se corrigió `DealCreate` para que una ejecutiva no intente reordenar leads sin asignar.",
+      "fin": "2026-11-05 22:01:58"
     }
   ],
   "corridas": [
