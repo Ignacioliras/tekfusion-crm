@@ -91,12 +91,13 @@
       "criterio": "Typecheck, lint y build sin errores; suite de app en verde con sentry.test.ts (sin DSN no inicializa; beforeSend limpia datos personales); las dos Edge Functions usan withSentry; ítem de Sentry marcado [x] en docs/09 anotando que se activa al poner el DSN en la nube.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-05 21:26:26"
     },
     {
       "id": "T4",

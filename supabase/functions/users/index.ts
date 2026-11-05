@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
+import { withSentry } from "../_shared/sentry.ts";
 import {
   AuthMiddleware,
   getJwtClaims,
@@ -538,50 +539,52 @@ async function offboardUser(req: Request, currentUserSale: any) {
   });
 }
 
-Deno.serve(async (req: Request) =>
-  OptionsMiddleware(req, async (req) =>
-    AuthMiddleware(req, async (req) =>
-      UserMiddleware(req, async (req, user) => {
-        const currentUserSale = await getUserSale(user);
-        // A disabled user may still hold a valid JWT: refuse it here.
-        if (!isActiveSale(currentUserSale)) {
-          return createErrorResponse(401, "Unauthorized");
-        }
-        // Two-step verification (docs/08): a manager, or anyone who enrolled a
-        // factor, acts only from a session verified by TOTP (aal2), as the RLS
-        // of the database already demands.
-        const hasVerifiedFactor = (user?.factors ?? []).some(
-          (factor) => factor.status === "verified",
-        );
-        if (
-          (currentUserSale.role === "manager" || hasVerifiedFactor) &&
-          getJwtClaims(req).aal !== "aal2"
-        ) {
-          return createErrorResponse(401, "Two-step verification required", {
-            code: "mfa_required",
-          });
-        }
-
-        try {
-          if (req.method === "POST") {
-            return await inviteUser(req, currentUserSale);
+Deno.serve(
+  withSentry(async (req: Request) =>
+    OptionsMiddleware(req, async (req) =>
+      AuthMiddleware(req, async (req) =>
+        UserMiddleware(req, async (req, user) => {
+          const currentUserSale = await getUserSale(user);
+          // A disabled user may still hold a valid JWT: refuse it here.
+          if (!isActiveSale(currentUserSale)) {
+            return createErrorResponse(401, "Unauthorized");
+          }
+          // Two-step verification (docs/08): a manager, or anyone who enrolled a
+          // factor, acts only from a session verified by TOTP (aal2), as the RLS
+          // of the database already demands.
+          const hasVerifiedFactor = (user?.factors ?? []).some(
+            (factor) => factor.status === "verified",
+          );
+          if (
+            (currentUserSale.role === "manager" || hasVerifiedFactor) &&
+            getJwtClaims(req).aal !== "aal2"
+          ) {
+            return createErrorResponse(401, "Two-step verification required", {
+              code: "mfa_required",
+            });
           }
 
-          if (req.method === "PATCH") {
-            return await patchUser(req, currentUserSale);
+          try {
+            if (req.method === "POST") {
+              return await inviteUser(req, currentUserSale);
+            }
+
+            if (req.method === "PATCH") {
+              return await patchUser(req, currentUserSale);
+            }
+
+            // DELETE never deletes a user (Atomic disables, AGENTS.md): it offboards.
+            if (req.method === "DELETE") {
+              return await offboardUser(req, currentUserSale);
+            }
+          } catch (e) {
+            console.error("Unhandled error in the users function:", e);
+            return createErrorResponse(500, "Internal Server Error");
           }
 
-          // DELETE never deletes a user (Atomic disables, AGENTS.md): it offboards.
-          if (req.method === "DELETE") {
-            return await offboardUser(req, currentUserSale);
-          }
-        } catch (e) {
-          console.error("Unhandled error in the users function:", e);
-          return createErrorResponse(500, "Internal Server Error");
-        }
-
-        return createErrorResponse(405, "Method Not Allowed");
-      }),
+          return createErrorResponse(405, "Method Not Allowed");
+        }),
+      ),
     ),
   ),
 );

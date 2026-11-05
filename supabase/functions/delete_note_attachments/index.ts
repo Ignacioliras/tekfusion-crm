@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { sql } from "https://esm.sh/kysely@0.27.2";
 import { AuthMiddleware } from "../_shared/authentication.ts";
 import { db } from "../_shared/db.ts";
+import { withSentry } from "../_shared/sentry.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { getCandidateNames, type WebhookPayload } from "./candidateNames.ts";
 
@@ -59,8 +60,10 @@ const deleteNoteAttachments = async (req: Request) => {
   return jsonResponse({ status: "ok", deleted: data.length });
 };
 
-Deno.serve(async (req: Request) =>
-  AuthMiddleware(req, async (req: Request) => deleteNoteAttachments(req)),
+Deno.serve(
+  withSentry(async (req: Request) =>
+    AuthMiddleware(req, async (req: Request) => deleteNoteAttachments(req)),
+  ),
 );
 
 // Returns the files that no row uses anymore, among the given ones.

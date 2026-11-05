@@ -91,6 +91,12 @@ Lo que no existe en local y se hace en el panel de Supabase, una vez por proyect
 - [ ] Advisors → **Security Advisor**: cero avisos de nivel error antes de cerrar la fase (`docs/09`).
 - [ ] Authentication → Sign in: desactivar el registro abierto (`enable_signup`) en producción (decisión pendiente en `docs/10`).
 
+### Variables de la nube: Sentry (errores)
+Sentry queda apagado mientras su DSN esté vacío (así está en local y en el repo). Para activarlo, un proyecto de Sentry de la cuenta de TekFusion por ambiente:
+- [ ] **`VITE_SENTRY_DSN`** (frontend): en Cloudflare Pages → Settings → Environment variables, una por ambiente (staging/producción). Se lee al compilar: hay que volver a desplegar. El `environment` lo pone el modo de Vite.
+- [ ] **`SENTRY_DSN`** (Edge Functions): `npx supabase secrets set SENTRY_DSN=… SENTRY_ENVIRONMENT=staging` (lo ejecuta Ignacio). Sin él, `_shared/sentry.ts` ni siquiera carga `@sentry/deno`. Hoy lo usan `users` y `delete_note_attachments`.
+- No se envían cookies, headers, cuerpos, correo ni IP (regla 5 de `CLAUDE.md`); el muestreo de trazas está en 0.
+
 ## Lo que NO hacer todavía
 - No conectar un número de WhatsApp real ni el Gmail de marketing.
 - No crear nada en producción ni proyectos de Supabase con datos reales.
