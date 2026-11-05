@@ -175,6 +175,7 @@ export const tekfusionMessages = {
       },
     },
     settings: {
+      crm_configuration: "Configuración del CRM",
       followups: {
         title: "Seguimientos y horario hábil",
         cadence: "Cadencia por defecto (días)",
@@ -205,6 +206,8 @@ export const tekfusionMessages = {
         move_down: "Bajar %{name}",
         error: "No se pudo guardar el cambio",
         required: "Completa los campos obligatorios",
+        apply: "Aplicar",
+        pending_hint: "Los cambios se guardan con el botón Guardar de abajo.",
       },
       templates: {
         title: "Plantillas de seguimiento",

@@ -64,6 +64,23 @@ describe("Configuración de seguimientos, horario, facturación y reporte", () =
       .not.toBeChecked();
   });
 
+  it("offers no way to empty the required report day", async () => {
+    const screen = await render(
+      <StoryWrapper>
+        <SettingsPage />
+      </StoryWrapper>,
+    );
+    await expect
+      .element(
+        screen.getByRole("combobox", { name: /Día del reporte semanal/ }),
+      )
+      .toHaveTextContent("Lunes");
+
+    expect(
+      screen.getByRole("button", { name: "Clear value" }).elements(),
+    ).toHaveLength(0);
+  });
+
   it("management saves every field", async () => {
     const { screen, saved } = await renderAsManager();
 

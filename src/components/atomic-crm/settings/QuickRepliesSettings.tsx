@@ -1,11 +1,4 @@
-import {
-  useCanAccess,
-  useCreate,
-  useGetList,
-  useNotify,
-  useTranslate,
-  useUpdate,
-} from "ra-core";
+import { useCanAccess, useTranslate } from "ra-core";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,40 +7,32 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { QuickReply } from "../types";
+import { useStagedCatalog } from "./stagedCatalogs";
 
 const T = "tekfusion.settings.quick_replies";
 const C = "tekfusion.settings.catalogs";
 
-type Draft = Omit<QuickReply, "id"> & { id?: QuickReply["id"] };
+type Row = Omit<QuickReply, "id"> & { id?: QuickReply["id"] };
+// index: position of the row being edited; undefined for a new one.
+type Draft = Row & { index?: number };
 
 const EMPTY: Draft = { title: "", body: "", active: true };
 
 /** WhatsApp quick replies (RF-14). Management only. */
 export const QuickRepliesSettings = () => {
   const translate = useTranslate();
-  const notify = useNotify();
   const { canAccess } = useCanAccess({
     resource: "configuration",
     action: "edit",
   });
-  const { data, refetch } = useGetList<QuickReply>("quick_replies", {
-    pagination: { page: 1, perPage: 100 },
-    sort: { field: "title", order: "ASC" },
+  const { rows, write } = useStagedCatalog<Row>("quick_replies", {
+    field: "title",
+    order: "ASC",
   });
-  const [create] = useCreate();
-  const [update] = useUpdate();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!canAccess) return null;
-
-  const options = {
-    onSuccess: () => {
-      setDraft(null);
-      refetch();
-    },
-    onError: () => notify(`${C}.error`, { type: "error" }),
-  };
 
   const save = () => {
     if (!draft) return;
@@ -56,33 +41,38 @@ export const QuickRepliesSettings = () => {
       return;
     }
     setError(null);
-    const { id, ...fields } = draft;
+    const { index, ...fields } = draft;
     const values = { ...fields, title: fields.title.trim() };
-    if (id == null) create("quick_replies", { data: values }, options);
-    else
-      update(
-        "quick_replies",
-        { id, data: values, previousData: data?.find((r) => r.id === id) },
-        options,
-      );
+    write(
+      index === undefined
+        ? [...rows, values]
+        : rows.map((row, i) => (i === index ? values : row)),
+    );
+    setDraft(null);
   };
 
   return (
-    <Card id="quick_replies">
+    <Card id="quick_replies" role="region" aria-label={translate(`${T}.title`)}>
       <CardContent className="space-y-4">
         <h2 className="text-xl font-semibold text-muted-foreground">
           {translate(`${T}.title`)}
         </h2>
-        {data?.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          {translate(`${C}.pending_hint`)}
+        </p>
+        {rows.length === 0 && (
           <p className="text-sm text-muted-foreground">
             {translate(`${C}.empty`)}
           </p>
         )}
         <ul className="divide-y">
-          {data?.map((reply) => {
+          {rows.map((reply, index) => {
             const action = reply.active ? `${C}.deactivate` : `${C}.activate`;
             return (
-              <li key={reply.id} className="flex items-center gap-2 py-2">
+              <li
+                key={reply.id ?? `new-${index}`}
+                className="flex items-center gap-2 py-2"
+              >
                 <span className="flex-1 text-sm">
                   {reply.title}
                   {!reply.active && (
@@ -99,7 +89,7 @@ export const QuickRepliesSettings = () => {
                   aria-label={`${translate(`${C}.edit`)} ${reply.title}`}
                   onClick={() => {
                     setError(null);
-                    setDraft(reply);
+                    setDraft({ ...reply, index });
                   }}
                 >
                   {translate(`${C}.edit`)}
@@ -110,14 +100,10 @@ export const QuickRepliesSettings = () => {
                   size="sm"
                   aria-label={`${translate(action)} ${reply.title}`}
                   onClick={() =>
-                    update(
-                      "quick_replies",
-                      {
-                        id: reply.id,
-                        data: { active: !reply.active },
-                        previousData: reply,
-                      },
-                      options,
+                    write(
+                      rows.map((row, i) =>
+                        i === index ? { ...row, active: !row.active } : row,
+                      ),
                     )
                   }
                 >
@@ -161,7 +147,7 @@ export const QuickRepliesSettings = () => {
                 {translate(`${C}.cancel`)}
               </Button>
               <Button type="button" onClick={save}>
-                {translate(`${C}.save`)}
+                {translate(`${C}.apply`)}
               </Button>
             </div>
           </div>

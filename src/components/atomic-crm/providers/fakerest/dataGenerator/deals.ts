@@ -1,10 +1,7 @@
 import { add } from "date-fns";
 import { datatype, lorem, random } from "faker/locale/en_US";
 
-import {
-  defaultDealCategories,
-  defaultDealStages,
-} from "../../../root/defaultConfiguration";
+import { defaultDealStages } from "../../../root/defaultConfiguration";
 import { LINEAS_NEGOCIO } from "../../../tekfusion/lineas";
 import type { Deal, OriginChannel } from "../../../types";
 import type { Db } from "./types";
@@ -41,7 +38,7 @@ export const generateDeals = (db: Db): Deal[] => {
       name: lowercaseName[0].toUpperCase() + lowercaseName.slice(1),
       company_id: company.id,
       contact_ids: contacts.map((contact) => contact.id),
-      categories: [random.arrayElement(defaultDealCategories).value],
+      categories: [],
       stage: random.arrayElement(defaultDealStages).value,
       description: lorem.paragraphs(datatype.number({ min: 1, max: 4 })),
       amount: datatype.number(1000) * 100,

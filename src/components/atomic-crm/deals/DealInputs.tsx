@@ -77,13 +77,15 @@ const DealMiscInputs = () => {
         {translate("resources.deals.field_categories.misc")}
       </h6>
 
-      <AutocompleteArrayInput
-        source="categories"
-        choices={dealCategories}
-        optionText="label"
-        optionValue="value"
-        helperText={false}
-      />
+      {dealCategories.length > 0 ? (
+        <AutocompleteArrayInput
+          source="categories"
+          choices={dealCategories}
+          optionText="label"
+          optionValue="value"
+          helperText={false}
+        />
+      ) : null}
       <NumberInput
         source="amount"
         defaultValue={0}

@@ -1,12 +1,4 @@
-import {
-  useCanAccess,
-  useCreate,
-  useGetList,
-  useNotify,
-  useTranslate,
-  useUpdate,
-  type Identifier,
-} from "ra-core";
+import { useCanAccess, useNotify, useTranslate } from "ra-core";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import type { LostReason } from "../types";
+import { useStagedCatalog } from "./stagedCatalogs";
+
+type Row = Omit<LostReason, "id"> & { id?: LostReason["id"] };
 
 const T = "tekfusion.settings.lost_reasons";
 const C = "tekfusion.settings.catalogs";
@@ -26,46 +21,29 @@ export const LostReasonsSettings = () => {
     resource: "configuration",
     action: "edit",
   });
-  const { data = [], refetch } = useGetList<LostReason>("lost_reasons", {
-    pagination: { page: 1, perPage: 100 },
-    sort: { field: "position", order: "ASC" },
+  const { rows: data, write } = useStagedCatalog<Row>("lost_reasons", {
+    field: "position",
+    order: "ASC",
   });
-  const [create] = useCreate();
-  const [update] = useUpdate();
-  // id = null: a new reason; undefined: nothing being edited.
+  // index = null: a new reason; undefined: nothing being edited.
   const [editing, setEditing] = useState<{
-    id: Identifier | null;
+    index: number | null;
     name: string;
   }>();
 
   if (!canAccess) return null;
 
-  const options = {
-    onSuccess: () => {
-      setEditing(undefined);
-      refetch();
-    },
-    onError: () => notify(`${C}.error`, { type: "error" }),
-  };
+  const patch = (index: number, changes: Partial<Row>) =>
+    write(data.map((row, i) => (i === index ? { ...row, ...changes } : row)));
 
-  const patch = (reason: LostReason, changes: Partial<LostReason>) =>
-    update(
-      "lost_reasons",
-      { id: reason.id, data: changes, previousData: reason },
-      options,
-    );
-
-  // Swap positions with the neighbour; positions are rewritten from the list
-  // order so gaps or repeated values left by older data heal themselves.
+  // Positions are rewritten from the list order when saving.
   const move = (index: number, offset: -1 | 1) => {
     const order = [...data];
     [order[index], order[index + offset]] = [
       order[index + offset],
       order[index],
     ];
-    order.forEach((reason, position) => {
-      if (reason.position !== position) patch(reason, { position });
-    });
+    write(order);
   };
 
   const save = () => {
@@ -74,17 +52,12 @@ export const LostReasonsSettings = () => {
       notify(`${C}.required`, { type: "error" });
       return;
     }
-    if (editing.id === null) {
-      const position = Math.max(-1, ...data.map((r) => r.position)) + 1;
-      create(
-        "lost_reasons",
-        { data: { name, active: true, position } },
-        options,
-      );
+    if (editing.index === null) {
+      write([...data, { name, active: true, position: data.length }]);
     } else {
-      const reason = data.find((r) => r.id === editing.id);
-      if (reason) patch(reason, { name });
+      patch(editing.index, { name });
     }
+    setEditing(undefined);
   };
 
   const editor = editing && (
@@ -102,25 +75,31 @@ export const LostReasonsSettings = () => {
         {translate(`${C}.cancel`)}
       </Button>
       <Button type="button" onClick={save}>
-        {translate(`${C}.save`)}
+        {translate(`${C}.apply`)}
       </Button>
     </div>
   );
 
   return (
-    <Card id="lost_reasons">
+    <Card id="lost_reasons" role="region" aria-label={translate(`${T}.title`)}>
       <CardContent className="space-y-4">
         <h2 className="text-xl font-semibold text-muted-foreground">
           {translate(`${T}.title`)}
         </h2>
+        <p className="text-sm text-muted-foreground">
+          {translate(`${C}.pending_hint`)}
+        </p>
         <ol className="divide-y" aria-label={translate(`${T}.title`)}>
           {data.map((reason, index) =>
-            editing?.id === reason.id ? (
-              <li key={reason.id} className="py-2">
+            editing?.index === index ? (
+              <li key={reason.id ?? `new-${index}`} className="py-2">
                 {editor}
               </li>
             ) : (
-              <li key={reason.id} className="flex items-center gap-1 py-2">
+              <li
+                key={reason.id ?? `new-${index}`}
+                className="flex items-center gap-1 py-2"
+              >
                 <span className="flex-1 text-sm">
                   {reason.name}
                   {!reason.active && (
@@ -157,9 +136,7 @@ export const LostReasonsSettings = () => {
                   variant="outline"
                   size="sm"
                   aria-label={`${translate(`${C}.edit`)} ${reason.name}`}
-                  onClick={() =>
-                    setEditing({ id: reason.id, name: reason.name })
-                  }
+                  onClick={() => setEditing({ index, name: reason.name })}
                 >
                   {translate(`${C}.edit`)}
                 </Button>
@@ -167,7 +144,7 @@ export const LostReasonsSettings = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => patch(reason, { active: !reason.active })}
+                  onClick={() => patch(index, { active: !reason.active })}
                 >
                   {translate(
                     reason.active ? `${C}.deactivate` : `${C}.activate`,
@@ -177,13 +154,13 @@ export const LostReasonsSettings = () => {
             ),
           )}
         </ol>
-        {editing?.id === null ? (
+        {editing?.index === null ? (
           editor
         ) : (
           <Button
             type="button"
             variant="outline"
-            onClick={() => setEditing({ id: null, name: "" })}
+            onClick={() => setEditing({ index: null, name: "" })}
           >
             {translate(`${C}.add`)}
           </Button>

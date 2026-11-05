@@ -4,9 +4,12 @@ import type { RaRecord } from "ra-core";
 import {
   EditBase,
   Form,
+  useDataProvider,
   useGetList,
   useInput,
   useNotify,
+  useRefresh,
+  useSaveContext,
   useTranslate,
 } from "ra-core";
 import { useCallback, useMemo } from "react";
@@ -44,6 +47,7 @@ import { SettingsTags } from "./SettingsTags";
 import { TemplatesSettings } from "./TemplatesSettings";
 import { QuickRepliesSettings } from "./QuickRepliesSettings";
 import { LostReasonsSettings } from "./LostReasonsSettings";
+import { saveCatalogs } from "./stagedCatalogs";
 
 const SECTIONS = [
   {
@@ -60,6 +64,11 @@ const SECTIONS = [
   { id: "notes", label: "resources.notes.name", fallback: "Notes" },
   { id: "tasks", label: "resources.tasks.name", fallback: "Tasks" },
   { id: "tags", label: "resources.tags.name", fallback: "Tags" },
+  { id: "followups", label: "tekfusion.settings.followups.title" },
+  { id: "report", label: "tekfusion.settings.report.title" },
+  { id: "templates", label: "tekfusion.settings.templates.title" },
+  { id: "quick_replies", label: "tekfusion.settings.quick_replies.title" },
+  { id: "lost_reasons", label: "tekfusion.settings.lost_reasons.title" },
 ];
 
 /** Ensure every item in a { value, label } array has a value (slug from label). */
@@ -165,7 +174,12 @@ const toFormValues = (config: ConfigurationContextValue) => ({
   ...reportToForm(config),
 });
 
-export const SettingsPage = () => {
+/**
+ * Configuración (management only). One way to save: the fixed "Guardar" button
+ * writes the configuration and the staged catalogs. `embedded`: inside the
+ * mobile settings page, with the save bar in the flow instead of fixed.
+ */
+export const SettingsPage = ({ embedded = false }: { embedded?: boolean }) => {
   const updateConfiguration = useConfigurationUpdater();
   const notify = useNotify();
 
@@ -188,41 +202,51 @@ export const SettingsPage = () => {
         },
       }}
     >
-      <SettingsForm />
+      <SettingsForm embedded={embedded} />
     </EditBase>
   );
 };
 
 SettingsPage.path = "/settings";
 
-const SettingsForm = () => {
+const SettingsForm = ({ embedded }: { embedded: boolean }) => {
   const config = useConfigurationContext();
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const { save } = useSaveContext();
 
   const defaultValues = useMemo(() => toFormValues(config), [config]);
 
+  // Catalogs first: if one fails, nothing of the configuration is half saved.
+  const handleSubmit = async (values: Record<string, any>) => {
+    try {
+      await saveCatalogs(dataProvider, values.catalogs);
+    } catch {
+      notify("tekfusion.settings.catalogs.error", { type: "error" });
+      refresh();
+      return;
+    }
+    await save?.(values);
+    refresh();
+  };
+
   return (
-    <Form defaultValues={defaultValues}>
-      <SettingsFormFields />
+    <Form defaultValues={defaultValues} onSubmit={handleSubmit}>
+      <SettingsFormFields embedded={embedded} />
     </Form>
   );
 };
 
-const SettingsFormFields = () => {
+const SettingsFormFields = ({ embedded }: { embedded: boolean }) => {
   const translate = useTranslate();
   const currencyChoices = useMemo(() => getCurrencyChoices(), []);
   const {
-    watch,
-    setValue,
     reset,
     formState: { isSubmitting },
   } = useFormContext();
 
-  const dealStages = watch("dealStages");
-  const dealPipelineStatuses: string[] = watch("dealPipelineStatuses") ?? [];
   const stageDisplayName = translate("crm.settings.validation.entities.stages");
-  const categoryDisplayName = translate(
-    "crm.settings.validation.entities.categories",
-  );
 
   const { data: deals } = useGetList("deals", {
     pagination: { page: 1, perPage: 1000 },
@@ -246,26 +270,8 @@ const SettingsFormFields = () => {
     [deals, stageDisplayName, translate],
   );
 
-  const validateDealCategories = useCallback(
-    (categories: { value: string; label: string }[] | undefined) =>
-      validateItemsInUse(categories, deals, "categories", categoryDisplayName, {
-        duplicate: (displayName, duplicates) =>
-          translate("crm.settings.validation.duplicate", {
-            display_name: displayName,
-            items: duplicates.join(", "),
-          }),
-        inUse: (displayName, inUse) =>
-          translate("crm.settings.validation.in_use", {
-            display_name: displayName,
-            items: inUse.join(", "),
-          }),
-        validating: translate("crm.settings.validation.validating"),
-      }),
-    [categoryDisplayName, deals, translate],
-  );
-
   return (
-    <div className="flex gap-8 mt-4 pb-20">
+    <div className={embedded ? "flex flex-col mt-4" : "flex gap-8 mt-4 pb-20"}>
       {/* Left navigation */}
       <nav className="hidden md:block w-48 shrink-0">
         <div className="sticky top-4 space-y-1">
@@ -283,7 +289,10 @@ const SettingsFormFields = () => {
               }}
               className="block w-full text-left px-3 py-1 text-sm rounded-md hover:text-foreground hover:bg-muted transition-colors"
             >
-              {translate(section.label, { smart_count: 2 })}
+              {translate(section.label, {
+                smart_count: 2,
+                _: section.fallback,
+              })}
             </button>
           ))}
           <Link
@@ -390,63 +399,6 @@ const SettingsFormFields = () => {
                 <TextInput source="label" label={false} />
               </SimpleFormIterator>
             </ArrayInput>
-
-            <Separator />
-
-            <h3 className="text-lg font-medium text-muted-foreground">
-              {translate("crm.settings.deals.pipeline_statuses")}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {translate("crm.settings.deals.pipeline_help")}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {dealStages?.map(
-                (stage: { value: string; label: string }, idx: number) => {
-                  const isSelected = dealPipelineStatuses.includes(stage.value);
-                  return (
-                    <Button
-                      key={idx}
-                      type="button"
-                      variant={isSelected ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        if (isSelected) {
-                          setValue(
-                            "dealPipelineStatuses",
-                            dealPipelineStatuses.filter(
-                              (s) => s !== stage.value,
-                            ),
-                          );
-                        } else {
-                          setValue("dealPipelineStatuses", [
-                            ...dealPipelineStatuses,
-                            stage.value,
-                          ]);
-                        }
-                      }}
-                    >
-                      {stage.label || stage.value}
-                    </Button>
-                  );
-                },
-              )}
-            </div>
-
-            <Separator />
-
-            <h3 className="text-lg font-medium text-muted-foreground">
-              {translate("crm.settings.deals.categories")}
-            </h3>
-            <ArrayInput
-              source="dealCategories"
-              label={false}
-              helperText={false}
-              validate={validateDealCategories}
-            >
-              <SimpleFormIterator disableReordering disableClear>
-                <TextInput source="label" label={false} />
-              </SimpleFormIterator>
-            </ArrayInput>
           </CardContent>
         </Card>
 
@@ -495,14 +447,19 @@ const SettingsFormFields = () => {
         {/* TekFusion parameters (RF-14), management only */}
         <FollowupSettings />
         <ReportSettings />
-        {/* Catalogs save on their own, not with the Save button below. */}
         <TemplatesSettings />
         <QuickRepliesSettings />
         <LostReasonsSettings />
       </div>
 
       {/* Sticky save button */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4">
+      <div
+        className={
+          embedded
+            ? "sticky bottom-0 -mx-4 border-t bg-background p-4"
+            : "fixed bottom-0 left-0 right-0 border-t bg-background p-4"
+        }
+      >
         <div className="max-w-screen-xl mx-auto flex gap-8 px-4">
           <div className="hidden md:block w-48 shrink-0" />
           <div className="flex-1 min-w-0 max-w-2xl flex justify-between">

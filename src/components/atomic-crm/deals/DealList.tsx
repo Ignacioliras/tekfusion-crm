@@ -48,26 +48,31 @@ const DealList = () => {
         placeholder={translate("resources.deals.fields.company_id")}
       />
     </ReferenceInput>,
-    <WrapperField
-      source="categories@ov"
-      label="resources.deals.fields.categories"
-    >
-      <AutocompleteArrayInput
-        source="categories@ov"
-        label={false}
-        placeholder={translate("resources.deals.fields.categories")}
-        // deals having any of the selected categories
-        parse={(values: string[]) =>
-          values?.length
-            ? `{${values.map((value) => `"${value}"`).join(",")}}`
-            : undefined
-        }
-        format={(value?: string) => value?.match(/[^{}",]+/g) ?? []}
-        choices={dealCategories}
-        optionText="label"
-        optionValue="value"
-      />
-    </WrapperField>,
+    // Atomic's categories: only when configured (TekFusion uses business lines).
+    ...(dealCategories.length > 0
+      ? [
+          <WrapperField
+            source="categories@ov"
+            label="resources.deals.fields.categories"
+          >
+            <AutocompleteArrayInput
+              source="categories@ov"
+              label={false}
+              placeholder={translate("resources.deals.fields.categories")}
+              // deals having any of the selected categories
+              parse={(values: string[]) =>
+                values?.length
+                  ? `{${values.map((value) => `"${value}"`).join(",")}}`
+                  : undefined
+              }
+              format={(value?: string) => value?.match(/[^{}",]+/g) ?? []}
+              choices={dealCategories}
+              optionText="label"
+              optionValue="value"
+            />
+          </WrapperField>,
+        ]
+      : []),
     ...(isPending
       ? []
       : [

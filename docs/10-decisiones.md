@@ -199,6 +199,13 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Interfaz:** un bloque por canal marcado con su selector de plantillas filtrado por canal; elegir plantilla rellena el texto, que es editable. Uno automático exige texto (y asunto en correo); un recordatorio no. Fecha por defecto: próximo día hábil (`businessHours.days`) a las 10:00 de Santiago (`tekfusion/santiago.ts`). Sin "Paso N" al programar a mano.
 - **Descartado:** columnas sueltas por canal (cinco columnas nuevas, la mitad nulas) y una tabla hija (más joins para algo que se lee siempre junto).
 
+## 2026-11-05 · Configuración: una sola forma de guardar y sin restos de Atomic (fase-3/ajustes)
+- **Guardado único:** plantillas, respuestas rápidas y motivos de pérdida se editan en el formulario de la página (`settings/stagedCatalogs.ts`): "Aplicar" deja el cambio en la lista y el botón fijo "Guardar" escribe primero los catálogos (crea los nuevos, actualiza solo los que cambiaron, los motivos toman su posición del orden) y después `configuration`. Si un catálogo falla, la configuración no se guarda. Excepción: Etiquetas (de Atomic) sigue con su modal propio; se crean desde los contactos.
+- **Restos de Atomic:** fuera las categorías de lead (TekFusion clasifica por línea; vacías ocultan el campo, el filtro y el bloque) y los chips "Etapas del pipeline"; sectores y tipos de tarea propios de TekFusion, por confirmar (`docs/11`); el seed usa los mismos valores (`mineria`, `construccion`, `agua`, `agro`, tarea `visit`).
+- **Select obligatorio sin ✕:** `SelectInput` (shadcn-admin-kit) ya no ofrece vaciar un campo requerido; vale para todos los selects.
+- **Móvil:** la página de Configuración de escritorio se incrusta en la de móvil para gerencia (regla 9: se reutiliza la pantalla, sin flujo propio), con la barra de guardar en el flujo.
+- **Pendiente de revisar:** las etapas siguen editables en Configuración aunque el código las trata como constantes (`tekfusion/estados.ts`); renombrarlas o borrarlas rompería reglas. Proponer dejarlas de solo lectura.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

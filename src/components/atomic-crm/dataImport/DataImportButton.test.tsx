@@ -131,7 +131,7 @@ describe("DataImportButton", () => {
     const { dataProvider, screen } = await renderImport(useCompanyImport, [
       {
         name: "Acme",
-        sector: "Tecnologías de la información",
+        sector: "Minería",
         size: 50,
         city: "New York",
         website: "https://acme.example",
@@ -147,7 +147,7 @@ describe("DataImportButton", () => {
     expect(companies[0]).toMatchObject({
       city: "New York",
       name: "Acme",
-      sector: "information-technology",
+      sector: "mineria",
       // 50 employees falls in the "50-249 employees" bucket
       size: 250,
       website: "https://acme.example",
@@ -197,6 +197,7 @@ describe("DataImportButton", () => {
       {
         name: "New website",
         company: "Acme",
+        // Atomic's categories: none configured for TekFusion, so dropped.
         categories: "Website design; Copywriting",
         stage: "Cotizado",
         amount: "12000",
@@ -216,7 +217,7 @@ describe("DataImportButton", () => {
     expect(deals).toHaveLength(2);
     expect(deals[0]).toMatchObject({
       amount: 12000,
-      categories: ["website-design", "copywriting"],
+      categories: [],
       company_id: companies[0].id,
       name: "New website",
       stage: "cotizado",

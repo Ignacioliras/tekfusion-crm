@@ -35,6 +35,10 @@ Completar a medida que lleguen. Mientras un dato esté `[PENDIENTE]`, el código
 - [ ] Teléfono para 2FA de las cuentas de plataforma (gerencia) y quién guarda los códigos de recuperación.
 - [ ] Datos de facturación de TekFusion: razón social, RUT, giro, dirección, correo.
 
+## Catálogos de Configuración (propuesta de Libux, 2026-11-05)
+- [ ] Sectores de clientes: Minería, Construcción y obras civiles, Agua y saneamiento, Agrícola y riego, Industria, Energía, Sector público, Otro. ¿Sobra o falta alguno?
+- [ ] Tipos de tarea: Ninguno, Llamada, Correo, WhatsApp, Reunión, Visita a terreno, Seguimiento, Agradecimiento, Despacho. ¿Sobra o falta alguno?
+
 ## Diseño
 - [ ] Logo en PNG/SVG y colores de marca.
 

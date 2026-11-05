@@ -34,14 +34,14 @@ describe("searchDealCategories", () => {
     });
   });
 
-  it("falls back to the default categories when none are configured", async () => {
+  it("adds nothing when no categories are configured (TekFusion's default)", async () => {
     const result = await searchDealCategories(
       searchParams,
       "copywriting",
       dataProviderWithConfig({}),
     );
 
-    expect(result.filter["@or"]["categories@ov"]).toBe('{"copywriting"}');
+    expect(result.filter["@or"]["categories@ov"]).toBeUndefined();
   });
 
   it("leaves the search unchanged when no category matches", async () => {
