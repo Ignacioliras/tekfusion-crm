@@ -138,6 +138,7 @@ create type alerta_tipo as enum ('sin_contacto_24h','sin_contacto_48h','seguimie
 | job_id | text NULL (idempotencia n8n) |
 | intentos | int default 0 |
 | motivo_cancelacion | text NULL |
+| mensajes (`messages`) | jsonb default `{}`: por canal marcado, plantilla elegida y texto final (`{"correo": {template_id, subject, body}, "whatsapp": {template_id, body}}`); solo esas dos claves. Si hay `body`, n8n lo envía tal cual; si no, renderiza `plantilla_id` (2026-11-05, docs/10) |
 
 ### `conversaciones` (una por número de WhatsApp)
 | columna | tipo |
