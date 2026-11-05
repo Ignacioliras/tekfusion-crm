@@ -78,6 +78,14 @@ Para probar el mecanismo sin gastar nada: `node scripts\tekfusion\nocturno.mjs -
 | `docs/nocturno/` | Colas, reportes y README del loop nocturno |
 | `ARRANQUE.cmd` / `NOCHE.cmd` | Doble clic: preparar el PC / lanzar la noche |
 
+## Tests e2e (Playwright) contra el stack local
+1. Docker Desktop abierto y Supabase local arriba (`npx supabase start`).
+2. `npm run test:e2e`. El script (`scripts/tekfusion/e2e.mjs`) **resetea la base local** (`npx supabase db reset --local`, borra lo que hayas cargado), levanta Vite en el puerto **5180** con `.env.development`, corre `npx playwright test --config playwright.tekfusion.config.ts` y apaga Vite al final, pasen o no los tests. Sale con el código de Playwright.
+3. El puerto 5180 debe estar libre (`--strictPort`: si está ocupado, falla en vez de usar otro).
+4. Los tests están en `e2e/tekfusion/` y entran como Camila (ejecutiva del seed). Si falla uno, el detalle queda en `test-results/` (`npx playwright show-trace <ruta>/trace.zip`).
+
+El harness e2e de Atomic (`playwright.config.ts`, `e2e/*.spec.ts`, `.env.e2e`) no se usa.
+
 ## Si algo falla en Windows
 - **Un hook de Claude Code da error** (mensajes con `.claude/hooks/...`): copia el error y pégalo en Claude. Plan B: abrir el repo en el `.devcontainer/` de Atomic (VS Code → "Reopen in Container") o en WSL2.
 - **`npx supabase start` falla:** Docker Desktop cerrado o sin WSL2. Ábrelo, espera "Engine running".

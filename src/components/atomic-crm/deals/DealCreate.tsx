@@ -58,9 +58,13 @@ export const DealCreate = ({ open }: { open: boolean }) => {
   });
 
   const onSuccess = async (deal: Deal) => {
-    // Atomic's kanban order: the new lead goes on top of its column.
+    // Atomic's kanban order: the new lead goes on top of its column. An
+    // executive also sees unassigned leads but RLS won't let them update those.
     const deals = (allDeals ?? []).filter(
-      (d) => d.stage === deal.stage && d.id !== deal.id,
+      (d) =>
+        d.stage === deal.stage &&
+        d.id !== deal.id &&
+        (canChooseOwner || d.sales_id === identity?.id),
     );
     await Promise.all(
       deals.map((oldDeal) =>
