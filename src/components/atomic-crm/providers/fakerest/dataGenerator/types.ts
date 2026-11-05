@@ -9,6 +9,7 @@ import type {
   DealNote,
   Followup,
   LostReason,
+  QuickReply,
   Quote,
   Template,
   Sale,
@@ -34,6 +35,7 @@ export interface Db {
   quotes: Quote[];
   followups: Followup[];
   templates: Template[];
+  quick_replies: QuickReply[];
   alerts: Alert[];
   audit_log: AuditLogEntry[];
   send_queue: Array<{ id: number; quote_id: number; channel: string }>;

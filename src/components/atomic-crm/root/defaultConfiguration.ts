@@ -61,7 +61,27 @@ export const defaultTaskTypes = [
   { value: "call", label: "Llamada" },
 ];
 
+// Must match the coalesce default of public.send_quote.
+export const defaultFollowupCadenceDays = [2, 5, 10];
+
+// docs/03-reglas-negocio.md: Monday to Friday, 09:00–18:00 America/Santiago.
+export const defaultBusinessHours = {
+  days: [1, 2, 3, 4, 5],
+  from: "09:00",
+  to: "18:00",
+};
+
+export const defaultWeeklyReport = {
+  day: 1,
+  time: "08:00",
+  recipients: [] as string[],
+};
+
 export const defaultConfiguration: ConfigurationContextValue = {
+  followupCadenceDays: defaultFollowupCadenceDays,
+  businessHours: defaultBusinessHours,
+  billingEmail: "",
+  weeklyReport: defaultWeeklyReport,
   companySectors: defaultCompanySectors,
   currency: defaultCurrency,
   dealCategories: defaultDealCategories,

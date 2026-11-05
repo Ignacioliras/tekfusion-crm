@@ -26,6 +26,14 @@ export function SalesInputs() {
         readOnly={record?.id === identity?.id}
         helperText={false}
       />
+      {record && (
+        <TextInput
+          source="signature"
+          label="tekfusion.settings.signature"
+          helperText="tekfusion.settings.signature_help"
+          multiline
+        />
+      )}
       {/* Deactivation goes through "Dar de baja" (OffboardButton); the switch only reactivates. */}
       {record?.disabled && (
         <BooleanInput source="disabled" helperText={false} />

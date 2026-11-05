@@ -29,7 +29,8 @@ import {
   type UserAssignmentValues,
 } from "./userAssignments";
 
-type SalesEditFormData = SalesFormData & UserAssignmentValues;
+type SalesEditFormData = SalesFormData &
+  UserAssignmentValues & { signature?: string | null };
 
 function EditToolbar() {
   return (
@@ -76,9 +77,19 @@ export function SalesEdit() {
         line_codes,
         substitute_sales_id,
         absences: submitted,
+        signature,
         ...sale
       } = data;
       const updated = await dataProvider.salesUpdate(record.id, withRole(sale));
+      // The users Edge Function does not carry the signature; authenticated
+      // may update that column directly (12_tekfusion_grants.sql).
+      if ((signature || null) !== (record.signature || null)) {
+        await dataProvider.update<Sale>("sales", {
+          id: record.id,
+          data: { signature: signature || null },
+          previousData: record,
+        });
+      }
       await saveUserAssignments(
         dataProvider,
         planUserAssignments(

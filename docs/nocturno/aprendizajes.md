@@ -1,5 +1,7 @@
 # Aprendizajes de las sesiones nocturnas
 
+- 2026-11-04 T4: en tests, `testI18nProvider` es inglés para las claves de Atomic (`ra.action.save` = "Save") y español solo para `tekfusion.*`. Un `<Form>` dentro de `EditBase` se resetea cuando llega el record (borra lo que el test ya escribió): esperar un valor marcador de primer nivel en el record antes de editar. ra-core `Form` no pone `noValidate`: un `type="email"` inválido lo frena el navegador y el mensaje propio no aparece.
+
 - 2026-11-03 T1: línea base OK en Windows — `npm run typecheck`, `npm run lint` y `npm run build` terminan con código 0 sin cambios.
 - Los comandos npm corren con la herramienta Bash (Git Bash); en la herramienta PowerShell el permiso los rechaza en sesión nocturna.
 - Avisos que no rompen la verificación (no tocarlos sin tarea): ESLint avisa que `.eslintignore` está obsoleto (migrar a `ignores` en `eslint.config.js`); Vite avisa por `__dirname` en `vite.config.ts:72`; chunk principal de ~2,5 MB.
@@ -35,3 +37,7 @@
 - `db diff` no ve las filas de `storage.buckets` ni emite los grants correctos para tablas nuevas (deja los privilegios por defecto, que dan DML a `authenticated`): migración a mano y `revoke all … from authenticated` explícito.
 - Un `security definer` ve `current_user` = dueño: para saber si llama una sesión de API usar `auth.role()`.
 - Reiniciar Supabase local (`stop`/`start`) para que tome cambios de `config.toml` (contraseñas, MFA); `db reset` no basta.
+- 2026-11-04 T1: `npm run test:unit:app -- --run` pasa entero en este worktree (66 archivos, ~55 s); ya no falla por el proyecto `claude`. Las piezas que sacan la sesión de un PC compartido se limpian en `root/clearPersistedCache.ts` (lo llaman ambos `logout`).
+- 2026-11-04 T3: `useUpdate`/`useUpdateMany` de ra-core reemplazan el registro en la caché del getList sin volver a filtrar: para listas filtradas por estado (ej. `read_at@is: null`) filtra también en el cliente. ra-data-postgrest `update` envía solo los campos cambiados contra `previousData` (sirve para tablas con grant por columna).
+- 2026-11-04 T5: la Edge `users` (y `salesUpdate` de Supabase) no transporta `sales.signature`: se guarda con `dataProvider.update("sales")` aparte. En vitest-browser, `getByText("x")` es exacto sobre el texto del elemento (con spans anidados falla: usa regex) y `toHaveTextContent` solo acepta string. PENDIENTE: `SettingsPageMobile` no muestra los catálogos de RF-14 (no revisado si debe).
+- 2026-11-04 T6: en Bash nocturno `| grep` se rechaza pero `| tail -N` pasa; un solo archivo de tests: `npx vitest --config vitest.config.ts --project app --run <ruta>`. Los `SelectInput`/`DateInput` de filtros `alwaysOn` se ubican por su `label` (combobox / `getByLabelText`). PENDIENTE: `ExportButton` de shadcn-admin-kit no consulta `canAccess`: en contactos y empresas Exportar sigue visible para ejecutivo/lector (envolver con `CanAccess action="export"`); falta registrar el export con autor.

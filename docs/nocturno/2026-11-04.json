@@ -31,12 +31,16 @@
       "criterio": "Typecheck y lint limpios; toda la suite de app en verde, incluidos los tests nuevos de clearPersistedCache; el ítem 'Limpiar la caché persistida de react-query' de la Fase 3 en docs/09 queda marcado [x] con fecha y una línea de qué se hizo.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "6806997d5271bba816708f6c1885214a5dbc99ff",
+      "costo_usd": 1.3279102,
+      "session_id": "1a04d0c1-96da-4f18-8822-eae957df9408",
+      "inicio": "2026-11-03 22:04:23",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: el cierre de sesión (Supabase y FakeRest) ahora vacía la caché de react-query en memoria y borra `REACT_QUERY_OFFLINE_CACHE` vía `root/clearPersistedCache.ts`, con tests y el ítem de la Fase 3 marcado.",
+      "fin": "2026-11-03 22:08:34"
     },
     {
       "id": "T2",
@@ -53,12 +57,15 @@
       "criterio": "db reset aplica la migración nueva; todos los pgTAP pasan, incluido el escenario nuevo de 17_baja_usuario; suite de app en verde; el ítem 'Completar offboard_sale' de la Fase 3 en docs/09 queda [x] y las reglas quedan en docs/10 (sección fechada 2026-11-03, decisión de Ignacio).",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
-      "error": null,
+      "estado": "fallida",
+      "intentos": 2,
+      "error": "claude -p terminó con código 1.\n{\"duration_api_ms\":196069,\"stop_reason\":\"tool_use\",\"session_id\":\"49ebda9b-cb35-414a-83f6-d50ef4c71da3\",\"total_cost_usd\":4.11377075,\"usage\":{\"input_tokens\":258,\"cache_creation_input_tokens\":138900,\"cache_read_input_tokens\":957249,\"output_tokens\":16453,\"output_tokens_details\":{\"thinking_tokens\":7813},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":138900,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"global\",\"iterations\":[{\"input_tokens\":32,\"output_tokens\":3814,\"cache_read_input_tokens\":135469,\"cache_creation_input_tokens\":3431,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":3431},\"type\":\"message\"}],\"speed\":\"standard\",\"fallback_credit\":null},\"modelUsage\":{\"claude-haiku-5-5\":{\"inputTokens\":6320,\"outputTokens\":23,\"cacheReadInputTokens\":0,\"cacheCreationInputTokens\":0,\"webSearchRequests\":0,\"costUSD\":0.0006435000000000001,\"contextWindow\":1000000,\"maxOutputTokens\":128000,\"thinkingTokens\":0,\"cacheCreationEphemeral5mInputTokens\":0,\"cacheCreationEphemeral1hInputTokens\":0,\"canonicalModel\":\"claude-haiku-5-5\",\"provider\":\"firstParty\",\"costBasis\":\"list\"},\"claude-fable-5-1\":{\"inputTokens\":290,\"outputTokens\":19369,\"cacheReadInputTokens\":1096149,\"cacheCreationInputTokens\":143387,\"webSearchRequests\":0,\"costUSD\":4.11312725,\"contextWindow\":1000000,\"maxOutputTokens\":64000,\"thinkingTokens\":8396,\"cacheCreationEphemeral5mInputTokens\":0,\"cacheCreationEphemeral1hInputTokens\":143387,\"canonicalModel\":\"claude-fable-5-1\",\"provider\":\"firstParty\",\"costBasis\":\"list\"}},\"permission_denials\":[{\"tool_name\":\"Bash\",\"tool_use_id\":\"toolu_01P9gR2H8bb3VrxX2WnXGk9n\",\"tool_input\":{\"command\":\"printf '%s\\\\n' '-- offboard_sale (Fase 3, docs/10 2026-11-03): substitute per line, contacts and' '-- pending tasks. Hand-written: same body as supabase/schemas/11_tekfusion_policies.sql.' '' > supabase/migrations/20261104100000_offboard_suplente_por_linea.sql && sed -n '/^CREATE OR REPLACE FUNCTION \\\"public\\\".\\\"offboard_sale\\\"/,/^\\\\$\\\\$;/p' supabase/schemas/11_tekfusion_policies.sql >> supabase/migrations/20261104100000_offboard_suplente_por_linea.sql && printf '%s\\\\n' '' 'revoke execute on function public.offboard_sale(bigint, bigint) from public, anon, authenticated;' 'grant execute on function public.offboard_sale(bigint, bigint) to service_role;' >> supabase/migrations/20261104100000_offboard_suplente_por_linea.sql && wc -l supabase/migrations/20261104100000_offboard_suplente_por_linea.sql\",\"description\":\"Write the hand-made migration from the schema function body\"}}],\"terminal_reason\":\"budget_exhausted\",\"fast_mode_state\":\"off\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"safety_stops\":0,\"is_error\":true,\"num_turns\":21,\"subtype\":\"error_max_budget_usd\",\"errors\":[\"Reached maximum budget ($4)\"],\"type\":\"result\",\"duration_ms\":236913,\"uuid\":\"f639d940-049b-4f96-b01d-7dea93df1a47\",\"queued_turn_count\":0,\"result_index\":0}",
       "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "costo_usd": 6.49630915,
+      "session_id": "49ebda9b-cb35-414a-83f6-d50ef4c71da3",
+      "inicio": "2026-11-03 22:14:56",
+      "modelo_usado": "fable/high",
+      "resumen_claude": ""
     },
     {
       "id": "T3",
@@ -79,12 +86,16 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos de alertas (contador, grupos, marcar una, marcar todas, enlace); Header.test.tsx sigue pasando; ítem 'Panel de alertas' de la Fase 3 en docs/09 marcado [x] con fecha, anotando que la captura se toma en la mañana.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "980fa68e861266e6453f09e8526947f24138c064",
+      "costo_usd": 1.9816646000000002,
+      "session_id": "c8e5952a-9550-4d47-8563-b2a1711e6e02",
+      "inicio": "2026-11-03 22:18:59",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: campana de alertas con contador de no leídas propias, panel agrupado por tipo con enlace a la ficha y marcar leída/todas (solo `read_at`), en headers de escritorio y móvil, con 5 tests y docs/09 actualizado.",
+      "fin": "2026-11-03 22:24:01"
     },
     {
       "id": "T4",
@@ -106,12 +117,16 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (gerencia guarda; ejecutivo no ve; validaciones); los defaults coinciden con send_quote ([2, 5, 10]); docs/09 anota avance parcial de 'Configuración completa (RF-14)'.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "0d312fd9b9535d8dbedebc7d3a3236767da31341",
+      "costo_usd": 3.3067561999999997,
+      "session_id": "1c21667c-fdb7-40be-b6cf-3784bee3d2c4",
+      "inicio": "2026-11-03 22:24:01",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Configuración (solo gerencia) ahora edita cadencia por defecto, horario hábil, correo de facturación y reporte semanal en configuration.config, con defaults [2, 5, 10] como send_quote, validación en español y 7 tests nuevos en verde.",
+      "fin": "2026-11-03 22:35:52"
     },
     {
       "id": "T5",
@@ -138,14 +153,20 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (plantilla válida con vista previa, variable desconocida rechazada, respuesta rápida, motivo reordenado, firma editada, ejecutivo sin acceso); con T4, el ítem 'Configuración completa (RF-14) salvo WhatsApp' de la Fase 3 en docs/09 queda [x], anotando que líneas y ejecutivos ya estaban en Usuarios (Fase 2).",
-      "depende_de": ["T4"],
+      "depende_de": [
+        "T4"
+      ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "48654fed5e3e1eb15077284fd31a000b55bb631c",
+      "costo_usd": 2.9681779000000006,
+      "session_id": "e1ce492e-ef35-468e-aee2-de3be5378ef8",
+      "inicio": "2026-11-03 22:35:53",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Configuración RF-14 completa con catálogos de plantillas (validación y vista previa), respuestas rápidas y motivos de pérdida, firma editable en Usuarios y Mi perfil, y tests en verde.",
+      "fin": "2026-11-03 22:43:22"
     },
     {
       "id": "T6",
@@ -168,12 +189,25 @@
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (filtros, export solo gerencia, búsqueda global) y los tests de roles ajustados; ítem 'Pipeline kanban + lista…' de la Fase 3 en docs/09 marcado [x] (con lo ya hecho de ganado/perdido); decisión en docs/10.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "18640d3b5721f320b97ef508aa6f155b464a8004",
+      "costo_usd": 2.4465438999999995,
+      "session_id": "33cd57f2-690b-4828-8b9c-833d00c344e6",
+      "inicio": "2026-11-03 22:43:22",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: filtros de línea, ejecutivo, canal, etapa y fecha en kanban y tabla, export CSV solo para gerencia y tests de búsqueda global, con la verificación en verde.",
+      "fin": "2026-11-03 22:49:41"
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-03 22:04:23",
+      "modelo": "opus",
+      "simulado": false,
+      "fin": "2026-11-03 22:49:41",
+      "motivo": "cola terminada"
     }
   ]
 }

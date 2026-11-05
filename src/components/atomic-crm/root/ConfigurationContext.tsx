@@ -6,7 +6,25 @@ import { defaultConfiguration } from "./defaultConfiguration";
 
 export const CONFIGURATION_STORE_KEY = "app.configuration";
 
+/** ISO weekdays: 1 = Monday … 7 = Sunday. Times are "HH:MM", America/Santiago. */
+export interface BusinessHours {
+  days: number[];
+  from: string;
+  to: string;
+}
+
+export interface WeeklyReport {
+  day: number;
+  time: string;
+  recipients: string[];
+}
+
 export interface ConfigurationContextValue {
+  /** Read by public.send_quote (default [2, 5, 10] there too). */
+  followupCadenceDays: number[];
+  businessHours: BusinessHours;
+  billingEmail: string;
+  weeklyReport: WeeklyReport;
   companySectors: LabeledValue[];
   currency: string;
   dealCategories: LabeledValue[];

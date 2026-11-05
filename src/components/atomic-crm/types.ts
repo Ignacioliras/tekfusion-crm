@@ -73,6 +73,12 @@ export type Template = {
   active: boolean;
 } & Pick<RaRecord, "id">;
 
+export type QuickReply = {
+  title: string;
+  body: string;
+  active: boolean;
+} & Pick<RaRecord, "id">;
+
 export type Alert = {
   created_at: string;
   type: string;

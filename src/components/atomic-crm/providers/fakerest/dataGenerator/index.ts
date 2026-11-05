@@ -44,6 +44,20 @@ export default (): Db => {
     active: true,
     ...template,
   }));
+  db.quick_replies = [
+    {
+      id: 1,
+      title: "Saludo",
+      body: "Hola, gracias por escribirnos. En un momento te atiendo.",
+      active: true,
+    },
+    {
+      id: 2,
+      title: "Ficha técnica",
+      body: "Te adjunto la ficha técnica del producto que consultaste.",
+      active: true,
+    },
+  ];
   db.quotes = [];
   db.followups = [];
   db.alerts = [];
