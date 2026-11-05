@@ -31,12 +31,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "786831b3580b02b7b93b9f259d26ed0bf3426930",
+      "costo_usd": 3.4714737500000004,
+      "session_id": "0d0d8d4c-2185-4796-b490-d6fd65565e9c",
+      "inicio": "2026-11-03 22:49:46",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: vista dashboard_monthly con security_invoker, grants, migración a mano, test pgTAP 25 contra el seed y métricas documentadas en docs/05.",
+      "fin": "2026-11-03 22:56:14"
     },
     {
       "id": "T2",
@@ -51,16 +55,22 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db && npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "db reset aplica ambas migraciones; todos los pgTAP pasan, incluido 26_sales_ranking (números contra el seed, cero filas para ejecutivo y lector); suite de app en verde; el ítem 'Vistas SQL' de la Fase 6 en docs/09 queda [x].",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "a5660adf507b517aadf543fe5db52532e33301b2",
+      "costo_usd": 3.2764702999999997,
+      "session_id": "4eacefe3-ff81-4e73-9de1-524bd04fb512",
+      "inicio": "2026-11-03 22:56:15",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: vista sales_ranking solo para gerencia con security_invoker, grants, migración a mano, test pgTAP 26 contra el seed y columnas documentadas en docs/05.",
+      "fin": "2026-11-03 23:02:43"
     },
     {
       "id": "T3",
@@ -88,12 +98,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "bloqueada",
+      "intentos": 1,
       "error": null,
       "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "costo_usd": 3.6168722000000004,
+      "session_id": "5bb4981e-2c51-42b5-b851-56f49f3f70c3",
+      "inicio": "2026-11-03 23:02:43",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "BLOQUEADA: el presupuesto de la sesión se agotó durante la lectura de contexto; la tarea necesita una corrida nueva con más presupuesto (el código quedó intacto).",
+      "motivo": "el presupuesto de la sesión se agotó durante la lectura de contexto; la tarea necesita una corrida nueva con más presupuesto (el código quedó intacto)."
     },
     {
       "id": "T4",
@@ -116,14 +130,20 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Typecheck y lint limpios; suite de app en verde con metrics.test.ts (fórmulas y ceros) y los tests de componente (totales, % 24 h, cambio de rango, estado vacío); los tests existentes del dashboard de Atomic siguen pasando.",
-      "depende_de": ["T1"],
+      "depende_de": [
+        "T1"
+      ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "81e02e72d1f8f32ee6b9ed863da046bd9152e513",
+      "costo_usd": 2.3048011,
+      "session_id": "a6f861a3-e15b-4b5e-b0ed-627300d160c9",
+      "inicio": "2026-11-03 23:04:30",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Dashboard de gerencia con filtro de meses, métricas puras con tests (incluidos ceros), tests de componente e integración arriba del dashboard de Atomic; suite completa en verde.",
+      "fin": "2026-11-03 23:10:50"
     },
     {
       "id": "T5",
@@ -145,14 +165,30 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests del ranking (gerencia ve y ordena, ejecutivo y lector no ven, rango cambia totales); los tres ítems de la Fase 6 en docs/09 quedan [x].",
-      "depende_de": ["T2", "T4"],
+      "depende_de": [
+        "T2",
+        "T4"
+      ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "hecha",
+      "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "commit": "5221e64d8420dcd5ce03124a2e7b9c44c387d516",
+      "costo_usd": 2.3426015999999996,
+      "session_id": "15ba5a94-5c4c-4607-94b0-76fea2074067",
+      "inicio": "2026-11-03 23:10:50",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: ranking de ejecutivos solo para gerencia en el dashboard (SalesRanking + rankSales con tests), FakeRest e i18n actualizados y Fase 6 marcada en docs/09.",
+      "fin": "2026-11-03 23:17:58"
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-03 22:49:43",
+      "modelo": "opus",
+      "simulado": false,
+      "fin": "2026-11-03 23:17:59",
+      "motivo": "cola terminada"
     }
   ]
 }

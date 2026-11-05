@@ -228,8 +228,28 @@ Claves iniciales: `cadencia_dias` `[2,5,10]`, `horario_habil` `{dias:[1..5], des
 
 ## Vistas y funciones
 
-- `vista_dashboard_mensual`: leads por canal/línea, funnel, tasa de cierre, montos, tiempo de primera respuesta (`primer_contacto_en - creado_en`). Materializar si hace falta.
-- `vista_ranking_ejecutivos`: solo accesible con rol gerencia (policy sobre la vista o función `security definer` que verifica el rol).
+- `vista_dashboard_mensual` → `public.dashboard_monthly` (hecha, Fase 6; `supabase/schemas/13_tekfusion_dashboard.sql`, `security_invoker`: cada usuario agrega solo los leads que su RLS le deja ver). Una fila por (`month`, `business_line`, `origin_channel`) sobre `deals`, sin excluir nada (los archivados cuentan como archivados). Métricas:
+  - `month`: primer día del mes de `created_at` en `America/Santiago`.
+  - `leads`: cantidad de leads.
+  - `contacted`: etapa distinta de `nuevo` o `first_response_at` no nulo.
+  - `quoted`: etapa `cotizado` o con al menos una cotización (un lead cerrado cuenta como cotizado solo si tiene cotización).
+  - `won` / `lost` / `archived`: etapa `ganado` / `perdido` / `archivado`.
+  - `responded`: con `first_response_at`.
+  - `first_response_within_24h`: con `first_response_at - created_at` ≤ 24 h.
+  - `avg_first_response_hours`: promedio de `first_response_at - created_at` en horas, 2 decimales; los leads sin respuesta quedan fuera (nulo si ninguno respondió).
+  - `quoted_amount`: suma del monto de la cotización vigente (`quotes.is_current`) de cada lead, CLP.
+  - `won_amount`: suma de `deals.won_amount`, CLP.
+  - Solo lectura para `authenticated` y `service_role`; `anon` sin acceso. Test: `supabase/tests/25_dashboard_monthly.test.sql`. Materializar si hace falta.
+- `vista_ranking_ejecutivos` → `public.sales_ranking` (hecha, Fase 6; `supabase/schemas/13_tekfusion_dashboard.sql`, `security_invoker`). Solo gerencia: la vista filtra con `public.is_manager()`, así ejecutivos y lectores reciben cero filas aunque su RLS les deje ver `deals`. Una fila por (`month`, `sales_id`) sobre los leads con dueño (`sales_id` no nulo). Columnas:
+  - `month`: primer día del mes de `created_at` en `America/Santiago`.
+  - `sales_id`: el ejecutivo dueño del lead.
+  - `leads`: cantidad de leads.
+  - `leads_attended`: con `first_response_at`.
+  - `avg_first_response_hours`: promedio de `first_response_at - created_at` en horas, 2 decimales (nulo si ninguno atendido).
+  - `quotes_sent`: cotizaciones de esos leads que se enviaron (`sent_channels` no vacío o con fila en `send_queue`).
+  - `won` / `lost`: etapa `ganado` / `perdido`.
+  - `won_amount`: suma de `deals.won_amount`, CLP.
+  - Solo lectura para `authenticated` y `service_role`; `anon` sin acceso. Test: `supabase/tests/26_sales_ranking.test.sql`.
 - `fn_asignar_lead(lead_id)`: aplica reglas de asignación (línea → ejecutivo → ausencia → suplente).
 - `fn_programar_seguimientos(lead_id)`: crea los pasos según `configuracion.cadencia_dias` y la cotización vigente.
 - `fn_cancelar_seguimientos(lead_id, motivo)`.

@@ -1,4 +1,5 @@
 import { DashboardActivityLog } from "./DashboardActivityLog";
+import { ManagementDashboard } from "../management-dashboard/ManagementDashboard";
 import MobileHeader from "../layout/MobileHeader";
 import { MobileContent } from "../layout/MobileContent";
 import { useConfigurationContext } from "../root/ConfigurationContext";
@@ -31,6 +32,7 @@ export const MobileDashboard = () => {
   return (
     <Wrapper>
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-1">
+        <ManagementDashboard />
         <DashboardActivityLog />
       </div>
     </Wrapper>
