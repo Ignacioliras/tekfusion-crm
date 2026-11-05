@@ -131,12 +131,15 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
-      "error": null,
+      "estado": "fallida",
+      "intentos": 1,
+      "error": "claude -p terminó con código 1.\n{\"duration_api_ms\":338177,\"stop_reason\":\"tool_use\",\"session_id\":\"b9ad524e-946f-45fe-a74e-3c83a6035a67\",\"total_cost_usd\":6.0966622500000005,\"usage\":{\"input_tokens\":12,\"cache_creation_input_tokens\":170757,\"cache_read_input_tokens\":596052,\"output_tokens\":40502,\"output_tokens_details\":{\"thinking_tokens\":15918},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":170757,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"global\",\"iterations\":[{\"input_tokens\":2,\"output_tokens\":17054,\"cache_read_input_tokens\":148422,\"cache_creation_input_tokens\":22335,\"cache_creation\":{\"ephemeral_5m_input_tokens\":0,\"ephemeral_1h_input_tokens\":22335},\"type\":\"message\"}],\"speed\":\"standard\",\"fallback_credit\":null},\"modelUsage\":{\"claude-fable-5-1\":{\"inputTokens\":14,\"outputTokens\":41176,\"cacheReadInputTokens\":766809,\"cacheCreationInputTokens\":192301,\"webSearchRequests\":0,\"costUSD\":6.0966622500000005,\"contextWindow\":1000000,\"maxOutputTokens\":128000,\"thinkingTokens\":16411,\"cacheCreationEphemeral5mInputTokens\":0,\"cacheCreationEphemeral1hInputTokens\":192301,\"canonicalModel\":\"claude-fable-5-1\",\"provider\":\"firstParty\",\"costBasis\":\"list\"}},\"permission_denials\":[],\"terminal_reason\":\"budget_exhausted\",\"fast_mode_state\":\"off\",\"fast_mode_disabled_reason\":\"sdk_opt_in_required\",\"subagent_stats\":{\"spawned\":0,\"requested\":{\"background\":0,\"foreground\":0,\"unset\":0},\"started_in_background\":0,\"max_depth\":0,\"spawned_by_subagents\":0,\"completed\":0,\"failed\":0,\"killed\":{\"parent\":0,\"user\":0,\"system\":0},\"refused\":{\"depth_limit\":0,\"concurrency_limit\":0,\"budget\":0},\"by_type\":{}},\"safety_stops\":0,\"is_error\":true,\"num_turns\":52,\"subtype\":\"error_max_budget_usd\",\"errors\":[\"Reached maximum budget ($6)\"],\"type\":\"result\",\"duration_ms\":358542,\"uuid\":\"8de14dab-6c46-4bf2-8069-ca15cba6445c\",\"queued_turn_count\":0,\"result_index\":0}",
       "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "costo_usd": 6.0966622500000005,
+      "session_id": "b9ad524e-946f-45fe-a74e-3c83a6035a67",
+      "inicio": "2026-11-05 21:32:19",
+      "modelo_usado": "fable/high",
+      "resumen_claude": ""
     },
     {
       "id": "T5",
