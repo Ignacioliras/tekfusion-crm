@@ -33,13 +33,16 @@
       "criterio": "Typecheck y lint sin errores; suite de app en verde con los tests nuevos (etapas sin inputs editables; retención 24 por defecto, guarda 36, rechaza -1 y 2,5); docs/09 anota el avance en el ítem de Configuración.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-05 21:10:20"
+      "commit": "80b3aaf9fd9c54e134f96dc56548ff4f7642d942",
+      "costo_usd": 1.8766644,
+      "session_id": "4ef06e88-abc0-43f2-9471-7bb98ce2144e",
+      "inicio": "2026-11-05 21:10:20",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Etapas de solo lectura en Configuración y retención de leads perdidos/archivados (`dataRetentionMonths`, 24 por defecto, entero 0–120) con tests en DataRetention.test.tsx y avance anotado en docs/09.",
+      "fin": "2026-11-05 21:15:43"
     },
     {
       "id": "T2",
