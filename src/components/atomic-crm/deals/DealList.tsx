@@ -14,20 +14,17 @@ import { ExportButton } from "@/components/admin/export-button";
 import { List } from "@/components/admin/list";
 import { ReferenceInput } from "@/components/admin/reference-input";
 import { FilterButton } from "@/components/admin/filter-form";
-import { SearchInput } from "@/components/admin/search-input";
 
 import { DataImportButton } from "../dataImport/DataImportButton";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { TopToolbar } from "../layout/TopToolbar";
-import { AccountManagerInput } from "../sales/AccountManagerInput";
 import { DealArchivedList } from "./DealArchivedList";
 import { DealCreate } from "./DealCreate";
 import { DealEdit } from "./DealEdit";
 import { DealEmpty } from "./DealEmpty";
-import { leadFilters } from "./DealFilters";
+import { leadFilters, leadSearchFilters } from "./DealFilters";
 import { DealListContent } from "./DealListContent";
 import { DealShow } from "./DealShow";
-import { OnlyMineInput } from "./OnlyMineInput";
 
 const DealList = () => {
   const { identity } = useGetIdentity();
@@ -41,7 +38,6 @@ const DealList = () => {
   if (!identity) return null;
 
   const dealFilters = [
-    <SearchInput source="q" alwaysOn />,
     <ReferenceInput source="company_id" reference="companies">
       <AutocompleteInput
         label={false}
@@ -73,15 +69,7 @@ const DealList = () => {
           </WrapperField>,
         ]
       : []),
-    ...(isPending
-      ? []
-      : [
-          canAccessSalesList ? (
-            <AccountManagerInput source="sales_id" alwaysOn />
-          ) : (
-            <OnlyMineInput source="sales_id" alwaysOn />
-          ),
-        ]),
+    ...(isPending ? [] : leadSearchFilters(!!canAccessSalesList)),
     ...leadFilters(),
   ];
 

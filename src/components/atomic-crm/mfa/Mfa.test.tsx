@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { render } from "vitest-browser-react";
 import { StoryWrapper } from "@/test/StoryWrapper";
 import { createFakeMfaApi, FAKE_MFA_CODE } from "@/test/fakeMfaApi";
@@ -48,6 +49,33 @@ describe("two-step verification", () => {
     await expect
       .element(screen.getByRole("button", { name: "Disable" }))
       .toBeVisible();
+  });
+
+  it("enrolls a manager from the forced enrollment page, leaving one verified factor", async () => {
+    const mfa = createFakeMfaApi({ latency: 50 });
+    const screen = await render(
+      <StrictMode>
+        <StoryWrapper
+          initialEntries={[MFA_ROUTES.enroll]}
+          authProvider={{
+            getMfaApi: () => mfa,
+            getIdentity: identityWithRole("manager"),
+          }}
+        >
+          {null}
+        </StoryWrapper>
+      </StrictMode>,
+    );
+
+    await expect
+      .element(screen.getByRole("img", { name: "QR code" }))
+      .toBeVisible();
+    await screen.getByLabelText("6-digit code").fill(FAKE_MFA_CODE);
+    await screen.getByRole("button", { name: "Confirm" }).click();
+
+    await expect
+      .poll(async () => (await mfa.listFactors()).data?.all)
+      .toMatchObject([{ status: "verified" }]);
   });
 
   it("gives a manager no way to disable it", async () => {

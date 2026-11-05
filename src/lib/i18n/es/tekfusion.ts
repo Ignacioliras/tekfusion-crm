@@ -28,6 +28,7 @@ export const tekfusionMessages = {
         lost_reason: "Motivo de pérdida",
       },
       filters: {
+        all: "Todos",
         business_line: "Línea de negocio",
         origin_channel: "Canal de origen",
         stage: "Etapa",

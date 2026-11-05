@@ -89,6 +89,40 @@ describe("lead filters", () => {
 
     await expectOnly(screen, "Tuberías planta sur");
   });
+
+  it.each([
+    ["admin", "Account manager"],
+    ["user", "Only deals I manage"],
+  ] as const)(
+    "labels every filter of the board and says Todos when empty (%s)",
+    async (role, salesFilter) => {
+      const screen = await render(<LeadsAs role={role} path="/deals" />);
+      await expect
+        .element(screen.getByText(ALL[0], { exact: true }))
+        .toBeVisible();
+
+      for (const label of [
+        "Search",
+        "Account manager",
+        "Línea de negocio",
+        "Canal de origen",
+        "Creado desde",
+        "Creado hasta",
+      ]) {
+        await expect
+          .element(screen.getByText(label, { exact: true }).first())
+          .toBeVisible();
+      }
+      await expect
+        .element(screen.getByText(salesFilter, { exact: true }).first())
+        .toBeVisible();
+      for (const filter of ["Línea de negocio", "Canal de origen"]) {
+        await expect
+          .element(screen.getByRole("combobox", { name: filter }))
+          .toHaveTextContent("Todos");
+      }
+    },
+  );
 });
 
 describe("CSV export", () => {
