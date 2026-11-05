@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import type { InputProps } from "ra-core";
 import {
-  CanAccess,
   useCanAccess,
   useGetIdentity,
   useListContext,
@@ -131,9 +130,7 @@ const DealActions = () => (
   <TopToolbar>
     <FilterButton />
     <DataImportButton resource="deals" />
-    <CanAccess action="export" resource="deals">
-      <ExportButton />
-    </CanAccess>
+    <ExportButton />
     <CreateButton label="resources.deals.action.new" />
   </TopToolbar>
 );

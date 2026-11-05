@@ -1,4 +1,4 @@
-import { CanAccess, useCanAccess } from "ra-core";
+import { useCanAccess } from "ra-core";
 import { DataTable } from "@/components/admin/data-table";
 import { DateField } from "@/components/admin/date-field";
 import { ExportButton } from "@/components/admin/export-button";
@@ -43,9 +43,7 @@ export const DealTableList = () => {
       sort={{ field: "created_at", order: "DESC" }}
       actions={
         <TopToolbar>
-          <CanAccess action="export" resource="deals">
-            <ExportButton />
-          </CanAccess>
+          <ExportButton />
         </TopToolbar>
       }
     >

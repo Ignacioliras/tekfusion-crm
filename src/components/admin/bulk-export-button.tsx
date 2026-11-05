@@ -2,6 +2,7 @@ import { Download } from "lucide-react";
 import type { RaRecord, UseBulkExportOptions } from "ra-core";
 import {
   useBulkExport,
+  useCanAccess,
   useGetResourceLabel,
   useResourceContext,
   useResourceTranslation,
@@ -62,6 +63,10 @@ export const BulkExportButton = <T extends RaRecord>({
     bulkExport();
     onClick?.(event);
   };
+
+  // Exporting takes data out of the CRM: hidden unless canAccess allows it (docs/08).
+  const { canAccess } = useCanAccess({ resource, action: "export" });
+  if (!canAccess) return null;
 
   return (
     <Button

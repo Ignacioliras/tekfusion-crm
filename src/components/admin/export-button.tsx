@@ -4,6 +4,7 @@ import { Download } from "lucide-react";
 import type { Exporter } from "ra-core";
 import {
   fetchRelatedRecords,
+  useCanAccess,
   useDataProvider,
   useGetResourceLabel,
   useNotify,
@@ -103,6 +104,10 @@ export const ExportButton = (props: ExportButtonProps) => {
       meta,
     ],
   );
+
+  // Exporting takes data out of the CRM: hidden unless canAccess allows it (docs/08).
+  const { canAccess } = useCanAccess({ resource, action: "export" });
+  if (!canAccess) return null;
 
   return (
     <Button

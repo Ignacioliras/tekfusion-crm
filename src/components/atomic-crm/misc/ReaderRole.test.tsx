@@ -112,14 +112,35 @@ describe("reader role", () => {
       }
     });
   });
+});
 
-  it("does not offer the pipeline's CSV export to a reader", async () => {
-    const screen = await renderAs("reader", "/deals");
-    await expect
-      .element(screen.getByText("Válvulas para relave").first())
-      .toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Export" }).elements(),
-    ).toHaveLength(0);
+// CSV export takes the data out of the CRM: managers only, on every list
+// (docs/08). The buttons themselves ask canAccess, so no list can forget it.
+const LISTS = [
+  { list: "pipeline", path: "/deals", loaded: "Válvulas para relave" },
+  { list: "leads table", path: "/leads", loaded: "Válvulas para relave" },
+  { list: "contacts", path: "/contacts", loaded: "Ada Rivas" },
+  { list: "companies", path: "/companies", loaded: "Minera Ficticia" },
+];
+
+describe("CSV export", () => {
+  describe.each(LISTS)("$list", ({ path, loaded }) => {
+    it("is offered to a manager", async () => {
+      const screen = await renderAs("admin", path);
+      await expect
+        .element(screen.getByRole("button", { name: "Export" }).first())
+        .toBeVisible();
+    });
+
+    it.each(["user", "reader"] as const)(
+      "is hidden from the %s role",
+      async (role) => {
+        const screen = await renderAs(role, path);
+        await expect.element(screen.getByText(loaded).first()).toBeVisible();
+        expect(
+          screen.getByRole("button", { name: "Export" }).elements(),
+        ).toHaveLength(0);
+      },
+    );
   });
 });
