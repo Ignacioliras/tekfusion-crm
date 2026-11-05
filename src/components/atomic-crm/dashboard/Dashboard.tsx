@@ -22,20 +22,14 @@ export const Dashboard = () => {
       <div className="md:col-span-12">
         <ManagementDashboard />
       </div>
-      <div className="md:col-span-3">
-        <div className="flex flex-col gap-4">
-          <HotContacts />
-        </div>
-      </div>
-      <div className="md:col-span-6">
-        <div className="flex flex-col gap-6">
+      {/* Side widgets render nothing when empty: the middle column takes their room. */}
+      <div className="flex flex-col gap-6 md:col-span-12 md:flex-row">
+        <HotContacts className="md:w-1/4 md:shrink-0" />
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
           {totalDeal ? <DealsChart /> : null}
           <DashboardActivityLog />
         </div>
-      </div>
-
-      <div className="md:col-span-3">
-        <TasksList />
+        <TasksList className="md:w-1/4 md:shrink-0" />
       </div>
     </div>
   );

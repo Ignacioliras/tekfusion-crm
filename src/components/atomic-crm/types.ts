@@ -16,11 +16,11 @@ export type UserRole = "manager" | "executive" | "reader";
 export type OriginChannel =
   "correo" | "formulario" | "bot" | "whatsapp" | "manual" | "migracion";
 
-// One row of the dashboard_monthly view (13_tekfusion_dashboard.sql): one per
-// (month, business_line, origin_channel). month is "YYYY-MM-01".
-export type DashboardMonthlyRow = {
+// One row of the dashboard_daily view (13_tekfusion_dashboard.sql): one per
+// (day, business_line, origin_channel). day is "YYYY-MM-DD" (America/Santiago).
+export type DashboardDailyRow = {
   id: Identifier;
-  month: string;
+  day: string;
   business_line: LineaNegocio;
   origin_channel: OriginChannel;
   leads: number;
@@ -37,10 +37,10 @@ export type DashboardMonthlyRow = {
 };
 
 // One row of the sales_ranking view (13_tekfusion_dashboard.sql): one per
-// (month, sales_id). Managers only; the view returns no rows to anyone else.
+// (day, sales_id). Managers only; the view returns no rows to anyone else.
 export type SalesRankingRow = {
   id: Identifier;
-  month: string;
+  day: string;
   sales_id: Identifier;
   leads: number;
   leads_attended: number;
@@ -98,7 +98,14 @@ export type Followup = {
   sent_at?: string | null;
   attempts: number;
   cancel_reason?: string | null;
+  messages?: FollowupMessages;
 } & Pick<RaRecord, "id">;
+
+/** Per channel: template picked and the final text to send (followups.messages). */
+export type FollowupMessages = {
+  correo?: { template_id: Identifier | null; subject: string; body: string };
+  whatsapp?: { template_id: Identifier | null; body: string };
+};
 
 export type Template = {
   name: string;

@@ -1,5 +1,13 @@
+import { useTranslate } from "ra-core";
+import type { ReactNode } from "react";
+
 import { DateInput } from "@/components/admin/date-input";
+import { SearchInput } from "@/components/admin/search-input";
 import { SelectInput } from "@/components/admin/select-input";
+import { Label } from "@/components/ui/label";
+
+import { AccountManagerInput } from "../sales/AccountManagerInput";
+import { OnlyMineInput } from "./OnlyMineInput";
 
 import type { DealStage } from "../types";
 import { CANALES_ORIGEN } from "../tekfusion/canales";
@@ -11,6 +19,54 @@ const startOfDay = (value: string) =>
   value ? `${value}T00:00:00.000Z` : value;
 const dayOf = (value?: string) => value?.slice(0, 10) ?? "";
 
+/**
+ * A filter input that has no label of its own, with one above like the
+ * selects next to it, so the whole row lines up. FilterForm reads `source`
+ * and `alwaysOn` from the element.
+ */
+const Labeled = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+  source: string;
+  alwaysOn: boolean;
+}) => {
+  const translate = useTranslate();
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>{translate(label)}</Label>
+      {children}
+    </div>
+  );
+};
+
+/** Search and executive filters, labelled; executives get "only mine". */
+export const leadSearchFilters = (canAccessSalesList: boolean) => [
+  <Labeled key="q" source="q" alwaysOn label="ra.action.search">
+    <SearchInput source="q" />
+  </Labeled>,
+  canAccessSalesList ? (
+    <AccountManagerInput
+      key="sales_id"
+      source="sales_id"
+      alwaysOn
+      label="crm.common.account_manager"
+      placeholder="tekfusion.lead.filters.all"
+    />
+  ) : (
+    <Labeled
+      key="sales_id"
+      source="sales_id"
+      alwaysOn
+      label="crm.common.account_manager"
+    >
+      <OnlyMineInput source="sales_id" alwaysOn />
+    </Labeled>
+  ),
+];
+
 /** TekFusion lead filters shared by the board and the table (RF-04). */
 export const leadFilters = () => [
   <SelectInput
@@ -21,6 +77,7 @@ export const leadFilters = () => [
     optionValue="value"
     optionText="label"
     translateChoice={false}
+    emptyText="tekfusion.lead.filters.all"
     alwaysOn
   />,
   <SelectInput
@@ -31,6 +88,7 @@ export const leadFilters = () => [
     optionValue="value"
     optionText="label"
     translateChoice={false}
+    emptyText="tekfusion.lead.filters.all"
     alwaysOn
   />,
   <DateInput
@@ -61,6 +119,7 @@ export const stageFilter = (dealStages: DealStage[]) => (
     optionValue="value"
     optionText="label"
     translateChoice={false}
+    emptyText="tekfusion.lead.filters.all"
     alwaysOn
   />
 );

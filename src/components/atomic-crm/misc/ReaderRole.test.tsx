@@ -112,14 +112,94 @@ describe("reader role", () => {
       }
     });
   });
+});
 
-  it("does not offer the pipeline's CSV export to a reader", async () => {
-    const screen = await renderAs("reader", "/deals");
+// CSV export takes the data out of the CRM: managers only, on every list
+// (docs/08). The buttons themselves ask canAccess, so no list can forget it.
+const LISTS = [
+  { list: "pipeline", path: "/deals", loaded: "Válvulas para relave" },
+  { list: "leads table", path: "/leads", loaded: "Válvulas para relave" },
+  { list: "contacts", path: "/contacts", loaded: "Ada Rivas" },
+  { list: "companies", path: "/companies", loaded: "Minera Ficticia" },
+];
+
+describe("CSV export", () => {
+  describe.each(LISTS)("$list", ({ path, loaded }) => {
+    it("is offered to a manager", async () => {
+      const screen = await renderAs("admin", path);
+      await expect
+        .element(screen.getByRole("button", { name: "Export" }).first())
+        .toBeVisible();
+    });
+
+    it.each(["user", "reader"] as const)(
+      "is hidden from the %s role",
+      async (role) => {
+        const screen = await renderAs(role, path);
+        await expect.element(screen.getByText(loaded).first()).toBeVisible();
+        expect(
+          screen.getByRole("button", { name: "Export" }).elements(),
+        ).toHaveLength(0);
+      },
+    );
+  });
+
+  it("records a manager's export with the resource, the rows and the filters", async () => {
+    const recorded: unknown[][] = [];
+    const screen = await render(
+      <StoryWrapper
+        initialEntries={["/companies"]}
+        data={data}
+        dataProvider={{
+          logExport: async (...args: unknown[]) => {
+            recorded.push(args);
+          },
+        }}
+        authProvider={{
+          canAccess: async (params) => canAccess("admin", params),
+        }}
+      >
+        {null}
+      </StoryWrapper>,
+    );
     await expect
-      .element(screen.getByText("Válvulas para relave").first())
+      .element(screen.getByText("Minera Ficticia").first())
       .toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Export" }).elements(),
-    ).toHaveLength(0);
+
+    await screen.getByRole("button", { name: "Export" }).click();
+
+    await expect.poll(() => recorded).toEqual([["companies", 1, {}]]);
+  });
+
+  it("warns, without blocking the download, when the record fails", async () => {
+    const screen = await render(
+      <StoryWrapper
+        initialEntries={["/companies"]}
+        data={data}
+        dataProvider={{
+          logExport: async () => {
+            throw new Error("network down");
+          },
+        }}
+        authProvider={{
+          canAccess: async (params) => canAccess("admin", params),
+        }}
+      >
+        {null}
+      </StoryWrapper>,
+    );
+    await expect
+      .element(screen.getByText("Minera Ficticia").first())
+      .toBeVisible();
+
+    await screen.getByRole("button", { name: "Export" }).click();
+
+    await expect
+      .element(
+        screen.getByText(
+          "El archivo se descargó, pero no se pudo registrar la exportación.",
+        ),
+      )
+      .toBeVisible();
   });
 });

@@ -25,8 +25,14 @@ export const MfaEnrollForm = ({
   const enrollment = useQuery({
     queryKey: ["mfa", "enrollment"],
     queryFn: async () => {
-      // A previous attempt that was never confirmed keeps the name taken.
       const { data: factors } = await mfa.listFactors();
+      // Confirming invalidates every query and this one runs again: with the
+      // factor already verified there is nothing to enroll (the name is taken,
+      // Supabase would answer 422).
+      if (factors?.totp.some((factor) => factor.status === "verified")) {
+        return null;
+      }
+      // A previous attempt that was never confirmed keeps the name taken.
       for (const factor of factors?.all ?? []) {
         if (factor.status === "unverified") {
           await mfa.unenroll({ factorId: factor.id });

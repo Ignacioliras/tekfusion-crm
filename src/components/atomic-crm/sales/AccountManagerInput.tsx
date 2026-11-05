@@ -18,9 +18,15 @@ const saleOptionRenderer = (choice: Sale) =>
 
 export const AccountManagerInput = ({
   source = "sales_id",
+  placeholder = "crm.common.account_manager",
+  label = false,
 }: {
   source?: string;
   alwaysOn?: boolean;
+  /** i18n key shown when empty. */
+  placeholder?: string;
+  /** i18n key of a label above the input (filters lined up with selects). */
+  label?: string | false;
 }) => {
   const translate = useTranslate();
   const isMobile = useIsMobile();
@@ -32,12 +38,12 @@ export const AccountManagerInput = ({
       sort={{ field: "last_name", order: "ASC" }}
     >
       <AutocompleteInput
-        label={false}
+        label={label}
         helperText={false}
         clearable
         modal={isMobile}
         optionText={saleOptionRenderer}
-        placeholder={translate("crm.common.account_manager")}
+        placeholder={translate(placeholder)}
       />
     </ReferenceInput>
   );

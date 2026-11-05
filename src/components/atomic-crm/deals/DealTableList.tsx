@@ -1,18 +1,15 @@
-import { CanAccess, useCanAccess } from "ra-core";
+import { useCanAccess } from "ra-core";
 import { DataTable } from "@/components/admin/data-table";
 import { DateField } from "@/components/admin/date-field";
 import { ExportButton } from "@/components/admin/export-button";
 import { List } from "@/components/admin/list";
 import { ReferenceField } from "@/components/admin/reference-field";
-import { SearchInput } from "@/components/admin/search-input";
 import { SelectField } from "@/components/admin/select-field";
 
 import { TopToolbar } from "../layout/TopToolbar";
 import { useConfigurationContext } from "../root/ConfigurationContext";
-import { AccountManagerInput } from "../sales/AccountManagerInput";
 import { formatAmount } from "../tekfusion/money";
-import { leadFilters, stageFilter } from "./DealFilters";
-import { OnlyMineInput } from "./OnlyMineInput";
+import { leadFilters, leadSearchFilters, stageFilter } from "./DealFilters";
 
 /**
  * Table view of the open (non-archived) deals, shown as "Leads" in the menu.
@@ -26,12 +23,7 @@ export const DealTableList = () => {
   });
   if (isPending) return null;
   const filters = [
-    <SearchInput key="q" source="q" alwaysOn />,
-    canAccessSalesList ? (
-      <AccountManagerInput key="sales_id" source="sales_id" alwaysOn />
-    ) : (
-      <OnlyMineInput key="sales_id" source="sales_id" alwaysOn />
-    ),
+    ...leadSearchFilters(!!canAccessSalesList),
     stageFilter(dealStages),
     ...leadFilters(),
   ];
@@ -43,9 +35,7 @@ export const DealTableList = () => {
       sort={{ field: "created_at", order: "DESC" }}
       actions={
         <TopToolbar>
-          <CanAccess action="export" resource="deals">
-            <ExportButton />
-          </CanAccess>
+          <ExportButton />
         </TopToolbar>
       }
     >

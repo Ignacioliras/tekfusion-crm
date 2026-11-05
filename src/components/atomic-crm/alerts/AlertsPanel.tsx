@@ -1,10 +1,18 @@
-import { useNotify, useTranslate, useUpdate, useUpdateMany } from "ra-core";
+import {
+  useGetMany,
+  useNotify,
+  useTranslate,
+  useUpdate,
+  useUpdateMany,
+} from "ra-core";
 import { Link } from "react-router";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { RelativeDate } from "../misc/RelativeDate";
-import type { Alert } from "../types";
+import type { Alert, Company, Deal } from "../types";
+import { alertText } from "./alertText";
 import { ALERT_TYPES } from "./alertTypes";
 
 /**
@@ -45,6 +53,25 @@ export const AlertsPanel = ({
       { onError },
     );
 
+  // The text names company and line: read the leads behind the alerts.
+  const dealIds = [...new Set(alerts.flatMap((alert) => alert.deal_id ?? []))];
+  const { data: deals = [] } = useGetMany<Deal>(
+    "deals",
+    { ids: dealIds },
+    { enabled: dealIds.length > 0 },
+  );
+  const companyIds = [...new Set(deals.map((deal) => deal.company_id))];
+  const { data: companies = [] } = useGetMany<Company>(
+    "companies",
+    { ids: companyIds },
+    { enabled: companyIds.length > 0 },
+  );
+  const dealOf = (alert: Alert) =>
+    deals.find((deal) => deal.id === alert.deal_id);
+  const companyNameOf = (deal?: Deal) =>
+    companies.find((company) => company.id === deal?.company_id)?.name;
+  const now = new Date();
+
   const groups = ALERT_TYPES.map((type) => ({
     type,
     alerts: alerts.filter((alert) => alert.type === type),
@@ -84,36 +111,53 @@ export const AlertsPanel = ({
                   {label} ({group.alerts.length})
                 </h3>
                 <ul>
-                  {group.alerts.map((alert) => (
-                    <li
-                      key={alert.id}
-                      className="flex flex-col gap-1 px-4 py-2"
-                    >
-                      {/* system text, rendered as plain text */}
-                      <p>{alert.message}</p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <RelativeDate date={alert.created_at} />
-                        {alert.deal_id != null ? (
-                          <Link
-                            to={`/deals/${alert.deal_id}/show`}
-                            onClick={onNavigate}
-                            className="text-primary underline-offset-4 hover:underline"
+                  {group.alerts.map((alert) => {
+                    const deal = dealOf(alert);
+                    return (
+                      <li
+                        key={alert.id}
+                        className="flex flex-col gap-1 px-4 py-2.5"
+                      >
+                        {/* system text, rendered as plain text */}
+                        <p className="font-medium">
+                          {alertText(
+                            alert,
+                            deal,
+                            companyNameOf(deal),
+                            now,
+                            translate,
+                          )}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {deal ? `${deal.name} · ` : null}
+                          <RelativeDate date={alert.created_at} />
+                        </p>
+                        <div className="mt-1 flex items-center gap-2">
+                          {alert.deal_id != null ? (
+                            <Link
+                              to={`/deals/${alert.deal_id}/show`}
+                              onClick={onNavigate}
+                              className={cn(
+                                buttonVariants({ size: "sm" }),
+                                "h-7",
+                              )}
+                            >
+                              {translate("tekfusion.alerts.open_lead")}
+                            </Link>
+                          ) : null}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-muted-foreground"
+                            onClick={() => markRead(alert)}
+                            disabled={isUpdating}
                           >
-                            {translate("tekfusion.alerts.open_lead")}
-                          </Link>
-                        ) : null}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="ml-auto h-7"
-                          onClick={() => markRead(alert)}
-                          disabled={isUpdating}
-                        >
-                          {translate("tekfusion.alerts.mark_read")}
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
+                            {translate("tekfusion.alerts.mark_read")}
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             );

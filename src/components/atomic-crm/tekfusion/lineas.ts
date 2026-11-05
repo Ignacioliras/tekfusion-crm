@@ -7,6 +7,7 @@ export const LINEAS_NEGOCIO = [
   {
     value: "valvulas",
     label: "Válvulas",
+    short: "Válvulas",
     description: "Válvulas industriales, actuadores y accesorios.",
     keywords: [
       "valvula",
@@ -21,6 +22,7 @@ export const LINEAS_NEGOCIO = [
   {
     value: "tuberias",
     label: "Tuberías",
+    short: "Tuberías",
     description: "Tuberías y cañerías (HDPE, PVC, acero, PPR) y fittings.",
     keywords: [
       "tuberia",
@@ -39,6 +41,7 @@ export const LINEAS_NEGOCIO = [
   {
     value: "geoceldas",
     label: "Geoceldas y geosintéticos",
+    short: "Geoceldas",
     description:
       "Geoceldas, geosintéticos y soluciones de contención de suelos.",
     keywords: [
@@ -54,10 +57,15 @@ export const LINEAS_NEGOCIO = [
   {
     value: LINEA_INDETERMINADA,
     label: "Por clasificar",
+    short: "Por clasificar",
     description: "Sin señales claras de ninguna línea.",
     keywords: [],
   },
 ] as const;
+
+// Short label for one-line texts (alerts).
+export const lineaCorta = (value: string): string =>
+  LINEAS_NEGOCIO.find((linea) => linea.value === value)?.short ?? value;
 
 export type LineaNegocio = (typeof LINEAS_NEGOCIO)[number]["value"];
 

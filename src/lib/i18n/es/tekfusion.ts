@@ -28,6 +28,7 @@ export const tekfusionMessages = {
         lost_reason: "Motivo de pérdida",
       },
       filters: {
+        all: "Todos",
         business_line: "Línea de negocio",
         origin_channel: "Canal de origen",
         stage: "Etapa",
@@ -118,6 +119,13 @@ export const tekfusionMessages = {
       no_template: "Sin plantilla",
       preview: "Vista previa",
       preview_subject: "Asunto",
+      message: "Mensaje",
+      message_help:
+        "Se rellena con la plantilla: puedes retocarlo o escribirlo desde cero.",
+      message_correo: "Mensaje por correo",
+      message_whatsapp: "Mensaje por WhatsApp",
+      message_required: "Escribe el mensaje o elige una plantilla",
+      subject_required: "Escribe el asunto del correo",
       adjust: "Ajustar",
       cancel: "Cancelar seguimiento",
       cancel_reason: "Motivo de la cancelación",
@@ -147,6 +155,16 @@ export const tekfusionMessages = {
       mark_all_read: "Marcar todas como leídas",
       open_lead: "Ver lead",
       error: "No se pudo marcar la alerta. Intenta de nuevo.",
+      elapsed_hours: "%{hours} h",
+      elapsed_days: "%{days} días",
+      what: {
+        no_contact: "sin contacto hace %{elapsed}",
+        unassigned: "sin asignar hace %{elapsed}",
+        to_archive: "sin movimiento hace %{elapsed}, se archiva en 48 h",
+        seguimiento_vencido: "seguimiento vencido",
+        cliente_respondio: "el cliente respondió",
+        whatsapp_desconectado: "WhatsApp desconectado",
+      },
       types: {
         sin_contacto_24h: "Sin contacto en 24 h",
         sin_contacto_48h: "Sin contacto en 48 h",
@@ -158,6 +176,7 @@ export const tekfusionMessages = {
       },
     },
     settings: {
+      crm_configuration: "Configuración del CRM",
       followups: {
         title: "Seguimientos y horario hábil",
         cadence: "Cadencia por defecto (días)",
@@ -188,6 +207,8 @@ export const tekfusionMessages = {
         move_down: "Bajar %{name}",
         error: "No se pudo guardar el cambio",
         required: "Completa los campos obligatorios",
+        apply: "Aplicar",
+        pending_hint: "Los cambios se guardan con el botón Guardar de abajo.",
       },
       templates: {
         title: "Plantillas de seguimiento",
@@ -232,12 +253,30 @@ export const tekfusionMessages = {
         recipients_invalid: "Correo no válido: %{email}",
       },
     },
+    activity: {
+      system: "El sistema",
+    },
+    export: {
+      log_error:
+        "El archivo se descargó, pero no se pudo registrar la exportación.",
+    },
     dashboard: {
       title: "Métricas comerciales",
       from: "Desde",
       to: "Hasta",
       empty: "No hay leads en el período elegido.",
       previous: "Período anterior: %{value}",
+      compared_with: "Comparado con el período anterior: %{range}",
+      previous_row: "Período anterior (%{range})",
+      period: "Período",
+      partial: "rango muy largo: datos parciales",
+      presets: {
+        this_month: "Este mes",
+        last_month: "Mes pasado",
+        last_30_days: "Últimos 30 días",
+        last_90_days: "Últimos 90 días",
+        this_year: "Este año",
+      },
       current_period: "Período",
       previous_period: "Anterior",
       leads: "Leads",

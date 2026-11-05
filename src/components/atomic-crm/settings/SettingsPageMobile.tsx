@@ -25,6 +25,7 @@ import {
   Form,
   Translate,
   useAuthProvider,
+  useCanAccess,
   useDataProvider,
   useGetIdentity,
   useGetOne,
@@ -43,6 +44,7 @@ import ImageEditorField from "../misc/ImageEditorField";
 import type { CrmDataProvider } from "../providers/types";
 import { getSalesErrorNotification } from "../sales/salesErrorNotification";
 import type { SalesFormData } from "../types";
+import { SettingsPage } from "./SettingsPage";
 
 const ChangePasswordButton = () => {
   const translate = useTranslate();
@@ -90,6 +92,12 @@ export const SettingsPageMobile = () => {
   const translate = useTranslate();
   const authProvider = useAuthProvider();
   const logout = useLogout();
+  // Managers also get the CRM configuration (RF-14): the desktop screen,
+  // reused on a small screen (no mobile-specific flow, rule 9).
+  const { canAccess: canEditConfiguration } = useCanAccess({
+    resource: "configuration",
+    action: "edit",
+  });
 
   if (!authProvider) return null;
 
@@ -105,6 +113,14 @@ export const SettingsPageMobile = () => {
           <div className="space-y-6">
             <ProfileSection />
             <PreferencesSection />
+            {canEditConfiguration ? (
+              <section>
+                <SectionLabel>
+                  {translate("tekfusion.settings.crm_configuration")}
+                </SectionLabel>
+                <SettingsPage embedded />
+              </section>
+            ) : null}
             <AboutSection />
           </div>
 

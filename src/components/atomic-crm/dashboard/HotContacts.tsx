@@ -15,7 +15,8 @@ import { SimpleList } from "../simple-list/SimpleList";
 import { Avatar } from "../contacts/Avatar";
 import type { Contact } from "../types";
 
-export const HotContacts = () => {
+/** The user's hot contacts; nothing at all while there are none (no Atomic help text). */
+export const HotContacts = ({ className }: { className?: string }) => {
   const { identity } = useGetIdentity();
   const translate = useTranslate();
   const {
@@ -32,8 +33,10 @@ export const HotContacts = () => {
     { enabled: Number.isInteger(identity?.id) },
   );
 
+  if (contactsLoading || !contactTotal) return null;
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center">
         <div className="mr-3 flex">
           <Users className="text-muted-foreground w-6 h-6" />

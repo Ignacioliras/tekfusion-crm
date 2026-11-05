@@ -115,10 +115,37 @@ begin
 end;
 $$;
 
+-- CSV export log (docs/08: exports are for managers only and recorded with
+-- their author). The interface calls it after building the file.
+CREATE OR REPLACE FUNCTION "public"."log_export"("resource" "text", "row_count" integer, "filters" "jsonb") RETURNS "public"."audit_log"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  entry public.audit_log;
+begin
+  if not public.is_manager() then
+    raise exception 'only managers export data' using errcode = '42501';
+  end if;
+  if resource is null or resource not in ('deals', 'contacts', 'companies', 'sales', 'tasks') then
+    raise exception 'unknown resource %', resource using errcode = '22023';
+  end if;
+  if row_count is null or row_count < 0 then
+    raise exception 'row_count must be zero or more' using errcode = '22023';
+  end if;
+  insert into public.audit_log (actor_sales_id, action, details)
+  values (public.current_sales_id(), 'export',
+          jsonb_build_object('resource', resource, 'rows', row_count, 'filters', coalesce(filters, '{}'::jsonb)))
+  returning * into entry;
+  return entry;
+end;
+$$;
+
 -- "Dar de baja" a user (docs/08 checklist, Fase 2). Only the users Edge
 -- Function calls it (service role), after banning the user in Auth; it passes
--- the manager doing it as actor_id. Disables the user, hands their open leads
--- and their business lines to their substitute (or leaves them unassigned),
+-- the manager doing it as actor_id. Disables the user, hands each open lead and
+-- each business line to the substitute of its line (docs/10, 2026-11-03), the
+-- contacts and pending tasks along with their leads (or leaves them unassigned),
 -- closes every session and writes the audit trail. Reactivation: Atomic's
 -- "disabled" switch, also through the Edge Function.
 -- Not here yet: SMTP/IMAP keys (Fase 5) and WhatsApp conversations (Fase 4).
@@ -128,8 +155,10 @@ CREATE OR REPLACE FUNCTION "public"."offboard_sale"("sale_id" bigint, "actor_id"
     AS $$
 declare
   target public.sales;
-  substitute bigint;
-  reassigned bigint[];
+  default_substitute bigint;
+  moved_deals jsonb;
+  moved_contacts bigint[];
+  moved_tasks bigint[];
   entry public.audit_log;
 begin
   -- auth.role(), not current_user: inside a security definer function
@@ -156,26 +185,78 @@ begin
     raise exception 'user % is already disabled', sale_id using errcode = 'P0001';
   end if;
 
-  -- The substitute of the lines the user owns (one per user, Configuración →
-  -- Usuarios); only an active executive or manager can receive leads.
-  select l.substitute_sales_id into substitute
+  -- Default substitute: the one of the user's first line (by code) that can
+  -- receive leads (active, not a reader, not the user). Used for a lead whose
+  -- own line has none, an 'indeterminada' lead, and contacts without leads.
+  select l.substitute_sales_id into default_substitute
     from public.business_lines l
     join public.sales s on s.id = l.substitute_sales_id
    where l.owner_sales_id = target.id and not s.disabled and s.role <> 'reader'
+     and s.id <> target.id
    order by l.code limit 1;
 
-  -- Open leads (ETAPAS_ABIERTAS of estados.ts); closed and archived ones keep their owner.
-  with moved as (
-    update public.deals
-       set sales_id = substitute, updated_at = now(), last_activity_at = now()
-     where sales_id = target.id and archived_at is null
-       and stage in ('nuevo', 'contactado', 'cotizado')
-    returning id
+  -- (a) Open leads (ETAPAS_ABIERTAS of estados.ts) go to the substitute of
+  -- their own line; closed and archived ones keep their owner (metrics).
+  with targets as (
+    select d.id,
+           coalesce((select l.substitute_sales_id
+                       from public.business_lines l
+                       join public.sales s on s.id = l.substitute_sales_id
+                      where l.code = d.business_line and not s.disabled
+                        and s.role <> 'reader' and s.id <> target.id),
+                    default_substitute) as new_owner
+      from public.deals d
+     where d.sales_id = target.id and d.archived_at is null
+       and d.stage in ('nuevo', 'contactado', 'cotizado')
+  ), moved as (
+    update public.deals d
+       set sales_id = t.new_owner, updated_at = now(), last_activity_at = now()
+      from targets t
+     where d.id = t.id
+    returning d.id, d.sales_id, d.contact_ids
   )
-  select coalesce(array_agg(id order by id), '{}') into reassigned from moved;
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'new_owner', sales_id, 'contacts', coalesce(contact_ids, '{}')) order by id), '[]')
+    into moved_deals from moved;
 
-  update public.business_lines set owner_sales_id = substitute, substitute_sales_id = null
-   where owner_sales_id = target.id;
+  -- (b) Each contact goes to whoever received most of its reassigned leads
+  -- (tie: lowest id); without any, to the default substitute (or no owner).
+  with targets as (
+    select co.id,
+           coalesce((select m.new_owner
+                       from jsonb_to_recordset(moved_deals) as m(id bigint, new_owner bigint, contacts bigint[])
+                      where co.id = any(m.contacts) and m.new_owner is not null
+                      group by m.new_owner
+                      order by count(*) desc, m.new_owner
+                      limit 1),
+                    default_substitute) as new_owner
+      from public.contacts co
+     where co.sales_id = target.id
+  ), moved as (
+    update public.contacts co set sales_id = t.new_owner
+      from targets t
+     where co.id = t.id
+    returning co.id
+  )
+  select coalesce(array_agg(id order by id), '{}') into moved_contacts from moved;
+
+  -- (c) Pending tasks follow the new owner of their contact; done ones stay.
+  with moved as (
+    update public.tasks t set sales_id = co.sales_id
+      from public.contacts co
+     where co.id = t.contact_id and t.sales_id = target.id and t.done_date is null
+    returning t.id
+  )
+  select coalesce(array_agg(id order by id), '{}') into moved_tasks from moved;
+
+  -- Each line the user owned goes to its own substitute, or the default one.
+  update public.business_lines l
+     set owner_sales_id = coalesce(
+           (select s.id from public.sales s
+             where s.id = l.substitute_sales_id and not s.disabled
+               and s.role <> 'reader' and s.id <> target.id),
+           default_substitute),
+         substitute_sales_id = null
+   where l.owner_sales_id = target.id;
   update public.business_lines set substitute_sales_id = null
    where substitute_sales_id = target.id;
 
@@ -184,12 +265,17 @@ begin
   delete from auth.sessions where user_id = target.user_id;
 
   insert into public.audit_log (actor_sales_id, action, target_sales_id, deal_id, details)
-  select actor_id, 'deal.reassigned', target.id, d,
-         jsonb_build_object('from', target.id, 'to', substitute, 'reason', 'offboarding')
-    from unnest(reassigned) as d;
+  select actor_id, 'deal.reassigned', target.id, m.id,
+         jsonb_build_object('from', target.id, 'to', m.new_owner, 'reason', 'offboarding')
+    from jsonb_to_recordset(moved_deals) as m(id bigint, new_owner bigint);
   insert into public.audit_log (actor_sales_id, action, target_sales_id, details)
   values (actor_id, 'sale.offboarded', target.id,
-          jsonb_build_object('substitute_sales_id', substitute, 'reassigned_deal_ids', to_jsonb(reassigned)))
+          jsonb_build_object(
+            'substitute_sales_id', default_substitute,
+            'reassigned_deal_ids', (select coalesce(jsonb_agg(m.id order by m.id), '[]')
+                                      from jsonb_to_recordset(moved_deals) as m(id bigint)),
+            'reassigned_contact_ids', to_jsonb(moved_contacts),
+            'reassigned_task_ids', to_jsonb(moved_tasks)))
   returning * into entry;
   return entry;
 end;

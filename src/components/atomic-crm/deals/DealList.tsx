@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import type { InputProps } from "ra-core";
 import {
-  CanAccess,
   useCanAccess,
   useGetIdentity,
   useListContext,
@@ -15,20 +14,17 @@ import { ExportButton } from "@/components/admin/export-button";
 import { List } from "@/components/admin/list";
 import { ReferenceInput } from "@/components/admin/reference-input";
 import { FilterButton } from "@/components/admin/filter-form";
-import { SearchInput } from "@/components/admin/search-input";
 
 import { DataImportButton } from "../dataImport/DataImportButton";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { TopToolbar } from "../layout/TopToolbar";
-import { AccountManagerInput } from "../sales/AccountManagerInput";
 import { DealArchivedList } from "./DealArchivedList";
 import { DealCreate } from "./DealCreate";
 import { DealEdit } from "./DealEdit";
 import { DealEmpty } from "./DealEmpty";
-import { leadFilters } from "./DealFilters";
+import { leadFilters, leadSearchFilters } from "./DealFilters";
 import { DealListContent } from "./DealListContent";
 import { DealShow } from "./DealShow";
-import { OnlyMineInput } from "./OnlyMineInput";
 
 const DealList = () => {
   const { identity } = useGetIdentity();
@@ -42,42 +38,38 @@ const DealList = () => {
   if (!identity) return null;
 
   const dealFilters = [
-    <SearchInput source="q" alwaysOn />,
     <ReferenceInput source="company_id" reference="companies">
       <AutocompleteInput
         label={false}
         placeholder={translate("resources.deals.fields.company_id")}
       />
     </ReferenceInput>,
-    <WrapperField
-      source="categories@ov"
-      label="resources.deals.fields.categories"
-    >
-      <AutocompleteArrayInput
-        source="categories@ov"
-        label={false}
-        placeholder={translate("resources.deals.fields.categories")}
-        // deals having any of the selected categories
-        parse={(values: string[]) =>
-          values?.length
-            ? `{${values.map((value) => `"${value}"`).join(",")}}`
-            : undefined
-        }
-        format={(value?: string) => value?.match(/[^{}",]+/g) ?? []}
-        choices={dealCategories}
-        optionText="label"
-        optionValue="value"
-      />
-    </WrapperField>,
-    ...(isPending
-      ? []
-      : [
-          canAccessSalesList ? (
-            <AccountManagerInput source="sales_id" alwaysOn />
-          ) : (
-            <OnlyMineInput source="sales_id" alwaysOn />
-          ),
-        ]),
+    // Atomic's categories: only when configured (TekFusion uses business lines).
+    ...(dealCategories.length > 0
+      ? [
+          <WrapperField
+            source="categories@ov"
+            label="resources.deals.fields.categories"
+          >
+            <AutocompleteArrayInput
+              source="categories@ov"
+              label={false}
+              placeholder={translate("resources.deals.fields.categories")}
+              // deals having any of the selected categories
+              parse={(values: string[]) =>
+                values?.length
+                  ? `{${values.map((value) => `"${value}"`).join(",")}}`
+                  : undefined
+              }
+              format={(value?: string) => value?.match(/[^{}",]+/g) ?? []}
+              choices={dealCategories}
+              optionText="label"
+              optionValue="value"
+            />
+          </WrapperField>,
+        ]
+      : []),
+    ...(isPending ? [] : leadSearchFilters(!!canAccessSalesList)),
     ...leadFilters(),
   ];
 
@@ -131,9 +123,7 @@ const DealActions = () => (
   <TopToolbar>
     <FilterButton />
     <DataImportButton resource="deals" />
-    <CanAccess action="export" resource="deals">
-      <ExportButton />
-    </CanAccess>
+    <ExportButton />
     <CreateButton label="resources.deals.action.new" />
   </TopToolbar>
 );

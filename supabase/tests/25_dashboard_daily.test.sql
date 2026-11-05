@@ -1,4 +1,4 @@
--- Dashboard mensual (RF-11): cada métrica de dashboard_monthly cuadra con el
+-- Dashboard por día (RF-11): cada métrica de dashboard_daily cuadra con el
 -- cálculo a mano sobre deals/quotes del seed; respeta la RLS (security_invoker)
 -- y anon no la lee.
 begin;
@@ -27,7 +27,7 @@ select
   (select round(avg(extract(epoch from first_response_at - created_at) / 3600)::numeric, 2) from public.deals where first_response_at is not null) as avg_hours,
   (select coalesce(sum(amount), 0) from public.quotes where is_current) as quoted_amount,
   (select coalesce(sum(won_amount), 0) from public.deals) as won_amount,
-  (select count(distinct (date_trunc('month', created_at at time zone 'America/Santiago')::date, business_line, origin_channel)) from public.deals) as groups;
+  (select count(distinct ((created_at at time zone 'America/Santiago')::date, business_line, origin_channel)) from public.deals) as groups;
 grant select on expected to authenticated;
 
 select ok((select leads from expected) > 0 and (select won from expected) > 0 and (select quoted_amount from expected) > 0,
@@ -35,36 +35,36 @@ select ok((select leads from expected) > 0 and (select won from expected) > 0 an
 
 -- (a) gerencia: sumas de la vista = tablas base --------------------------------
 select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
-select is((select count(*) from public.dashboard_monthly), (select groups from expected), 'una fila por (mes, línea, canal)');
-select is((select sum(leads)::bigint from public.dashboard_monthly), (select leads from expected), 'leads = count(*) de deals');
-select is((select sum(contacted)::bigint from public.dashboard_monthly), (select contacted from expected), 'contacted = etapa distinta de nuevo o con primera respuesta');
-select is((select sum(quoted)::bigint from public.dashboard_monthly), (select quoted from expected), 'quoted = en cotizado o con alguna cotización');
-select is((select sum(won)::bigint from public.dashboard_monthly), (select won from expected), 'won = count de ganado');
-select is((select sum(lost)::bigint from public.dashboard_monthly), (select lost from expected), 'lost = count de perdido');
-select is((select sum(archived)::bigint from public.dashboard_monthly), (select archived from expected), 'archived = count de archivado');
-select is((select sum(responded)::bigint from public.dashboard_monthly), (select responded from expected), 'responded = count con first_response_at');
-select is((select sum(first_response_within_24h)::bigint from public.dashboard_monthly), (select within_24h from expected), 'first_response_within_24h = respondidos en 24 h');
-select is((select round(sum(avg_first_response_hours * responded) / sum(responded), 2) from public.dashboard_monthly),
+select is((select count(*) from public.dashboard_daily), (select groups from expected), 'una fila por (día, línea, canal)');
+select is((select sum(leads)::bigint from public.dashboard_daily), (select leads from expected), 'leads = count(*) de deals');
+select is((select sum(contacted)::bigint from public.dashboard_daily), (select contacted from expected), 'contacted = etapa distinta de nuevo o con primera respuesta');
+select is((select sum(quoted)::bigint from public.dashboard_daily), (select quoted from expected), 'quoted = en cotizado o con alguna cotización');
+select is((select sum(won)::bigint from public.dashboard_daily), (select won from expected), 'won = count de ganado');
+select is((select sum(lost)::bigint from public.dashboard_daily), (select lost from expected), 'lost = count de perdido');
+select is((select sum(archived)::bigint from public.dashboard_daily), (select archived from expected), 'archived = count de archivado');
+select is((select sum(responded)::bigint from public.dashboard_daily), (select responded from expected), 'responded = count con first_response_at');
+select is((select sum(first_response_within_24h)::bigint from public.dashboard_daily), (select within_24h from expected), 'first_response_within_24h = respondidos en 24 h');
+select is((select round(sum(avg_first_response_hours * responded) / sum(responded), 2) from public.dashboard_daily),
   (select avg_hours from expected), 'avg_first_response_hours ponderado = promedio de horas a la primera respuesta');
-select is((select sum(quoted_amount)::bigint from public.dashboard_monthly), (select quoted_amount::bigint from expected), 'quoted_amount = suma de las cotizaciones vigentes');
-select is((select sum(won_amount)::bigint from public.dashboard_monthly), (select won_amount::bigint from expected), 'won_amount = suma de deals.won_amount');
+select is((select sum(quoted_amount)::bigint from public.dashboard_daily), (select quoted_amount::bigint from expected), 'quoted_amount = suma de las cotizaciones vigentes');
+select is((select sum(won_amount)::bigint from public.dashboard_daily), (select won_amount::bigint from expected), 'won_amount = suma de deals.won_amount');
 reset role;
 
 -- (b) ejecutivo: solo agrega lo que ve bajo su RLS ---------------------------------
 select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
 select ok((select count(*) from public.deals) < (select leads from expected), 'Camila ve menos leads que gerencia');
-select is((select sum(leads)::bigint from public.dashboard_monthly), (select count(*) from public.deals),
+select is((select sum(leads)::bigint from public.dashboard_daily), (select count(*) from public.deals),
   'ejecutivo: la vista suma solo los leads que ve (suyos y sin asignar)');
 reset role;
 
 -- (c) security_invoker y (d) grants ---------------------------------------------------
 select is(
   (select option_value from pg_class c join pg_namespace n on n.oid = c.relnamespace, pg_options_to_table(c.reloptions)
-    where n.nspname = 'public' and c.relname = 'dashboard_monthly' and option_name = 'security_invoker'),
-  'on', 'dashboard_monthly es security_invoker');
-select ok(not has_table_privilege('anon', 'public.dashboard_monthly', 'select')
-  and has_table_privilege('authenticated', 'public.dashboard_monthly', 'select'),
-  'anon no lee dashboard_monthly; authenticated sí');
+    where n.nspname = 'public' and c.relname = 'dashboard_daily' and option_name = 'security_invoker'),
+  'on', 'dashboard_daily es security_invoker');
+select ok(not has_table_privilege('anon', 'public.dashboard_daily', 'select')
+  and has_table_privilege('authenticated', 'public.dashboard_daily', 'select'),
+  'anon no lee dashboard_daily; authenticated sí');
 
 select * from finish();
 rollback;

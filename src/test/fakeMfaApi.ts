@@ -14,8 +14,14 @@ type FakeFactor = {
 /**
  * An in-memory stand-in for supabase-js `auth.mfa`: one TOTP factor, verified
  * by FAKE_MFA_CODE. `verified: true` starts with a factor already enrolled.
+ * `latency` (ms) makes every call take that long, like the network. Like
+ * Supabase, enrolling a second factor with a taken friendly name fails (422).
  */
-export const createFakeMfaApi = ({ verified = false } = {}): MfaApi => {
+export const createFakeMfaApi = ({
+  verified = false,
+  latency = 0,
+} = {}): MfaApi => {
+  const wait = () => new Promise((resolve) => setTimeout(resolve, latency));
   let factors: FakeFactor[] = verified
     ? [
         {
@@ -40,6 +46,17 @@ export const createFakeMfaApi = ({ verified = false } = {}): MfaApi => {
   // is cast where it returns less.
   return {
     enroll: (async ({ friendlyName }: { friendlyName?: string }) => {
+      await wait();
+      if (factors.some((factor) => factor.friendly_name === friendlyName)) {
+        return {
+          data: null,
+          error: {
+            message: `A factor with the friendly name "${friendlyName}" for this user already exists`,
+            name: "AuthApiError",
+            status: 422,
+          },
+        };
+      }
       const factor: FakeFactor = {
         id: `f${next++}`,
         friendly_name: friendlyName ?? "",
@@ -93,11 +110,12 @@ export const createFakeMfaApi = ({ verified = false } = {}): MfaApi => {
         error: null,
       };
     }) as unknown as MfaApi["verify"],
-    listFactors: (async () => ({
-      data: list(),
-      error: null,
-    })) as unknown as MfaApi["listFactors"],
+    listFactors: (async () => {
+      await wait();
+      return { data: list(), error: null };
+    }) as unknown as MfaApi["listFactors"],
     unenroll: (async ({ factorId }: { factorId: string }) => {
+      await wait();
       factors = factors.filter((factor) => factor.id !== factorId);
       return { data: { id: factorId }, error: null };
     }) as unknown as MfaApi["unenroll"],

@@ -4,10 +4,10 @@ import { page } from "vitest/browser";
 import {
   DashboardWithoutData,
   DashboardWithTwoMonths,
-  LAST_MONTH,
+  EARLIER,
 } from "./ManagementDashboard.fixtures";
 
-describe("Dashboard de gerencia: métricas con filtro de meses", () => {
+describe("Dashboard de gerencia: métricas con rango de fechas", () => {
   beforeAll(() => {
     page.viewport(1600, 1000);
   });
@@ -56,7 +56,7 @@ describe("Dashboard de gerencia: métricas con filtro de meses", () => {
       )
       .toBeVisible();
 
-    await screen.getByLabelText("Desde").fill(LAST_MONTH);
+    await screen.getByLabelText("Desde").fill(EARLIER);
 
     const leads = screen.getByRole("group", { name: "Leads" });
     await expect.element(leads.getByText("9", { exact: true })).toBeVisible();
@@ -67,6 +67,34 @@ describe("Dashboard de gerencia: métricas con filtro de meses", () => {
           .getByText("50%"),
       )
       .toBeVisible();
+  });
+
+  it("opens on the last 30 days and says which period it compares with", async () => {
+    const screen = await render(<DashboardWithTwoMonths />);
+
+    await expect
+      .element(screen.getByRole("button", { name: "Últimos 30 días" }))
+      .toHaveAttribute("aria-pressed", "true");
+    await expect
+      .element(screen.getByText(/^Comparado con el período anterior:/))
+      .toBeVisible();
+    await expect
+      .element(
+        screen
+          .getByRole("region", { name: "Tasa de cierre por mes" })
+          .getByText(/^Período anterior \(/),
+      )
+      .toBeVisible();
+  });
+
+  it("a shortcut changes the range and the numbers", async () => {
+    const screen = await render(<DashboardWithTwoMonths />);
+    const leads = screen.getByRole("group", { name: "Leads" });
+    await expect.element(leads.getByText("6", { exact: true })).toBeVisible();
+
+    await screen.getByRole("button", { name: "Últimos 90 días" }).click();
+
+    await expect.element(leads.getByText("9", { exact: true })).toBeVisible();
   });
 
   it("shows the empty state in Spanish when there is no data", async () => {

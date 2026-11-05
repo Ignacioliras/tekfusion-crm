@@ -3,14 +3,13 @@ import {
   EMPTY_VALUE,
   avgFirstResponseHours,
   closeRate,
-  currentMonth,
   formatHours,
   formatPercent,
   funnel,
   inRange,
+  presetRange,
   previousRange,
   rankSales,
-  shiftMonth,
   sumRows,
   totalsBy,
   within24hRate,
@@ -18,7 +17,7 @@ import {
 
 const rows = [
   buildRow({
-    month: "2026-10-01",
+    day: "2026-10-15",
     business_line: "valvulas",
     origin_channel: "correo",
     leads: 4,
@@ -33,7 +32,7 @@ const rows = [
     won_amount: 2_000_000,
   }),
   buildRow({
-    month: "2026-11-01",
+    day: "2026-11-03",
     business_line: "tuberias",
     origin_channel: "correo",
     leads: 2,
@@ -91,10 +90,6 @@ describe("metrics del dashboard de gerencia", () => {
   it("groups totals by line, channel and month", () => {
     expect(totalsBy(rows, "business_line").get("tuberias")?.lost).toBe(2);
     expect(totalsBy(rows, "origin_channel").get("correo")?.leads).toBe(6);
-    expect([...totalsBy(rows, "month").keys()]).toEqual([
-      "2026-10-01",
-      "2026-11-01",
-    ]);
   });
 
   it("returns null and shows a dash instead of dividing by zero", () => {
@@ -110,29 +105,54 @@ describe("metrics del dashboard de gerencia", () => {
     expect(formatHours(avgFirstResponseHours(unanswered))).toBe("—");
   });
 
-  it("shifts months across years and builds the previous range", () => {
-    expect(shiftMonth("2026-01", -1)).toBe("2025-12");
-    expect(previousRange("2026-11", "2026-11")).toEqual({
-      from: "2026-10",
-      to: "2026-10",
+  it("builds the previous range of the same number of days", () => {
+    expect(previousRange({ from: "2026-10-07", to: "2026-11-05" })).toEqual({
+      from: "2026-09-07",
+      to: "2026-10-06",
     });
-    expect(previousRange("2026-01", "2026-03")).toEqual({
-      from: "2025-10",
-      to: "2025-12",
+    // Across a year and a leap day.
+    expect(previousRange({ from: "2028-03-01", to: "2028-03-01" })).toEqual({
+      from: "2028-02-29",
+      to: "2028-02-29",
     });
   });
 
-  it("takes the current month in Santiago and filters rows by range", () => {
-    // 2026-12-01 02:00 UTC is still November 30 in Santiago.
-    expect(currentMonth(new Date("2026-12-01T02:00:00Z"))).toBe("2026-11");
-    expect(inRange(rows[0], "2026-10", "2026-10")).toBe(true);
-    expect(inRange(rows[1], "2026-10", "2026-10")).toBe(false);
+  it("turns each shortcut into a range as of today in Santiago", () => {
+    // 2026-11-06 02:00 UTC is still November 5 in Santiago.
+    const now = new Date("2026-11-06T02:00:00Z");
+    expect(presetRange("last_30_days", now)).toEqual({
+      from: "2026-10-07",
+      to: "2026-11-05",
+    });
+    expect(presetRange("this_month", now)).toEqual({
+      from: "2026-11-01",
+      to: "2026-11-05",
+    });
+    expect(presetRange("last_month", now)).toEqual({
+      from: "2026-10-01",
+      to: "2026-10-31",
+    });
+    expect(presetRange("last_90_days", now).from).toBe("2026-08-08");
+    expect(presetRange("this_year", now)).toEqual({
+      from: "2026-01-01",
+      to: "2026-11-05",
+    });
   });
 
-  it("ranks executives by won amount over the months in range", () => {
+  it("filters rows by day range and groups them by month", () => {
+    expect(inRange(rows[0], { from: "2026-10-01", to: "2026-10-31" })).toBe(
+      true,
+    );
+    expect(inRange(rows[1], { from: "2026-10-01", to: "2026-10-31" })).toBe(
+      false,
+    );
+    expect([...totalsBy(rows, "month").keys()]).toEqual(["2026-10", "2026-11"]);
+  });
+
+  it("ranks executives by won amount over the days in range", () => {
     const ranking = [
       buildRankingRow({
-        month: "2026-10-01",
+        day: "2026-10-15",
         sales_id: 1,
         leads: 3,
         leads_attended: 2,
@@ -142,7 +162,7 @@ describe("metrics del dashboard de gerencia", () => {
         won_amount: 1_000_000,
       }),
       buildRankingRow({
-        month: "2026-11-01",
+        day: "2026-11-03",
         sales_id: 1,
         leads: 2,
         leads_attended: 2,
@@ -152,7 +172,7 @@ describe("metrics del dashboard de gerencia", () => {
         won_amount: 500_000,
       }),
       buildRankingRow({
-        month: "2026-11-01",
+        day: "2026-11-03",
         sales_id: 2,
         leads: 4,
         leads_attended: 1,
@@ -162,7 +182,7 @@ describe("metrics del dashboard de gerencia", () => {
         won_amount: 4_000_000,
       }),
       buildRankingRow({
-        month: "2026-09-01",
+        day: "2026-09-20",
         sales_id: 3,
         leads: 9,
         won: 9,
@@ -170,7 +190,7 @@ describe("metrics del dashboard de gerencia", () => {
       }),
     ];
 
-    const result = rankSales(ranking, "2026-10", "2026-11");
+    const result = rankSales(ranking, { from: "2026-10-01", to: "2026-11-30" });
 
     expect(result.map((line) => line.salesId)).toEqual([2, 1]);
     // (10 h × 2 + 4 h × 2) / 4 = 7 h
@@ -183,7 +203,11 @@ describe("metrics del dashboard de gerencia", () => {
       won: 2,
       wonAmount: 1_500_000,
     });
-    expect(rankSales(ranking, "2026-11", "2026-11")[1].wonAmount).toBe(500_000);
-    expect(rankSales(ranking, "2026-12", "2026-12")).toEqual([]);
+    expect(
+      rankSales(ranking, { from: "2026-11-01", to: "2026-11-30" })[1].wonAmount,
+    ).toBe(500_000);
+    expect(
+      rankSales(ranking, { from: "2026-12-01", to: "2026-12-31" }),
+    ).toEqual([]);
   });
 });

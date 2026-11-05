@@ -1,14 +1,14 @@
 import { buildSale, StoryWrapper } from "@/test/StoryWrapper";
 import { canAccess } from "../providers/commons/canAccess";
-import type { DashboardMonthlyRow, SalesRankingRow } from "../types";
+import type { DashboardDailyRow, SalesRankingRow } from "../types";
 import { ManagementDashboard } from "./ManagementDashboard";
-import { currentMonth, shiftMonth } from "./metrics";
+import { addDays, santiagoDay } from "../tekfusion/santiago";
 
 export const buildRow = (
-  overrides: Partial<DashboardMonthlyRow> = {},
-): DashboardMonthlyRow => ({
+  overrides: Partial<DashboardDailyRow> = {},
+): DashboardDailyRow => ({
   id: 1,
-  month: `${currentMonth()}-01`,
+  day: santiagoDay(new Date()),
   business_line: "valvulas",
   origin_channel: "correo",
   leads: 0,
@@ -25,18 +25,20 @@ export const buildRow = (
   ...overrides,
 });
 
-export const THIS_MONTH = currentMonth();
-export const LAST_MONTH = shiftMonth(THIS_MONTH, -1);
+// Today falls in the default range (last 30 days); 40 days ago, in the
+// previous 30 days it is compared with.
+export const TODAY = santiagoDay(new Date());
+export const EARLIER = addDays(TODAY, -40);
 
 /**
- * Two months of fictitious rows, precalculated as the view would return them.
- * This month: 6 leads, 3 of 4 responded within 24 h (75%), 8,5 h on average.
- * Last month: 3 leads, 0 of 2 within 24 h. Both months: 9 leads, 3 of 6 (50%).
+ * Two periods of fictitious rows, precalculated as the view would return them.
+ * Last 30 days: 6 leads, 3 of 4 responded within 24 h (75%), 8,5 h on average.
+ * The 30 days before: 3 leads, 0 of 2 within 24 h. Both periods: 9 leads, 3 of 6 (50%).
  */
-export const twoMonthsRows = (): DashboardMonthlyRow[] => [
+export const twoMonthsRows = (): DashboardDailyRow[] => [
   buildRow({
     id: 1,
-    month: `${THIS_MONTH}-01`,
+    day: TODAY,
     business_line: "valvulas",
     origin_channel: "correo",
     leads: 4,
@@ -52,7 +54,7 @@ export const twoMonthsRows = (): DashboardMonthlyRow[] => [
   }),
   buildRow({
     id: 2,
-    month: `${THIS_MONTH}-01`,
+    day: TODAY,
     business_line: "tuberias",
     origin_channel: "whatsapp",
     leads: 2,
@@ -66,7 +68,7 @@ export const twoMonthsRows = (): DashboardMonthlyRow[] => [
   }),
   buildRow({
     id: 3,
-    month: `${LAST_MONTH}-01`,
+    day: EARLIER,
     business_line: "valvulas",
     origin_channel: "correo",
     leads: 3,
@@ -81,7 +83,7 @@ export const twoMonthsRows = (): DashboardMonthlyRow[] => [
 ];
 
 export const DashboardWithTwoMonths = () => (
-  <StoryWrapper data={{ dashboard_monthly: twoMonthsRows() }}>
+  <StoryWrapper data={{ dashboard_daily: twoMonthsRows() }}>
     <ManagementDashboard />
   </StoryWrapper>
 );
@@ -90,7 +92,7 @@ export const buildRankingRow = (
   overrides: Partial<SalesRankingRow> = {},
 ): SalesRankingRow => ({
   id: 1,
-  month: `${currentMonth()}-01`,
+  day: santiagoDay(new Date()),
   sales_id: 1,
   leads: 0,
   leads_attended: 0,
@@ -121,13 +123,13 @@ const rankingSales = [
 ];
 
 /**
- * This month: Tomás won $4.000.000, Valentina $500.000.
- * With last month too: Valentina adds $5.000.000 and goes first ($5.500.000).
+ * Last 30 days: Tomás won $4.000.000, Valentina $500.000.
+ * With the 30 days before too: Valentina adds $5.000.000 and goes first ($5.500.000).
  */
 export const rankingRows = (): SalesRankingRow[] => [
   buildRankingRow({
     id: 1,
-    month: `${THIS_MONTH}-01`,
+    day: TODAY,
     sales_id: 1,
     leads: 2,
     leads_attended: 2,
@@ -138,7 +140,7 @@ export const rankingRows = (): SalesRankingRow[] => [
   }),
   buildRankingRow({
     id: 2,
-    month: `${THIS_MONTH}-01`,
+    day: TODAY,
     sales_id: 2,
     leads: 4,
     leads_attended: 2,
@@ -149,7 +151,7 @@ export const rankingRows = (): SalesRankingRow[] => [
   }),
   buildRankingRow({
     id: 3,
-    month: `${LAST_MONTH}-01`,
+    day: EARLIER,
     sales_id: 1,
     leads: 3,
     leads_attended: 2,
@@ -161,7 +163,7 @@ export const rankingRows = (): SalesRankingRow[] => [
 ];
 
 const rankingData = {
-  dashboard_monthly: twoMonthsRows(),
+  dashboard_daily: twoMonthsRows(),
   sales_ranking: rankingRows(),
 };
 

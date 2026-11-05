@@ -30,6 +30,13 @@ export const createLeadMethods = (
   getDataProvider: () => DataProvider,
   getIdentity: () => Promise<UserIdentity | undefined>,
 ) => ({
+  /** log_export() has nothing to record in the demo: it only resolves. */
+  logExport: async (
+    _resource: string,
+    _rowCount: number,
+    _filters: Record<string, unknown>,
+  ): Promise<void> => undefined,
+
   takeDeal: async (dealId: Identifier): Promise<Deal> => {
     const dataProvider = getDataProvider();
     const me = await getIdentity();

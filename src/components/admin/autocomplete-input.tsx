@@ -238,12 +238,15 @@ export const AutocompleteInput = (
                     aria-expanded={open}
                     aria-label={accessibleName}
                     aria-labelledby={hasLabel ? uniqueId : undefined}
-                    className={cn(
-                      "w-full justify-between h-auto py-1.75 font-normal",
-                      isClearable && "pr-9",
-                    )}
+                    className="w-full justify-between h-auto py-1.75 font-normal"
                   >
-                    <div className="min-w-0 flex flex-1 items-center gap-2 overflow-hidden text-left">
+                    <div
+                      className={cn(
+                        "min-w-0 flex flex-1 items-center gap-2 overflow-hidden text-left",
+                        // room for the clear button, left of the chevron
+                        isClearable && "pr-6",
+                      )}
+                    >
                       {selectedChoice ? (
                         getInputText(selectedChoice)
                       ) : (

@@ -1,11 +1,4 @@
-import {
-  useCanAccess,
-  useCreate,
-  useGetList,
-  useNotify,
-  useTranslate,
-  useUpdate,
-} from "ra-core";
+import { useCanAccess, useTranslate } from "ra-core";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,11 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { renderTemplate } from "../followups/renderTemplate";
 import type { SendChannel, Template } from "../types";
+import { useStagedCatalog } from "./stagedCatalogs";
 
 const T = "tekfusion.settings.templates";
 const C = "tekfusion.settings.catalogs";
 const CHANNELS: SendChannel[] = ["correo", "whatsapp"];
-const ALL = { pagination: { page: 1, perPage: 100 } };
 
 // Same rule as the templates_known_variables check in the base.
 const UNKNOWN_VARIABLE =
@@ -32,7 +25,9 @@ const SAMPLE = {
   ejecutivo: "María Soto",
 };
 
-type Draft = Omit<Template, "id"> & { id?: Template["id"] };
+type Row = Omit<Template, "id"> & { id?: Template["id"] };
+// index: position of the row being edited; undefined for a new one.
+type Draft = Row & { index?: number };
 
 const EMPTY: Draft = {
   name: "",
@@ -45,29 +40,18 @@ const EMPTY: Draft = {
 /** Follow-up templates (RF-14). Management only. */
 export const TemplatesSettings = () => {
   const translate = useTranslate();
-  const notify = useNotify();
   const { canAccess } = useCanAccess({
     resource: "configuration",
     action: "edit",
   });
-  const { data, refetch } = useGetList<Template>("templates", {
-    ...ALL,
-    sort: { field: "name", order: "ASC" },
+  const { rows, write } = useStagedCatalog<Row>("templates", {
+    field: "name",
+    order: "ASC",
   });
-  const [create] = useCreate();
-  const [update] = useUpdate();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!canAccess) return null;
-
-  const options = {
-    onSuccess: () => {
-      setDraft(null);
-      refetch();
-    },
-    onError: () => notify(`${C}.error`, { type: "error" }),
-  };
 
   const save = () => {
     if (!draft) return;
@@ -84,46 +68,47 @@ export const TemplatesSettings = () => {
       return;
     }
     setError(null);
-    const { id, ...fields } = draft;
+    const { index, ...fields } = draft;
     const values = {
       ...fields,
       name: fields.name.trim(),
       subject: subject || null,
     };
-    if (id == null) create("templates", { data: values }, options);
-    else
-      update(
-        "templates",
-        { id, data: values, previousData: data?.find((t) => t.id === id) },
-        options,
-      );
+    write(
+      index === undefined
+        ? [...rows, values]
+        : rows.map((row, i) => (i === index ? values : row)),
+    );
+    setDraft(null);
   };
 
-  const toggle = (template: Template) =>
-    update(
-      "templates",
-      {
-        id: template.id,
-        data: { active: !template.active },
-        previousData: template,
-      },
-      options,
+  const toggle = (index: number) =>
+    write(
+      rows.map((row, i) =>
+        i === index ? { ...row, active: !row.active } : row,
+      ),
     );
 
   return (
-    <Card id="templates">
+    <Card id="templates" role="region" aria-label={translate(`${T}.title`)}>
       <CardContent className="space-y-4">
         <h2 className="text-xl font-semibold text-muted-foreground">
           {translate(`${T}.title`)}
         </h2>
-        {data?.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          {translate(`${C}.pending_hint`)}
+        </p>
+        {rows.length === 0 && (
           <p className="text-sm text-muted-foreground">
             {translate(`${C}.empty`)}
           </p>
         )}
         <ul className="divide-y">
-          {data?.map((template) => (
-            <li key={template.id} className="flex items-center gap-2 py-2">
+          {rows.map((template, index) => (
+            <li
+              key={template.id ?? `new-${index}`}
+              className="flex items-center gap-2 py-2"
+            >
               <span className="flex-1 text-sm">
                 {template.name}{" "}
                 <span className="text-muted-foreground">
@@ -138,7 +123,11 @@ export const TemplatesSettings = () => {
                 aria-label={`${translate(`${C}.edit`)} ${template.name}`}
                 onClick={() => {
                   setError(null);
-                  setDraft({ ...template, subject: template.subject ?? "" });
+                  setDraft({
+                    ...template,
+                    subject: template.subject ?? "",
+                    index,
+                  });
                 }}
               >
                 {translate(`${C}.edit`)}
@@ -148,7 +137,7 @@ export const TemplatesSettings = () => {
                 variant="ghost"
                 size="sm"
                 aria-label={`${translate(template.active ? `${C}.deactivate` : `${C}.activate`)} ${template.name}`}
-                onClick={() => toggle(template)}
+                onClick={() => toggle(index)}
               >
                 {translate(
                   template.active ? `${C}.deactivate` : `${C}.activate`,
@@ -232,7 +221,7 @@ export const TemplatesSettings = () => {
                 {translate(`${C}.cancel`)}
               </Button>
               <Button type="button" onClick={save}>
-                {translate(`${C}.save`)}
+                {translate(`${C}.apply`)}
               </Button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { Download } from "lucide-react";
 import type { Exporter } from "ra-core";
 import {
   fetchRelatedRecords,
+  useCanAccess,
   useDataProvider,
   useGetResourceLabel,
   useNotify,
@@ -11,6 +12,7 @@ import {
   useResourceTranslation,
 } from "ra-core";
 import { Button } from "@/components/ui/button";
+import { logExport } from "@/components/admin/log-export";
 
 /**
  * A button that exports list data to a file.
@@ -51,6 +53,7 @@ export const ExportButton = (props: ExportButtonProps) => {
     getData,
     total,
     resource,
+    filterValues,
     exporter: exporterFromContext,
   } = useListContext();
   const getResourceLabel = useGetResourceLabel();
@@ -74,16 +77,23 @@ export const ExportButton = (props: ExportButtonProps) => {
       }
 
       getData({ maxResults, meta })
-        .then(
-          (data) =>
-            exporter &&
+        .then((data) => {
+          if (exporter) {
             exporter(
               data,
               fetchRelatedRecords(dataProvider),
               dataProvider,
               resource,
-            ),
-        )
+            );
+          }
+          return logExport(
+            dataProvider,
+            resource,
+            data.length,
+            filterValues ?? {},
+            () => notify("tekfusion.export.log_error", { type: "warning" }),
+          );
+        })
         .catch((error) => {
           console.error(error);
           notify("HTTP Error", { type: "error" });
@@ -95,6 +105,7 @@ export const ExportButton = (props: ExportButtonProps) => {
     [
       dataProvider,
       exporter,
+      filterValues,
       getData,
       notify,
       onClick,
@@ -103,6 +114,10 @@ export const ExportButton = (props: ExportButtonProps) => {
       meta,
     ],
   );
+
+  // Exporting takes data out of the CRM: hidden unless canAccess allows it (docs/08).
+  const { canAccess } = useCanAccess({ resource, action: "export" });
+  if (!canAccess) return null;
 
   return (
     <Button

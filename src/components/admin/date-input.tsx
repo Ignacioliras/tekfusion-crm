@@ -75,6 +75,7 @@ export const DateInput = (props: DateInputProps) => {
     validate,
     disabled,
     readOnly,
+    parse,
     ...rest
   } = props;
 
@@ -92,6 +93,7 @@ export const DateInput = (props: DateInputProps) => {
     disabled,
     readOnly,
     format,
+    parse,
     ...rest,
   });
   const localInputRef = React.useRef<HTMLInputElement>(null);

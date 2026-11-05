@@ -40,6 +40,9 @@ grant update (first_name, last_name, avatar, signature, whatsapp_phone, role, ad
 revoke execute on function public.take_deal(bigint) from public, anon;
 revoke execute on function public.offboard_sale(bigint, bigint) from public, anon, authenticated;
 grant execute on function public.offboard_sale(bigint, bigint) to service_role;
+-- log_export: any signed-in user may call it; the function itself lets only managers in.
+revoke execute on function public.log_export(text, integer, jsonb) from public, anon;
+grant execute on function public.log_export(text, integer, jsonb) to authenticated, service_role;
 revoke execute on function public.can_read_attachment(text) from public, anon;
 grant execute on function public.can_read_attachment(text) to authenticated, service_role;
 revoke execute on function public.can_write_attachment(text) from public, anon;

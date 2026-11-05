@@ -13,18 +13,17 @@ export const defaultCurrency = "CLP";
 
 export const defaultTitle = "CRM TekFusion";
 
+// TekFusion's clients (B2B: valves, pipes, geocells). To confirm with
+// TekFusion (docs/11); editable in Configuración.
 export const defaultCompanySectors = [
-  { value: "communication-services", label: "Telecomunicaciones" },
-  { value: "consumer-discretionary", label: "Consumo discrecional" },
-  { value: "consumer-staples", label: "Consumo básico" },
-  { value: "energy", label: "Energía" },
-  { value: "financials", label: "Finanzas" },
-  { value: "health-care", label: "Salud" },
-  { value: "industrials", label: "Industria" },
-  { value: "information-technology", label: "Tecnologías de la información" },
-  { value: "materials", label: "Materiales" },
-  { value: "real-estate", label: "Inmobiliario" },
-  { value: "utilities", label: "Servicios básicos" },
+  { value: "mineria", label: "Minería" },
+  { value: "construccion", label: "Construcción y obras civiles" },
+  { value: "agua", label: "Agua y saneamiento" },
+  { value: "agro", label: "Agrícola y riego" },
+  { value: "industria", label: "Industria" },
+  { value: "energia", label: "Energía" },
+  { value: "publico", label: "Sector público" },
+  { value: "otro", label: "Otro" },
 ];
 
 export const defaultDealStages = ETAPAS.map(({ value, label }) => ({
@@ -34,13 +33,9 @@ export const defaultDealStages = ETAPAS.map(({ value, label }) => ({
 
 export const defaultDealPipelineStatuses: string[] = [...ETAPAS_CERRADAS];
 
-export const defaultDealCategories = [
-  { value: "other", label: "Other" },
-  { value: "copywriting", label: "Copywriting" },
-  { value: "print-project", label: "Print project" },
-  { value: "ui-design", label: "UI Design" },
-  { value: "website-design", label: "Website design" },
-];
+// Atomic's deal categories: TekFusion classifies leads by business line
+// instead. Empty hides the field, the filter and the settings block.
+export const defaultDealCategories: { value: string; label: string }[] = [];
 
 export const defaultNoteStatuses = [
   { value: "cold", label: "Frío", color: "#7dbde8" },
@@ -51,14 +46,14 @@ export const defaultNoteStatuses = [
 
 export const defaultTaskTypes = [
   { value: "none", label: "Ninguno" },
+  { value: "call", label: "Llamada" },
   { value: "email", label: "Correo" },
-  { value: "demo", label: "Demo" },
-  { value: "lunch", label: "Almuerzo" },
+  { value: "whatsapp", label: "WhatsApp" },
   { value: "meeting", label: "Reunión" },
+  { value: "visit", label: "Visita a terreno" },
   { value: "follow-up", label: "Seguimiento" },
   { value: "thank-you", label: "Agradecimiento" },
   { value: "ship", label: "Despacho" },
-  { value: "call", label: "Llamada" },
 ];
 
 // Must match the coalesce default of public.send_quote.

@@ -242,8 +242,12 @@ export const SelectInput = (props: SelectInputProps) => {
     field.onChange(emptyValue);
   };
 
+  // A required select cannot be emptied: no clear button.
   const isClearable =
-    !field.disabled && !!field.value && field.value !== emptyValue;
+    !isRequired &&
+    !field.disabled &&
+    !!field.value &&
+    field.value !== emptyValue;
 
   return (
     <>

@@ -1,7 +1,6 @@
 import {
   Form,
   useCreate,
-  useGetOne,
   useNotify,
   useRefresh,
   useTranslate,
@@ -12,8 +11,6 @@ import { useWatch, type FieldValues } from "react-hook-form";
 import { BooleanInput } from "@/components/admin/boolean-input";
 import { DateTimeInput } from "@/components/admin/date-time-input";
 import { RadioButtonGroupInput } from "@/components/admin/radio-button-group-input";
-import { ReferenceInput } from "@/components/admin/reference-input";
-import { SelectInput } from "@/components/admin/select-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,72 +21,92 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import type {
-  Company,
-  Contact,
-  Deal,
-  Followup,
-  Sale,
-  SendChannel,
-  Template,
-} from "../types";
-import { renderTemplate, type TemplateVariables } from "./renderTemplate";
+import { useConfigurationContext } from "../root/ConfigurationContext";
+import { defaultBusinessHours } from "../root/defaultConfiguration";
+import { nextBusinessDayAt } from "../tekfusion/santiago";
+import type { Deal, Followup, FollowupMessages, SendChannel } from "../types";
+import { ChannelMessage } from "./ChannelMessage";
+
+const CHANNELS: SendChannel[] = ["correo", "whatsapp"];
+// docs/03: a follow-up written by hand goes out at 10:00 of a business day.
+const DEFAULT_TIME = "10:00";
 
 interface FollowupFormValues {
   scheduled_at?: string;
   send_correo?: boolean;
   send_whatsapp?: boolean;
   mode?: Followup["mode"];
-  template_id?: Followup["template_id"];
+  correo_template_id?: Followup["template_id"];
+  correo_subject?: string;
+  correo_body?: string;
+  whatsapp_template_id?: Followup["template_id"];
+  whatsapp_body?: string;
 }
+
+const channelsOf = (values: FollowupFormValues): SendChannel[] =>
+  CHANNELS.filter((channel) => values[`send_${channel}`]);
 
 // Form-level: a field validator inside a ReferenceInput can register late.
 const validateFollowup = (values: FieldValues) => {
+  const v = values as FollowupFormValues;
   const errors: Record<string, string> = {};
-  if (!values.scheduled_at || new Date(values.scheduled_at) <= new Date()) {
+  if (!v.scheduled_at || new Date(v.scheduled_at) <= new Date()) {
     errors.scheduled_at = "tekfusion.followup.past_date";
   }
-  if (!values.send_correo && !values.send_whatsapp) {
+  const channels = channelsOf(v);
+  if (channels.length === 0) {
     errors.send_whatsapp = "tekfusion.followup.channels_required";
+  }
+  // The system sends an automatic one as is: it needs its text. A reminder
+  // only tells the executive, who writes it then.
+  if (v.mode === "automatico") {
+    for (const channel of channels) {
+      if (!v[`${channel}_body`]?.trim()) {
+        errors[`${channel}_body`] = "tekfusion.followup.message_required";
+      }
+    }
+    if (channels.includes("correo") && !v.correo_subject?.trim()) {
+      errors.correo_subject = "tekfusion.followup.subject_required";
+    }
   }
   return errors;
 };
 
-const channelsOf = (values: FollowupFormValues): SendChannel[] => [
-  ...(values.send_correo ? (["correo"] as const) : []),
-  ...(values.send_whatsapp ? (["whatsapp"] as const) : []),
-];
+const messagesOf = (v: FollowupFormValues): FollowupMessages =>
+  Object.fromEntries(
+    channelsOf(v).map((channel) => [
+      channel,
+      {
+        template_id: v[`${channel}_template_id`] || null,
+        ...(channel === "correo" ? { subject: v.correo_subject ?? "" } : {}),
+        body: v[`${channel}_body`] ?? "",
+      },
+    ]),
+  );
 
-/** Values the preview fills: first contact, company, product (lead name), executive. */
-const useTemplateVariables = (deal: Deal): TemplateVariables => {
-  const contactId = deal.contact_ids?.[0];
-  const { data: contact } = useGetOne<Contact>(
-    "contacts",
-    { id: contactId },
-    { enabled: contactId != null },
-  );
-  const { data: company } = useGetOne<Company>(
-    "companies",
-    { id: deal.company_id },
-    { enabled: deal.company_id != null },
-  );
-  const { data: sale } = useGetOne<Sale>(
-    "sales",
-    { id: deal.sales_id },
-    { enabled: deal.sales_id != null },
-  );
+/** Form values of a saved follow-up; one from the cadence only has template_id. */
+const valuesOf = (followup: Followup): FollowupFormValues => {
+  const messages = followup.messages ?? {};
+  const legacyTemplate = (channel: SendChannel) =>
+    followup.channels[0] === channel ? followup.template_id : null;
   return {
-    nombre: contact?.first_name,
-    empresa: company?.name,
-    producto: deal.name,
-    ejecutivo:
-      sale?.signature || (sale ? `${sale.first_name} ${sale.last_name}` : null),
+    scheduled_at: followup.scheduled_at,
+    send_correo: followup.channels.includes("correo"),
+    send_whatsapp: followup.channels.includes("whatsapp"),
+    mode: followup.mode,
+    correo_template_id:
+      messages.correo?.template_id ?? legacyTemplate("correo"),
+    correo_subject: messages.correo?.subject ?? "",
+    correo_body: messages.correo?.body ?? "",
+    whatsapp_template_id:
+      messages.whatsapp?.template_id ?? legacyTemplate("whatsapp"),
+    whatsapp_body: messages.whatsapp?.body ?? "",
   };
 };
 
 /**
  * Schedule a follow-up or adjust one (RF-07): date, channels, automatic or
- * reminder, template, and a preview with the variables resolved.
+ * reminder, and per channel its template and the text to send.
  */
 export const FollowupDialog = ({
   deal,
@@ -105,6 +122,7 @@ export const FollowupDialog = ({
   onClose: () => void;
 }) => {
   const translate = useTranslate();
+  const { businessHours } = useConfigurationContext();
   const [create, { isPending: isCreating }] = useCreate();
   const [update, { isPending: isUpdating }] = useUpdate();
   const notify = useNotify();
@@ -113,13 +131,29 @@ export const FollowupDialog = ({
     ? "tekfusion.followup.adjust_title"
     : "tekfusion.followup.schedule_title";
 
+  const defaultValues: FollowupFormValues = followup
+    ? valuesOf(followup)
+    : {
+        scheduled_at: nextBusinessDayAt(
+          new Date(),
+          (businessHours ?? defaultBusinessHours).days,
+          DEFAULT_TIME,
+        ).toISOString(),
+        send_correo: true,
+        send_whatsapp: false,
+        mode: "automatico",
+      };
+
   const handleSubmit = (values: FieldValues) => {
     const v = values as FollowupFormValues;
+    const messages = messagesOf(v);
     const data = {
       scheduled_at: new Date(v.scheduled_at as string).toISOString(),
       channels: channelsOf(v),
       mode: v.mode,
-      template_id: v.template_id || null,
+      // Kept for the cadence and n8n: the first channel's template.
+      template_id: Object.values(messages)[0]?.template_id ?? null,
+      messages,
     };
     const options = {
       onSuccess: () => {
@@ -160,24 +194,18 @@ export const FollowupDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{translate(title)}</DialogTitle>
           <DialogDescription>
-            {deal.name} ·{" "}
-            {translate("tekfusion.followup.step", {
-              step: followup?.step ?? nextStep ?? 1,
-            })}
+            {deal.name}
+            {followup
+              ? ` · ${translate("tekfusion.followup.step", { step: followup.step })}`
+              : null}
           </DialogDescription>
         </DialogHeader>
         <Form
-          defaultValues={{
-            scheduled_at: followup?.scheduled_at,
-            send_correo: followup ? followup.channels.includes("correo") : true,
-            send_whatsapp: followup?.channels.includes("whatsapp") ?? false,
-            mode: followup?.mode ?? "automatico",
-            template_id: followup?.template_id ?? null,
-          }}
+          defaultValues={defaultValues}
           validate={validateFollowup}
           onSubmit={handleSubmit}
         >
@@ -188,7 +216,7 @@ export const FollowupDialog = ({
               helperText={false}
             />
             <fieldset className="flex flex-col gap-2">
-              <legend className="text-sm font-medium mb-2">
+              <legend className="mb-2 text-sm font-medium">
                 {translate("tekfusion.followup.channels")}
               </legend>
               <BooleanInput
@@ -217,19 +245,7 @@ export const FollowupDialog = ({
               ]}
               helperText={false}
             />
-            <ReferenceInput
-              source="template_id"
-              reference="templates"
-              filter={{ active: true }}
-              sort={{ field: "name", order: "ASC" }}
-            >
-              <SelectInput
-                label="tekfusion.followup.template"
-                optionText="name"
-                emptyText="tekfusion.followup.no_template"
-              />
-            </ReferenceInput>
-            <TemplatePreview deal={deal} />
+            <ChannelMessages deal={deal} />
           </div>
           <DialogFooter className="mt-6">
             <Button type="button" variant="ghost" onClick={onClose}>
@@ -245,36 +261,14 @@ export const FollowupDialog = ({
   );
 };
 
-const TemplatePreview = ({ deal }: { deal: Deal }) => {
-  const translate = useTranslate();
-  const templateId = useWatch({ name: "template_id" });
-  const variables = useTemplateVariables(deal);
-  const { data: template } = useGetOne<Template>(
-    "templates",
-    { id: templateId },
-    { enabled: !!templateId },
-  );
-  if (!templateId || !template) return null;
-
+/** One block per channel switched on. */
+const ChannelMessages = ({ deal }: { deal: Deal }) => {
+  const sendCorreo = useWatch({ name: "send_correo" });
+  const sendWhatsapp = useWatch({ name: "send_whatsapp" });
   return (
-    <section
-      aria-label={translate("tekfusion.followup.preview")}
-      className="rounded-md border bg-muted/40 p-3 text-sm flex flex-col gap-1"
-    >
-      <span className="text-xs text-muted-foreground">
-        {translate("tekfusion.followup.preview")}
-      </span>
-      {template.subject ? (
-        <p>
-          <span className="text-muted-foreground">
-            {translate("tekfusion.followup.preview_subject")}:{" "}
-          </span>
-          {renderTemplate(template.subject, variables)}
-        </p>
-      ) : null}
-      <p className="whitespace-pre-line">
-        {renderTemplate(template.body, variables)}
-      </p>
-    </section>
+    <>
+      {sendCorreo ? <ChannelMessage channel="correo" deal={deal} /> : null}
+      {sendWhatsapp ? <ChannelMessage channel="whatsapp" deal={deal} /> : null}
+    </>
   );
 };

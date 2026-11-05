@@ -193,6 +193,29 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Ranking privado en la vista:** `sales_ranking` filtra con `where (select public.is_manager())` dentro de la vista (`security_invoker`): ejecutivo y lector reciben 0 filas sin policy nueva. La interfaz además oculta la sección con `canAccess`.
 - **Ubicación:** el bloque "Métricas comerciales" va arriba del dashboard de Atomic (contactos calientes, ingresos proyectados, última actividad, próximas tareas), que se mantiene. Ejecutivos y lectores ven las métricas sin ranking (RF-11).
 
+## 2026-11-05 · Seguimiento con texto por canal (fase-3/ajustes)
+- **Decisión:** `followups.messages jsonb` guarda, por cada canal marcado, la plantilla elegida y el texto final que dejó el ejecutivo: `{"correo": {"template_id", "subject", "body"}, "whatsapp": {"template_id", "body"}}`. Restricción `followups_messages_channels`: objeto con solo esas dos claves. `template_id` se mantiene (la cadencia de `send_quote` lo usa) y en un seguimiento manual queda con la plantilla del primer canal.
+- **Contrato con n8n (Fase 5):** si `messages.<canal>.body` existe, se envía tal cual (ya viene con las variables resueltas y es texto plano); si no, se renderiza `template_id` como hasta ahora.
+- **Interfaz:** un bloque por canal marcado con su selector de plantillas filtrado por canal; elegir plantilla rellena el texto, que es editable. Uno automático exige texto (y asunto en correo); un recordatorio no. Fecha por defecto: próximo día hábil (`businessHours.days`) a las 10:00 de Santiago (`tekfusion/santiago.ts`). Sin "Paso N" al programar a mano.
+- **Descartado:** columnas sueltas por canal (cinco columnas nuevas, la mitad nulas) y una tabla hija (más joins para algo que se lee siempre junto).
+
+## 2026-11-05 · Configuración: una sola forma de guardar y sin restos de Atomic (fase-3/ajustes)
+- **Guardado único:** plantillas, respuestas rápidas y motivos de pérdida se editan en el formulario de la página (`settings/stagedCatalogs.ts`): "Aplicar" deja el cambio en la lista y el botón fijo "Guardar" escribe primero los catálogos (crea los nuevos, actualiza solo los que cambiaron, los motivos toman su posición del orden) y después `configuration`. Si un catálogo falla, la configuración no se guarda. Excepción: Etiquetas (de Atomic) sigue con su modal propio; se crean desde los contactos.
+- **Restos de Atomic:** fuera las categorías de lead (TekFusion clasifica por línea; vacías ocultan el campo, el filtro y el bloque) y los chips "Etapas del pipeline"; sectores y tipos de tarea propios de TekFusion, por confirmar (`docs/11`); el seed usa los mismos valores (`mineria`, `construccion`, `agua`, `agro`, tarea `visit`).
+- **Select obligatorio sin ✕:** `SelectInput` (shadcn-admin-kit) ya no ofrece vaciar un campo requerido; vale para todos los selects.
+- **Móvil:** la página de Configuración de escritorio se incrusta en la de móvil para gerencia (regla 9: se reutiliza la pantalla, sin flujo propio), con la barra de guardar en el flujo.
+- **Pendiente de revisar:** las etapas siguen editables en Configuración aunque el código las trata como constantes (`tekfusion/estados.ts`); renombrarlas o borrarlas rompería reglas. Proponer dejarlas de solo lectura.
+
+## 2026-11-05 · offboard_sale por línea: detalles de implementación (fase-3/ajustes)
+- **Reglas:** las de Ignacio del 2026-11-03 (leads por línea, contactos por mayoría con empate al menor id, tareas pendientes con su contacto).
+- **Implícito, decidido aquí:** cada **línea** que tenía a cargo pasa a su propio suplente (antes, todas al único suplente); el usuario dado de baja nunca cuenta como suplente válido de sí mismo; los leads que quedan sin asignar no cuentan para la mayoría de un contacto.
+- **Test aparte:** el escenario de dos líneas va en `28_baja_por_linea.test.sql` y no en el 17: cada archivo de pgTAP corre en su transacción y en el 17 Diego ya queda desactivado.
+
+## 2026-11-05 · Export CSV: oculto y registrado desde el botón (fase-3/ajustes)
+- **Decisión:** `ExportButton` y `BulkExportButton` (shadcn-admin-kit) son el único camino de un export: ellos consultan `canAccess(export)` (se ocultan a ejecutivo y lector en toda lista) y, después de generar el CSV, llaman `dataProvider.logExport(recurso, filas, filtros)` (`admin/log-export.ts`). Si el registro falla, el archivo ya se descargó y se avisa.
+- **Base:** RPC `log_export(resource, row_count, filters)`, security definer, solo gerencia (42501), recurso en lista cerrada (22023), escribe `audit_log` con `action = 'export'`.
+- **Descartado:** envolver el `exporter` de cada lista (lo que proponía la cola): el exporter no conoce los filtros y una lista nueva podía olvidarlo.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
