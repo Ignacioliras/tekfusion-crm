@@ -167,13 +167,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-05 21:38:25"
+      "commit": "d6abd35df4d46a89fe2a850695f87f3b586f4e78",
+      "costo_usd": 5.751402000000001,
+      "session_id": "2c54beef-0930-4324-b1bc-90627036ced0",
+      "inicio": "2026-11-05 21:38:25",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: RF-17 con `anonymize_contact` (gerencia), retención diaria con pg_cron (`anonymize_expired_contacts`), botón con confirmación en la ficha de contacto, pgTAP `31_anonimizar` y `AnonymizeContact.test.tsx` en verde, y docs/09 actualizado (aviso de privacidad pendiente para la Fase 5).",
+      "fin": "2026-11-05 21:49:23"
     },
     {
       "id": "T6",
