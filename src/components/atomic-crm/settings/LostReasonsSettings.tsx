@@ -98,9 +98,9 @@ export const LostReasonsSettings = () => {
             ) : (
               <li
                 key={reason.id ?? `new-${index}`}
-                className="flex items-center gap-1 py-2"
+                className="flex flex-wrap items-center gap-1 py-2"
               >
-                <span className="flex-1 text-sm">
+                <span className="basis-full text-sm sm:basis-0 sm:flex-1">
                   {reason.name}
                   {!reason.active && (
                     <span className="text-muted-foreground">

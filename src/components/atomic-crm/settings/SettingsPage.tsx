@@ -271,7 +271,11 @@ const SettingsFormFields = ({ embedded }: { embedded: boolean }) => {
   );
 
   return (
-    <div className={embedded ? "flex flex-col mt-4" : "flex gap-8 mt-4 pb-20"}>
+    <div
+      className={
+        embedded ? "flex flex-col mt-4 pb-24" : "flex gap-8 mt-4 pb-20"
+      }
+    >
       {/* Left navigation */}
       <nav className="hidden md:block w-48 shrink-0">
         <div className="sticky top-4 space-y-1">
@@ -456,13 +460,13 @@ const SettingsFormFields = ({ embedded }: { embedded: boolean }) => {
       <div
         className={
           embedded
-            ? "sticky bottom-0 -mx-4 border-t bg-background p-4"
+            ? "fixed bottom-14 left-0 right-0 z-40 border-t bg-background p-4"
             : "fixed bottom-0 left-0 right-0 border-t bg-background p-4"
         }
       >
         <div className="max-w-screen-xl mx-auto flex gap-8 px-4">
           <div className="hidden md:block w-48 shrink-0" />
-          <div className="flex-1 min-w-0 max-w-2xl flex justify-between">
+          <div className="flex-1 min-w-0 max-w-2xl flex flex-wrap justify-between gap-2">
             <Button
               type="button"
               variant="ghost"
