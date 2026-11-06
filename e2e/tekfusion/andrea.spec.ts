@@ -1,6 +1,19 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
 
 import { totp, totpStep } from "./fixtures/totp";
+
+const DEALS_SAMPLE = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../src/components/atomic-crm/dataImport/deals_sample.csv",
+);
+// Filas de deals_sample.csv en etapas que el kanban muestra, por columna.
+const IMPORTED_LEADS = [
+  ["Nuevo", "Válvulas mariposa 8 pulgadas"],
+  ["Contactado", "Geoceldas para talud de acceso"],
+  ["Cotizado", "Tubería HDPE 315 mm"],
+] as const;
 
 // Andrea (gerencia) sobre el seed ficticio recién reseteado por
 // scripts/tekfusion/e2e.mjs. El seed no le crea factor TOTP: el primer test lo
@@ -127,6 +140,29 @@ test.describe.serial("Andrea, gerencia con TOTP", () => {
 
     await saveCadence(changed);
     await saveCadence(original);
+  });
+
+  test("importa deals_sample.csv desde el kanban y ve los leads importados", async () => {
+    await page.goto("/#/deals");
+    await page.getByRole("button", { name: "Importar CSV" }).click();
+    const dialog = page.getByRole("dialog", { name: "Importar leads" });
+    await dialog.locator('input[type="file"]').setInputFiles(DEALS_SAMPLE);
+    await dialog.getByRole("button", { name: "Iniciar importación" }).click();
+
+    const report = page.getByRole("dialog", {
+      name: "Resultado de la importación",
+    });
+    // Creados, duplicados, errores.
+    await expect(report.getByRole("definition")).toHaveText(["6", "0", "0"]);
+    // La X del diálogo también se llama "Cerrar": el primero es el del pie.
+    await report.getByRole("button", { name: "Cerrar" }).first().click();
+    await expect(report).toBeHidden();
+
+    for (const [column, lead] of IMPORTED_LEADS) {
+      await expect(
+        page.getByRole("region", { name: column }).getByText(lead),
+      ).toBeVisible();
+    }
   });
 
   test("ve la lista de usuarios con los 4 del seed", async () => {

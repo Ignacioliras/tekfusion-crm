@@ -272,12 +272,13 @@
         "T8"
       ],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-06 17:19:25"
     },
     {
       "id": "T11",
