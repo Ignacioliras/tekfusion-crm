@@ -228,12 +228,16 @@
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "bloqueada",
+      "intentos": 1,
       "error": null,
       "commit": null,
-      "costo_usd": 0,
-      "session_id": null
+      "costo_usd": 2.3391396000000007,
+      "session_id": "fed4f99d-b25e-4970-b8d6-b8931e8c3d2d",
+      "inicio": "2026-11-06 05:45:07",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "BLOQUEADA: importar deals_sample.csv como Camila la saca al login (las filas de Tuberías van a Diego, la base responde 403 y el authProvider cierra la sesión; falta la decisión de Ignacio sobre el 403 y sobre si un ejecutivo puede importar leads de otros), y la firma no se puede guardar porque el se",
+      "motivo": "importar deals_sample.csv como Camila la saca al login (las filas de Tuberías van a Diego, la base responde 403 y el authProvider cierra la sesión; falta la decisión de Ignacio sobre el 403 y sobre si un ejecutivo puede importar leads de otros), y la firma no se puede guardar porque el servicio local de Edge Functions está detenido y `docker start` requiere aprobación."
     },
     {
       "id": "T9",
