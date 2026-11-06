@@ -133,12 +133,12 @@
     {
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "a232f8281b24a4412e945132bb246101e4df1e0c",
+      "costo_usd": 1.8196728,
+      "session_id": "7c1383ed-17f5-4925-9c26-3cb59e29646b",
       "id": "T5",
       "titulo": "Kanban: al arrastrar, un ejecutivo solo reordena los leads que puede editar",
       "descripcion": "Fase 3, pendiente de aprendizajes.md (2026-11-05 T6). Decisión de Ignacio (2026-11-05): el ejecutivo reordena solo los suyos. Un ejecutivo ve los leads sin asignar pero la RLS no le deja actualizarlos, así que al arrastrar una tarjeta en el kanban el update del index de un lead ajeno o sin asignar falla. La lógica está en src/components/atomic-crm/deals/DealListContent.tsx (onDragEnd → updateDealStage, que hace dataProvider.update de index sobre los demás leads de la columna de origen y de destino). Aplicar el mismo criterio que ya usa DealCreate.tsx (useCanAccess({ resource: 'sales', action: 'list' }) para gerencia + useGetIdentity): gerencia corre el index de todos; un ejecutivo solo el de los leads con sales_id = su identidad. El lead arrastrado se actualiza siempre (DealCard ya impide arrastrar si no puede editarlo). Si updateDealStage es más fácil de probar como función pura que devuelve la lista de updates, extraerla a src/components/atomic-crm/deals/stages.ts. Test de componente en src/components/atomic-crm/deals/DealList.test.tsx (o un archivo nuevo DealListReorder.test.tsx en la misma carpeta) con StoryWrapper y authProvider { canAccess: async (p) => canAccess('user', p) } usando el canAccess real de providers/commons/canAccess.ts: el ejecutivo arrastra su propio lead dentro de una columna que tiene además un lead sin asignar y uno de otro ejecutivo; tras soltar, el index de esos dos queda igual en el dataProvider (FakeRest no aplica RLS, por eso se mira el index) y el del arrastrado cambia. Para arrastrar, seguir CloseDeal.test.tsx (esperar el drag handle con expect.poll, no el texto de la tarjeta). Un segundo caso con gerencia ('admin') confirma que ahí sí se corren todos.",
@@ -153,7 +153,10 @@
       "criterio": "Typecheck y lint limpios; los tests de deals pasan, incluido el nuevo caso de ejecutivo (no toca el index de leads ajenos o sin asignar) y el de gerencia (corre todos).",
       "modelo": "opus",
       "esfuerzo": "high",
-      "inicio": "2026-11-06 01:50:32"
+      "inicio": "2026-11-06 01:50:32",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: el kanban ya no corre el orden de leads ajenos o sin asignar cuando arrastra un ejecutivo (gerencia sigue corriendo todos), con tests de ejecutivo y gerencia en DealListReorder.test.tsx.",
+      "fin": "2026-11-06 01:55:42"
     },
     {
       "depende_de": [],
