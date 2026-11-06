@@ -228,34 +228,42 @@ const ContactMergeDialog = ({ open, onClose }: ContactMergeDialogProps) => {
                 <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                   {notesCount != null && notesCount > 0 && (
                     <li>
-                      • {notesCount} note
-                      {notesCount !== 1 ? "s" : ""} will be reassigned
+                      •{" "}
+                      {translate("tekfusion.contacts.merge.notes", {
+                        smart_count: notesCount,
+                      })}
                     </li>
                   )}
                   {tasksCount != null && tasksCount > 0 && (
                     <li>
-                      • {tasksCount} task
-                      {tasksCount !== 1 ? "s" : ""} will be reassigned
+                      •{" "}
+                      {translate("tekfusion.contacts.merge.tasks", {
+                        smart_count: tasksCount,
+                      })}
                     </li>
                   )}
                   {dealsCount != null && dealsCount > 0 && (
                     <li>
-                      • {dealsCount} deal
-                      {dealsCount !== 1 ? "s" : ""} will be updated
+                      •{" "}
+                      {translate("tekfusion.contacts.merge.deals", {
+                        smart_count: dealsCount,
+                      })}
                     </li>
                   )}
                   {loserContact.email_jsonb?.length > 0 && (
                     <li>
-                      • {loserContact.email_jsonb.length} email address
-                      {loserContact.email_jsonb.length !== 1 ? "es" : ""} will
-                      be added
+                      •{" "}
+                      {translate("tekfusion.contacts.merge.emails", {
+                        smart_count: loserContact.email_jsonb.length,
+                      })}
                     </li>
                   )}
                   {loserContact.phone_jsonb?.length > 0 && (
                     <li>
-                      • {loserContact.phone_jsonb.length} phone number
-                      {loserContact.phone_jsonb.length !== 1 ? "s" : ""} will be
-                      added
+                      •{" "}
+                      {translate("tekfusion.contacts.merge.phones", {
+                        smart_count: loserContact.phone_jsonb.length,
+                      })}
                     </li>
                   )}
                   {!notesCount &&

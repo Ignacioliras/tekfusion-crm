@@ -297,6 +297,19 @@ export const tekfusionMessages = {
           "El contacto quedó anonimizado, pero no se pudieron borrar sus archivos adjuntos. Avisa a soporte.",
         error: "No se pudo anonimizar el contacto",
       },
+      // What the merge dialog lists before merging (ContactMergeButton).
+      merge: {
+        notes:
+          "%{smart_count} nota se reasignará |||| %{smart_count} notas se reasignarán",
+        tasks:
+          "%{smart_count} tarea se reasignará |||| %{smart_count} tareas se reasignarán",
+        deals:
+          "%{smart_count} lead se actualizará |||| %{smart_count} leads se actualizarán",
+        emails:
+          "Se agregará %{smart_count} correo |||| Se agregarán %{smart_count} correos",
+        phones:
+          "Se agregará %{smart_count} teléfono |||| Se agregarán %{smart_count} teléfonos",
+      },
     },
     export: {
       log_error:

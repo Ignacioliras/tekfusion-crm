@@ -7,7 +7,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { render } from "vitest-browser-react";
 import { createDataProvider } from "@/components/atomic-crm/providers/fakerest";
-import { buildContact, createCrmDb, StoryWrapper } from "@/test/StoryWrapper";
+import {
+  buildContact,
+  buildDeal,
+  createCrmDb,
+  StoryWrapper,
+} from "@/test/StoryWrapper";
 import { ContactAside } from "./ContactAside";
 import { ContactShow } from "./ContactShow";
 import { MobileSuccess } from "./ContactShow.mobile.fixtures";
@@ -184,5 +189,76 @@ describe("ContactShow", () => {
     await expect
       .element(screen.getByRole("combobox"))
       .toHaveTextContent("Caliente");
+  });
+
+  it("lists what the merge will move in spanish, not in english", async () => {
+    // Arrange
+    mockIsMobile.mockReturnValue(false);
+    const loser = buildContact({
+      id: 1,
+      email_jsonb: [
+        { email: "ada@example.com", type: "Work" },
+        { email: "ada@casa.example", type: "Home" },
+      ],
+      phone_jsonb: [{ number: "+56 9 1111 2222", type: "Work" }],
+    });
+    const duplicate = buildContact({ id: 2, email_jsonb: [] });
+    const screen = await render(
+      <StoryWrapper
+        data={{
+          contacts: [loser, duplicate],
+          contact_notes: [1, 2].map((id) => ({
+            id,
+            contact_id: 1,
+            text: `Nota ${id}`,
+            date: "2025-01-03T10:00:00.000Z",
+            sales_id: 0,
+            status: "warm",
+            attachments: [],
+          })),
+          tasks: [
+            {
+              id: 1,
+              contact_id: 1,
+              type: "call",
+              text: "Llamar",
+              due_date: "2025-01-04T10:00:00.000Z",
+              sales_id: 0,
+            },
+          ],
+          deals: [buildDeal({ contact_ids: [1] })],
+        }}
+      >
+        <ResourceContextProvider value="contacts">
+          {/* The merge button lives in the aside of the edit page (link="show") */}
+          <ShowBase id={loser.id}>
+            <ContactAside link="show" />
+          </ShowBase>
+        </ResourceContextProvider>
+      </StoryWrapper>,
+    );
+
+    // Act
+    await screen
+      .getByRole("button", { name: "Merge with another contact" })
+      .click();
+
+    // Assert
+    const dialog = screen.getByRole("dialog");
+    for (const text of [
+      "2 notas se reasignarán",
+      "1 tarea se reasignará",
+      "1 lead se actualizará",
+      "Se agregarán 2 correos",
+      "Se agregará 1 teléfono",
+    ]) {
+      // Each item starts with a "•" bullet, so match the text inside it.
+      await expect
+        .element(dialog.getByText(new RegExp(`• ${text}$`)))
+        .toBeVisible();
+    }
+    expect(dialog.element().textContent).not.toMatch(
+      /will be (reassigned|updated|added)/,
+    );
   });
 });
