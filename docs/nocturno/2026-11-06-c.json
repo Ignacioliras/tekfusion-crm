@@ -77,13 +77,16 @@
       "criterio": "db reset sin error y todos los pgTAP pasan, incluido 34_wa_ingest.",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:30:28"
+      "commit": "e3be68652364890c6a89bd99cdedc6988e36bb1f",
+      "costo_usd": 1.6929164,
+      "session_id": "7189a41f-6486-49c4-9989-e9befcfd1bff",
+      "inicio": "2026-11-06 16:30:28",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Funciones SQL de ingreso de WhatsApp (wa_ingest_message, wa_update_message_status, wa_upsert_instance_status) solo para service_role, con migración limpia, pgTAP 34_wa_ingest y decisión en docs/10.",
+      "fin": "2026-11-06 16:37:03"
     },
     {
       "id": "T4",
