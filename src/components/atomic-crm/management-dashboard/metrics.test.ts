@@ -1,4 +1,4 @@
-import { buildRankingRow, buildRow } from "./ManagementDashboard.fixtures";
+import { buildRow } from "./ManagementDashboard.fixtures";
 import {
   EMPTY_VALUE,
   avgFirstResponseHours,
@@ -159,65 +159,29 @@ describe("metrics del dashboard de gerencia", () => {
     ]);
   });
 
-  it("ranks executives by won amount over the days in range", () => {
-    const ranking = [
-      buildRankingRow({
-        day: "2026-10-15",
-        sales_id: 1,
-        leads: 3,
-        leads_attended: 2,
-        avg_first_response_hours: 10,
-        quotes_sent: 2,
-        won: 1,
-        won_amount: 1_000_000,
-      }),
-      buildRankingRow({
-        day: "2026-11-03",
-        sales_id: 1,
-        leads: 2,
-        leads_attended: 2,
-        avg_first_response_hours: 4,
-        quotes_sent: 1,
-        won: 1,
-        won_amount: 500_000,
-      }),
-      buildRankingRow({
-        day: "2026-11-03",
-        sales_id: 2,
-        leads: 4,
-        leads_attended: 1,
-        avg_first_response_hours: 2,
-        quotes_sent: 3,
-        won: 2,
-        won_amount: 4_000_000,
-      }),
-      buildRankingRow({
-        day: "2026-09-20",
-        sales_id: 3,
-        leads: 9,
-        won: 9,
-        won_amount: 9_000_000,
-      }),
+  it("ranks the summed executives by won amount, then won leads", () => {
+    const line = (sales_id: number, won: number, won_amount: number) => ({
+      sales_id,
+      leads: 0,
+      leads_attended: 0,
+      avg_first_response_hours: null,
+      quotes_sent: 0,
+      won,
+      won_amount,
+      lost: 0,
+    });
+    const executives = [
+      line(1, 2, 1_500_000),
+      line(2, 2, 4_000_000),
+      line(3, 1, 0),
+      line(4, 3, 0),
     ];
 
-    const result = rankSales(ranking, { from: "2026-10-01", to: "2026-11-30" });
-
-    expect(result.map((line) => line.salesId)).toEqual([2, 1]);
-    // (10 h × 2 + 4 h × 2) / 4 = 7 h
-    expect(result[1]).toEqual({
-      salesId: 1,
-      leads: 5,
-      leadsAttended: 4,
-      avgFirstResponseHours: 7,
-      quotesSent: 3,
-      won: 2,
-      wonAmount: 1_500_000,
-    });
-    expect(
-      rankSales(ranking, { from: "2026-11-01", to: "2026-11-30" })[1].wonAmount,
-    ).toBe(500_000);
-    expect(
-      rankSales(ranking, { from: "2026-12-01", to: "2026-12-31" }),
-    ).toEqual([]);
+    expect(rankSales(executives).map((row) => row.sales_id)).toEqual([
+      2, 1, 4, 3,
+    ]);
+    // The rows come from the provider: they are not reordered in place.
+    expect(executives.map((row) => row.sales_id)).toEqual([1, 2, 3, 4]);
+    expect(rankSales([])).toEqual([]);
   });
 });

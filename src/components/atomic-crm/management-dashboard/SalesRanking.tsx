@@ -1,5 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import type { Identifier } from "ra-core";
-import { useCanAccess, useGetList, useTranslate } from "ra-core";
+import { useCanAccess, useDataProvider, useTranslate } from "ra-core";
 
 import {
   Table,
@@ -9,14 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { CrmDataProvider } from "../providers/types";
 import { useGetSalesName } from "../sales/useGetSalesName";
 import { formatAmount } from "../tekfusion/money";
-import type { SalesRankingRow } from "../types";
 import { formatHours, rankSales, type DayRange } from "./metrics";
 
 const CURRENCY = "CLP";
-// ponytail: one page of rows; one row per executive and day (a year ≈ 6 × 250).
-const MAX_ROWS = 1000;
 
 interface SalesRankingProps {
   /** Same range as the metrics above. */
@@ -24,29 +23,26 @@ interface SalesRankingProps {
 }
 
 /**
- * Executive ranking over the sales_ranking view (RF-11), managers only. Same
+ * Executive ranking over sales_ranking_summary (RF-11), managers only. Same
  * criterion as LeadActions: only managers may list sales (canAccess.ts).
- * Executives and readers render nothing and never query the view.
+ * Executives and readers render nothing and never query it.
  */
 export const SalesRanking = ({ range }: SalesRankingProps) => {
   const translate = useTranslate();
+  const dataProvider = useDataProvider<CrmDataProvider>();
   const { canAccess: isManager = false } = useCanAccess({
     resource: "sales",
     action: "list",
   });
-  const { data = [], isPending } = useGetList<SalesRankingRow>(
-    "sales_ranking",
-    {
-      pagination: { page: 1, perPage: MAX_ROWS },
-      sort: { field: "day", order: "ASC" },
-      filter: { "day@gte": range.from, "day@lte": range.to },
-    },
-    { enabled: isManager },
-  );
+  const { data = [], isPending } = useQuery({
+    queryKey: ["sales_ranking_summary", range.from, range.to],
+    queryFn: () => dataProvider.getSalesRankingSummary(range),
+    enabled: isManager,
+  });
   if (!isManager) return null;
 
   const title = translate("tekfusion.dashboard.ranking.title");
-  const ranking = rankSales(data, range);
+  const ranking = rankSales(data);
   const column = (key: string) =>
     translate(`tekfusion.dashboard.ranking.${key}`);
 
@@ -77,20 +73,20 @@ export const SalesRanking = ({ range }: SalesRankingProps) => {
           </TableHeader>
           <TableBody>
             {ranking.map((line) => (
-              <TableRow key={line.salesId}>
+              <TableRow key={line.sales_id}>
                 <TableCell>
-                  <SalesName id={line.salesId} />
+                  <SalesName id={line.sales_id} />
                 </TableCell>
                 <TableCell className="text-right">
-                  {line.leadsAttended}
+                  {line.leads_attended}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatHours(line.avgFirstResponseHours)}
+                  {formatHours(line.avg_first_response_hours)}
                 </TableCell>
-                <TableCell className="text-right">{line.quotesSent}</TableCell>
+                <TableCell className="text-right">{line.quotes_sent}</TableCell>
                 <TableCell className="text-right">{line.won}</TableCell>
                 <TableCell className="text-right">
-                  {formatAmount(line.wonAmount, CURRENCY)}
+                  {formatAmount(line.won_amount, CURRENCY)}
                 </TableCell>
               </TableRow>
             ))}

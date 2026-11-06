@@ -2,6 +2,8 @@ import { buildSale, StoryWrapper } from "@/test/StoryWrapper";
 import { canAccess } from "../providers/commons/canAccess";
 import type { DashboardDailyRow, SalesRankingRow } from "../types";
 import { ManagementDashboard } from "./ManagementDashboard";
+import type { DayRange } from "./metrics";
+import { summarizeSalesRanking } from "./summary";
 import { addDays, santiagoDay } from "../tekfusion/santiago";
 
 export const buildRow = (
@@ -163,14 +165,21 @@ export const rankingRows = (): SalesRankingRow[] => [
   }),
 ];
 
-const rankingData = {
-  dashboard_daily: twoMonthsRows(),
-  sales_ranking: rankingRows(),
+const rankingData = { dashboard_daily: twoMonthsRows() };
+
+// StoryWrapper does not hand its canAccess to FakeRest, whose ranking method
+// would then answer as a non-manager. Same sum as sales_ranking_summary(),
+// without the role check: hiding the ranking is SalesRanking's job, and a
+// leaked query would show the names in the role tests.
+const rankingProvider = {
+  getSalesRankingSummary: async (range: DayRange) =>
+    summarizeSalesRanking(rankingRows(), range),
 };
 
 export const DashboardForManager = () => (
   <StoryWrapper
     data={{ ...rankingData, sales: [buildSale(), ...rankingSales] }}
+    dataProvider={rankingProvider}
   >
     <ManagementDashboard />
   </StoryWrapper>
@@ -181,6 +190,7 @@ export const DashboardForRole = ({ role }: { role: "user" | "reader" }) => (
   <StoryWrapper
     authProvider={{ canAccess: async (params) => canAccess(role, params) }}
     data={{ ...rankingData, sales: [buildSale(), ...rankingSales] }}
+    dataProvider={rankingProvider}
   >
     <ManagementDashboard />
   </StoryWrapper>

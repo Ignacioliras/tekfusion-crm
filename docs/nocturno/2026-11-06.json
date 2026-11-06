@@ -105,8 +105,8 @@
         "T3"
       ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
@@ -124,7 +124,8 @@
         "docs/09-plan-fases.md"
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
-      "criterio": "Suite de app completa en verde; SalesRanking ya no consulta sales_ranking ni tiene MAX_ROWS; docs/05 describe las dos funciones; el ítem de la Fase 6 queda [x]."
+      "criterio": "Suite de app completa en verde; SalesRanking ya no consulta sales_ranking ni tiene MAX_ROWS; docs/05 describe las dos funciones; el ítem de la Fase 6 queda [x].",
+      "inicio": "2026-11-06 01:40:07"
     },
     {
       "depende_de": [],

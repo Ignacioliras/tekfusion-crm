@@ -1,8 +1,6 @@
 // Pure calculations of the management dashboard (RF-11) over dashboard_summary
 // rows. Every ratio returns null when its denominator is zero; the UI shows "—".
-import type { Identifier } from "ra-core";
-
-import type { DashboardSummaryRow, SalesRankingRow } from "../types";
+import type { DashboardSummaryRow, SalesRankingSummaryRow } from "../types";
 import type { Etapa } from "../tekfusion/estados";
 import { addDays, santiagoDay } from "../tekfusion/santiago";
 
@@ -155,48 +153,11 @@ export const inRange = (
   { from, to }: DayRange,
 ): boolean => row.day >= from && row.day <= to;
 
-export type SalesRankingTotals = {
-  salesId: Identifier;
-  leads: number;
-  leadsAttended: number;
-  avgFirstResponseHours: number | null;
-  quotesSent: number;
-  won: number;
-  wonAmount: number;
-};
-
 /**
- * One line per executive over the sales_ranking rows within [from, to], sorted
- * by won amount (then won leads) descending. The average first response is
- * weighted by the attended leads of each day.
+ * The sales_ranking_summary rows (already one per executive and summed over the
+ * range) sorted by won amount, then won leads, descending. Returns a new array.
  */
 export const rankSales = (
-  rows: readonly SalesRankingRow[],
-  range: DayRange,
-): SalesRankingTotals[] => {
-  const groups = rows
-    .filter((row) => inRange(row, range))
-    .reduce((acc, row) => {
-      const prev = acc.get(row.sales_id);
-      const next = new Map(acc);
-      next.set(row.sales_id, {
-        leads: (prev?.leads ?? 0) + row.leads,
-        leadsAttended: (prev?.leadsAttended ?? 0) + row.leads_attended,
-        hoursTotal:
-          (prev?.hoursTotal ?? 0) +
-          (row.avg_first_response_hours ?? 0) * row.leads_attended,
-        quotesSent: (prev?.quotesSent ?? 0) + row.quotes_sent,
-        won: (prev?.won ?? 0) + row.won,
-        wonAmount: (prev?.wonAmount ?? 0) + row.won_amount,
-      });
-      return next;
-    }, new Map<Identifier, { leads: number; leadsAttended: number; hoursTotal: number; quotesSent: number; won: number; wonAmount: number }>());
-
-  return [...groups.entries()]
-    .map(([salesId, { hoursTotal, ...totals }]) => ({
-      salesId,
-      ...totals,
-      avgFirstResponseHours: ratio(hoursTotal, totals.leadsAttended),
-    }))
-    .sort((a, b) => b.wonAmount - a.wonAmount || b.won - a.won);
-};
+  rows: readonly SalesRankingSummaryRow[],
+): SalesRankingSummaryRow[] =>
+  [...rows].sort((a, b) => b.won_amount - a.won_amount || b.won - a.won);

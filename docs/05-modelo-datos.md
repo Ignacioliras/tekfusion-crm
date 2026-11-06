@@ -251,6 +251,11 @@ Claves iniciales: `cadencia_dias` `[2,5,10]`, `horario_habil` `{dias:[1..5], des
   - `won` / `lost`: etapa `ganado` / `perdido`.
   - `won_amount`: suma de `deals.won_amount`, CLP.
   - Solo lectura para `authenticated` y `service_role`; `anon` sin acceso. Test: `supabase/tests/26_sales_ranking.test.sql`.
+- `public.dashboard_summary(date_from, date_to)` y `public.sales_ranking_summary(date_from, date_to)` (hechas, Fase 6, 2026-11-06; `supabase/schemas/13_tekfusion_dashboard.sql`, decisión "Dashboard sumado en la base" de `docs/10`). Suman en la base las filas por día de `dashboard_daily` y `sales_ranking` dentro del rango (ambas fechas incluidas), para que el dashboard nunca descargue filas por día y ningún rango choque con el tope de PostgREST (`max_rows = 1000`). Las usa el frontend vía `getDashboardSummary` / `getSalesRankingSummary` del dataProvider (FakeRest las imita en `management-dashboard/summary.ts`).
+  - `dashboard_summary`: una fila por (`month`, `business_line`, `origin_channel`), con `month` = primer día del mes; mismas columnas de conteo y monto que `dashboard_daily`, sumadas.
+  - `sales_ranking_summary`: una fila por `sales_id`, con las columnas de `sales_ranking` sumadas.
+  - `avg_first_response_hours`: promedio ponderado por `responded` (resumen) o `leads_attended` (ranking), 2 decimales, nulo si nadie respondió.
+  - `security invoker` (funciones SQL `stable`, `search_path` vacío): leen las vistas con los permisos de quien llama, así aplica la misma RLS y ejecutivos y lectores reciben cero filas del ranking. `execute` solo para `authenticated` y `service_role`; `anon` sin acceso. Test: `supabase/tests/30_dashboard_summary.test.sql`.
 - `fn_asignar_lead(lead_id)`: aplica reglas de asignación (línea → ejecutivo → ausencia → suplente).
 - `fn_programar_seguimientos(lead_id)`: crea los pasos según `configuracion.cadencia_dias` y la cotización vigente.
 - `fn_cancelar_seguimientos(lead_id, motivo)`.
