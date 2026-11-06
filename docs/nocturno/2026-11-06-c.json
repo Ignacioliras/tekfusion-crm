@@ -1,0 +1,273 @@
+{
+  "fecha": "2026-11-06-c",
+  "fase": 4,
+  "modelo": "opus",
+  "esfuerzo": "high",
+  "limites": {
+    "turnos_por_tarea": 120,
+    "usd_por_tarea": 15,
+    "usd_total": 250,
+    "hora_fin": "07:00",
+    "intentos": 2,
+    "minutos_verificacion": 25,
+    "modelo_reintento": "fable",
+    "esfuerzo_reintento": "high"
+  },
+  "tareas": [
+    {
+      "id": "T1",
+      "titulo": "Validar con zod la entrada de la Edge Function users (POST, PATCH, DELETE)",
+      "descripcion": "Hallazgo B6 de la revisión de seguridad (docs/10). Crear supabase/functions/_shared/requestBody.ts que exporta parseJsonBody(req, schema): lee el JSON del request y lo valida con zod (importar como en _shared/evolutionWebhook.ts: `npm:zod@^4.3.6`, ya aliasado en vitest.config.ts); devuelve { data } o { response } con un 400 JSON (headers CORS de _shared/cors.ts) que dice qué campo falló, sin eco del valor recibido. Si el cuerpo no es JSON válido, también 400. Crear supabase/functions/users/schemas.ts con un esquema por método, derivado de los campos que hoy desestructura users/index.ts de `await req.json()` (POST ~línea 151, PATCH ~línea 300, DELETE ~línea 483): tipos exactos, emails con formato, role con isUserRole de role.ts, sales_id entero positivo, objetos estrictos (campos desconocidos rechazados). En users/index.ts reemplazar cada `await req.json()` por parseJsonBody y devolver su 400 temprano. No cambiar ninguna otra lógica de users. Tests: _shared/requestBody.test.ts (JSON inválido, campo faltante, campo de más, válido) y users/schemas.test.ts (un caso válido y los inválidos relevantes por método).",
+      "archivos": [
+        "supabase/functions/_shared/requestBody.ts",
+        "supabase/functions/_shared/requestBody.test.ts",
+        "supabase/functions/users/schemas.ts",
+        "supabase/functions/users/schemas.test.ts",
+        "supabase/functions/users/index.ts"
+      ],
+      "verificacion": "npm run typecheck:functions && npm run lint && npx vitest --config vitest.config.ts --project functions --run",
+      "criterio": "Typecheck de functions y lint limpios; los tests de functions pasan; users/index.ts ya no lee req.json() sin validar.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T2",
+      "titulo": "Parser de Evolution: messages.update y connection.update",
+      "descripcion": "Extender supabase/functions/_shared/evolutionWebhook.ts (docs/07, Receptor). parseEvolutionEvent pasa a devolver una unión discriminada por `kind`: { kind: 'message', ...EvolutionMessage } | { kind: 'status', instance, waMessageId, status } | { kind: 'connection', instance, connected, state } | IgnoredEvent. messages.update (Evolution v2, asumido y documentado en el comentario de cabecera como el resto): data trae el id en `keyId` o en `key.id` y `status` en 'PENDING'|'SERVER_ACK'|'DELIVERY_ACK'|'READ'|'PLAYED'|'ERROR'; mapear a delivery_status: PENDING→pendiente, SERVER_ACK→enviado, DELIVERY_ACK→entregado, READ y PLAYED→leido, ERROR→fallido; status desconocido → ignorado. connection.update: data.state 'open'→connected true; 'close'|'connecting'→false; otro → ignorado. Aceptar también la grafía MESSAGES_UPDATE / CONNECTION_UPDATE (ojo: el replace('_','.') actual solo cambia el primer guion bajo, revisar). Exportar el tipo DeliveryStatus. Actualizar evolutionWebhook.test.ts al nuevo tipo y agregar casos de cada evento (válidos, id faltante, status desconocido, ambas grafías).",
+      "archivos": [
+        "supabase/functions/_shared/evolutionWebhook.ts",
+        "supabase/functions/_shared/evolutionWebhook.test.ts"
+      ],
+      "verificacion": "npm run typecheck:functions && npm run lint && npx vitest --config vitest.config.ts --project functions --run",
+      "criterio": "Typecheck y lint limpios; los tests de functions pasan, incluidos los nuevos de messages.update y connection.update.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T3",
+      "titulo": "Funciones SQL de ingreso de WhatsApp: wa_ingest_message, wa_update_message_status, wa_upsert_instance_status",
+      "descripcion": "En supabase/schemas/14_tekfusion_whatsapp.sql (formato pg_dump, ver AGENTS.md), tres funciones executable solo por service_role (revoke de public, anon, authenticated; los grants en el mismo archivo como ya hace). 1) wa_ingest_message(p_instance text, p_wa_message_id text, p_phone text, p_direction wa_direction, p_type wa_message_type, p_text text, p_sent_at timestamptz, p_payload jsonb, p_job_id text default null) returns jsonb {conversation_id, message_id, inserted}: en una sola sentencia/transacción hace upsert de wa_conversations por phone, inserta en wa_messages con `on conflict (wa_message_id) do nothing`; deal_id = active_deal_id de la conversación; si es saliente y p_job_id es null: origin 'telefono', from_me_phone true, author_sales_id = sales_id de la conversación. SOLO si insertó: last_message_at = greatest(actual, p_sent_at) y, si es entrante, unread_count + 1. Un reintento del mismo wa_message_id no cambia nada (inserted false). 2) wa_update_message_status(p_wa_message_id text, p_status delivery_status) returns boolean: actualiza por wa_message_id y nunca retrocede (orden pendiente < enviado < entregado < leido; fallido solo desde pendiente o enviado); devuelve si cambió. 3) wa_upsert_instance_status(p_instance text, p_connected boolean, p_event jsonb): upsert por instance con updated_at = now(). Generar la migración con `npx supabase db diff --local -f wa_ingest` y limpiar los fantasmas (CLAUDE.md). pgTAP supabase/tests/34_wa_ingest.test.sql: conversación nueva y existente, reintento idempotente (una fila, unread_count sin doble suma), fromMe sin job_id atribuido, estado que no retrocede, fallido, instancia, y que authenticated no puede ejecutarlas (42501). Registrar en docs/10 la decisión: el ingreso es una función SQL atómica para que unread_count sea correcto ante reintentos.",
+      "archivos": [
+        "supabase/schemas/14_tekfusion_whatsapp.sql",
+        "supabase/migrations/<timestamp>_wa_ingest.sql",
+        "supabase/tests/34_wa_ingest.test.sql",
+        "docs/10-decisiones.md"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db",
+      "criterio": "db reset sin error y todos los pgTAP pasan, incluido 34_wa_ingest.",
+      "depende_de": [],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T4",
+      "titulo": "Edge Function whatsapp-webhook (handler testeable + index)",
+      "descripcion": "Crear supabase/functions/whatsapp-webhook/handler.ts que exporta createHandler({ secret, rpc, log }) => (req: Request) => Promise<Response>, con rpc(name, args) => Promise<{ error }>. Reglas (docs/07, Receptor): método distinto de POST → 405; isAuthorized falso → 401 (sin detalle); cuerpo no JSON o evento ignorado → 200 {ok:true, ignored: reason}; kind 'message' → rpc('wa_ingest_message', ...) con direction según fromMe y type mapeado a wa_message_type (text→texto, image→imagen, document→documento, audio→audio, other→otro), payload = el cuerpo crudo; kind 'status' → rpc('wa_update_message_status'); kind 'connection' → rpc('wa_upsert_instance_status'). Si rpc devuelve error o lanza: log con detalle y 200 {ok:false} (nunca 5xx, para que Evolution no reintente sin fin). Adjuntos: no se descargan; dejar TODO (Storage, docs/07) y attachment_path vacío. Flujo 02: TODO. index.ts: Deno.serve con withSentry, supabaseAdmin.rpc y secret de Deno.env EVOLUTION_WEBHOOK_SECRET (si falta, el handler responde 401 siempre). Agregar [functions.whatsapp-webhook] verify_jwt = false en supabase/config.toml y EVOLUTION_WEBHOOK_SECRET en supabase/functions/.env.example (valor vacío). Tests handler.test.ts con rpc falso: 405, 401 (sin header, header malo, secreto vacío), mensaje → args correctos, grupo ignorado sin rpc, status, connection, rpc con error → 200 ok:false.",
+      "archivos": [
+        "supabase/functions/whatsapp-webhook/handler.ts",
+        "supabase/functions/whatsapp-webhook/handler.test.ts",
+        "supabase/functions/whatsapp-webhook/index.ts",
+        "supabase/config.toml",
+        "supabase/functions/.env.example"
+      ],
+      "verificacion": "npm run typecheck:functions && npm run lint && npx vitest --config vitest.config.ts --project functions --run",
+      "criterio": "Typecheck y lint limpios; handler.test.ts y el resto de los tests de functions pasan.",
+      "depende_de": ["T2", "T3"],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T5",
+      "titulo": "🔒 Policies de wa_conversations y wa_messages según docs/08",
+      "descripcion": "🔒 REVISAR ANTES DEL MERGE (database-reviewer). Regla de docs/08 (tabla de permisos, fila conversaciones/mensajes): select → gerencia todas; ejecutivo las suyas (sales_id = current_sales_id()) y las sin asignar (sales_id is null); lector ninguna. insert/update/delete → ninguna policy para authenticated (solo service role y RPC). wa_messages: visible si su conversación es visible (exists sobre wa_conversations con la misma regla). Usar el patrón de deals_select en 11_tekfusion_policies.sql ((select fn()) para que se evalúe una vez). Poner policies, `grant select` a authenticated (solo select) e índices wa_conversations(sales_id) y wa_conversations(last_message_at desc) en 14_tekfusion_whatsapp.sql. wa_instance_status sigue cerrada. Migración generada y limpiada de fantasmas; si db diff no capta las policies, escribirla a mano. Ajustar supabase/tests/32_whatsapp_tablas.test.sql (hoy afirma que todo está cerrado para todos) y crear 35_rls_whatsapp.test.sql: Andrea (gerencia) ve las 3 del seed; Camila ve solo las suyas + sin asignar y sus mensajes; lector ve 0 filas; ningún authenticated inserta, actualiza ni borra; anon nada. 14_rls_cobertura debe seguir pasando. Anotar en docs/10.",
+      "archivos": [
+        "supabase/schemas/14_tekfusion_whatsapp.sql",
+        "supabase/migrations/<timestamp>_wa_policies.sql",
+        "supabase/tests/32_whatsapp_tablas.test.sql",
+        "supabase/tests/35_rls_whatsapp.test.sql",
+        "docs/10-decisiones.md"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db",
+      "criterio": "db reset sin error y todos los pgTAP pasan, incluidos 32, 35 y 14_rls_cobertura.",
+      "depende_de": ["T3"],
+      "necesita_supabase": true,
+      "modelo": "fable",
+      "esfuerzo": "high",
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T6",
+      "titulo": "RPC take_wa_conversation y mark_wa_conversation_read",
+      "descripcion": "En 14_tekfusion_whatsapp.sql, dos funciones security definer con search_path '' (patrón de take_deal en 11_tekfusion_policies.sql), execute solo para authenticated. take_wa_conversation(conversation_id bigint) returns wa_conversations: gerencia o ejecutivo; asigna sales_id = current_sales_id() solo si está sin asignar y no archivada; si no, P0002; lector o sin sale → 42501. mark_wa_conversation_read(conversation_id bigint) returns integer (mensajes marcados): solo gerencia o el ejecutivo asignado; los entrantes que no están en 'leido' pasan a 'leido' y unread_count = 0. Decisión de Ignacio (2026-11-06): abrir una conversación SIN ASIGNAR no la marca leída: si sales_id is null la función no cambia nada y devuelve 0 (también para gerencia), para que siga apareciendo como nueva hasta que alguien la tome. Ejecutivo sobre una conversación ajena → 42501. Migración generada y limpiada. pgTAP supabase/tests/36_wa_rpc.test.sql con todos esos casos. Anotar la decisión en docs/10.",
+      "archivos": [
+        "supabase/schemas/14_tekfusion_whatsapp.sql",
+        "supabase/migrations/<timestamp>_wa_rpc.sql",
+        "supabase/tests/36_wa_rpc.test.sql",
+        "docs/10-decisiones.md"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db",
+      "criterio": "db reset sin error y todos los pgTAP pasan, incluido 36_wa_rpc.",
+      "depende_de": ["T5"],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T7",
+      "titulo": "Trigger: mensaje entrante en un lead cancela seguimientos y crea alerta cliente_respondio",
+      "descripcion": "docs/05 (tg_mensaje_entrante) y CLAUDE.md §1.4. En 14_tekfusion_whatsapp.sql, trigger after insert on wa_messages for each row when (new.direction = 'entrante' and new.deal_id is not null): los followups del lead en estado 'pendiente' pasan a 'cancelado' con cancel_reason 'Cliente respondió por WhatsApp' (mismo patrón que send_quote en 11_tekfusion_policies.sql); inserta una alerta type 'cliente_respondio' para el sales_id del lead (si el lead no tiene ejecutivo, no se crea alerta), con message en español que nombre al lead. Un reintento no dispara nada porque wa_ingest_message no inserta. Función security definer, search_path '', sin execute para API roles. Migración generada y limpiada. pgTAP supabase/tests/37_wa_cliente_respondio.test.sql: entrante con lead cancela solo los pendientes de ese lead y crea una alerta; saliente no hace nada; entrante sin lead no hace nada; lead sin ejecutivo cancela pero no alerta.",
+      "archivos": [
+        "supabase/schemas/14_tekfusion_whatsapp.sql",
+        "supabase/migrations/<timestamp>_wa_cliente_respondio.sql",
+        "supabase/tests/37_wa_cliente_respondio.test.sql"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db",
+      "criterio": "db reset sin error y todos los pgTAP pasan, incluido 37_wa_cliente_respondio.",
+      "depende_de": ["T3"],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T8",
+      "titulo": "Permisos de ejecutivo en pantalla: importar, ficha sin asignar, marcar contactado y mensajes ante 42501",
+      "descripcion": "1) El botón 'Importar CSV' del kanban (deals/DealList.tsx y deals/DealEmpty.tsx) solo lo ve gerencia (useCanAccess sobre el recurso que ya usa el importador; importar es solo gerencia). 2) En la ficha de un lead sin asignar (LeadFile / LeadActions) el ejecutivo no ve 'Agregar una nota' ni ninguna acción salvo 'Tomar'. 3) 'Marcar contactado' exige una nota obligatoria (docs/03): no se puede confirmar con la nota vacía, la nota se guarda junto con el cambio de etapa. 4) Las pantallas que muestran un mensaje fijo al fallar una consulta muestran el texto de 'sin permiso' (reutilizar providers/supabase/accessErrors.ts y la clave i18n que ya usa LeadFileDenied) cuando el error es 42501/403. Textos nuevos en src/lib/i18n/es/tekfusion.ts. Tests con ejecutivo y con gerencia para cada punto (fixtures existentes de deals). docs/10: registrar la decisión de Ignacio (2026-11-06): un lead importado ya cerrado no tiene fecha de cierre (closed_at) y no cuenta en el reporte semanal.",
+      "archivos": [
+        "src/components/atomic-crm/deals/DealList.tsx",
+        "src/components/atomic-crm/deals/DealEmpty.tsx",
+        "src/components/atomic-crm/deals/LeadActions.tsx",
+        "src/components/atomic-crm/deals/LeadFile.tsx",
+        "src/components/atomic-crm/deals/*.test.tsx",
+        "src/components/atomic-crm/providers/supabase/accessErrors.ts",
+        "src/lib/i18n/es/tekfusion.ts",
+        "docs/10-decisiones.md"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
+      "criterio": "Typecheck y lint limpios; toda la suite app pasa, con tests nuevos para ejecutivo y gerencia en los cuatro puntos.",
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T9",
+      "titulo": "🔒 RPC send_wa_message para enviar desde la bandeja (sin Evolution todavía)",
+      "descripcion": "🔒 REVISAR ANTES DEL MERGE. En 14_tekfusion_whatsapp.sql, send_wa_message(conversation_id bigint, text text) returns wa_messages, security definer, search_path ''. Permisos: ejecutivo solo en conversaciones con sales_id = current_sales_id(); gerencia con aal2 en cualquiera (mismo chequeo de aal que usan las otras RPC de gerencia); lector y resto → 42501. Texto: trim no vacío y largo máximo (constante documentada, p. ej. 4096) → si no, 22023. Inserta en wa_messages: direction 'saliente', type 'texto', status 'pendiente', origin 'crm', author_sales_id = current_sales_id(), deal_id = active_deal_id, job_id único generado, wa_message_id provisional único derivado del job_id (anotar en docs/10 que whatsapp-send lo reemplazará por el id de Evolution), sent_at now(). Encola en send_queue con canal whatsapp igual que send_quote (11_tekfusion_policies.sql). Sube last_message_at. Grants a mano (revoke de public/anon, grant execute a authenticated) y migración escrita a mano (supabase/migrations/<timestamp>_send_wa_message.sql). pgTAP supabase/tests/38_send_wa_message.test.sql: ejecutivo propio ok, ajeno 42501, sin asignar 42501, gerencia aal1 42501, gerencia aal2 ok, lector 42501, texto vacío y demasiado largo, fila en send_queue, last_message_at. La interfaz la conecta de día cuando entre la bandeja.",
+      "archivos": [
+        "supabase/schemas/14_tekfusion_whatsapp.sql",
+        "supabase/migrations/<timestamp>_send_wa_message.sql",
+        "supabase/tests/38_send_wa_message.test.sql",
+        "docs/10-decisiones.md"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db",
+      "criterio": "db reset sin error y todos los pgTAP pasan, incluido 38_send_wa_message.",
+      "depende_de": ["T5"],
+      "necesita_supabase": true,
+      "modelo": "fable",
+      "esfuerzo": "high",
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T10",
+      "titulo": "E2E pendientes: alerta leída, importar deals_sample.csv y firma en Mi perfil",
+      "descripcion": "Completar lo que quedó bloqueado en 2026-11-06-b T8. En e2e/tekfusion/: (a) Camila marca una alerta como leída desde la campana y el contador baja; (b) Andrea entra con TOTP (helper e2e/tekfusion/fixtures/totp.ts, como andrea.spec.ts), importa src/components/atomic-crm/dataImport/deals_sample.csv desde el kanban y ve los leads importados en el kanban; (c) Camila edita su firma en Mi perfil y al recargar sigue guardada (la Edge Function users corre en local con supabase/functions/.env). Esperas deterministas (expect(locator).toBeVisible, waitForResponse), sin waitForTimeout. Si un paso choca con un bug de la app, BLOQUEADA con el detalle en vez de saltárselo.",
+      "archivos": [
+        "e2e/tekfusion/camila.spec.ts",
+        "e2e/tekfusion/andrea.spec.ts"
+      ],
+      "verificacion": "npm run test:e2e",
+      "criterio": "npm run test:e2e pasa completo, con los tres flujos nuevos.",
+      "depende_de": ["T8"],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T11",
+      "titulo": "Seed de demo: 12 meses de leads por línea y canal",
+      "descripcion": "Ampliar supabase/seed.sql con datos ficticios (nunca reales) de los últimos 12 meses: leads repartidos por las 3 líneas de negocio y por canal de origen, en todas las etapas; cotizaciones; ganados y perdidos con motivo de pérdida y closed_at; tareas; alertas. Fechas relativas a now() para que el demo no envejezca. Todos los pgTAP existentes siguen pasando: ajustar solo los que cuentan filas del seed (y explicar el ajuste en el commit/docs). dashboard_summary sobre los últimos 12 meses devuelve datos en cada uno de los 12 meses (agregar esa aserción a 30_dashboard_summary). Los e2e existentes siguen pasando.",
+      "archivos": [
+        "supabase/seed.sql",
+        "supabase/tests/*.test.sql",
+        "e2e/tekfusion/*.spec.ts"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db && npm run test:e2e",
+      "criterio": "db reset sin error, todos los pgTAP pasan (incluida la aserción de 12 meses) y los e2e pasan.",
+      "depende_de": ["T10"],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    },
+    {
+      "id": "T12",
+      "titulo": "HTML del correo semanal de gerencia (weeklyReportHtml.ts)",
+      "descripcion": "Crear supabase/functions/_shared/weeklyReportHtml.ts que exporta renderWeeklyReport(data, { crmBaseUrl }) => { subject, html, text } a partir del resultado de weekly_report_data (15_tekfusion_weekly_report.sql; tipar la forma exacta que devuelve). Contenido (RF-12): tabla por línea de negocio (entradas, contactados, cotizados, ganados, perdidos), perdidos con su motivo, leads sin atender y vencidos con enlace a la ficha (`${CRM_BASE_URL}/deals/<id>/show` o la ruta real de la ficha). HTML de correo: estilos inline, sin CSS ni recursos externos, todo texto escapado (nombres de leads son datos externos: regla 11). Montos CLP enteros con separador de miles chileno; fechas en America/Santiago. Versión texto plano equivalente. Tests weeklyReportHtml.test.ts: semana vacía (mensaje 'sin movimiento', sin tablas rotas) y semana con datos (cifras, motivos, enlaces, escape de '<script>' en un nombre).",
+      "archivos": [
+        "supabase/functions/_shared/weeklyReportHtml.ts",
+        "supabase/functions/_shared/weeklyReportHtml.test.ts"
+      ],
+      "verificacion": "npm run typecheck && npx vitest --config vitest.config.ts --project functions --run",
+      "criterio": "Typecheck limpio y los tests de functions pasan, incluidos los dos casos del reporte.",
+      "depende_de": [],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null
+    }
+  ]
+}
