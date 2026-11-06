@@ -202,13 +202,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 05:37:02"
+      "commit": "a9380bae63ce7f47e78888f9d4ac5d4f6f9f433b",
+      "costo_usd": 3.1226548000000003,
+      "session_id": "062563f2-1c93-47b2-ae35-ec4cac85cde9",
+      "inicio": "2026-11-06 05:37:02",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: pasé a claves tekfusion.contacts.merge.* (español, con plurales) la lista en inglés del diálogo de fusión de contactos, único texto escrito a mano en las 4 carpetas, con un test que verifica el español y la ausencia del inglés.",
+      "fin": "2026-11-06 05:45:03"
     },
     {
       "id": "T8",
