@@ -1,9 +1,10 @@
--- WhatsApp (Fase 4, solo esquema): wa_conversations, wa_messages y
--- wa_instance_status quedan cerradas hasta que lleguen las policies por rol
--- (tarea 🔒): ningún usuario logueado ni anon lee ni escribe; solo el service
--- role (Edge Function receptora, n8n). wa_message_id es único (CLAUDE.md regla 2).
+-- WhatsApp (Fase 4): tablas wa_conversations, wa_messages y wa_instance_status.
+-- wa_instance_status está cerrada para todo usuario logueado; anon no lee ni
+-- escribe ninguna de las tres; el service role (Edge Function receptora, n8n)
+-- lee y escribe. wa_message_id es único (CLAUDE.md regla 2).
+-- Lo que cada rol ve de conversaciones y mensajes: 35_rls_whatsapp.
 begin;
-select plan(32);
+select plan(20);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -15,26 +16,27 @@ begin
 end $$;
 
 -- Sin privilegios no hay filas: cada lectura y cada alta falla con 42501.
-create temp table closed_statements (sql text, label text);
+-- instance_only: lo único que sigue cerrado también para un usuario logueado.
+create temp table closed_statements (sql text, label text, instance_only boolean);
 insert into closed_statements values
-  ('select count(*) from public.wa_conversations', 'no lee conversaciones'),
-  ('select count(*) from public.wa_messages', 'no lee mensajes'),
-  ('select count(*) from public.wa_instance_status', 'no lee el estado de WhatsApp'),
-  ('insert into public.wa_conversations (phone) values (''+56900009999'')', 'no crea conversaciones'),
-  ('insert into public.wa_messages (conversation_id, wa_message_id, direction, type, sent_at) values (1, ''DEMO-WA-X'', ''entrante'', ''texto'', now())', 'no crea mensajes'),
-  ('insert into public.wa_instance_status (instance) values (''otra'')', 'no escribe el estado de WhatsApp');
+  ('select count(*) from public.wa_conversations', 'no lee conversaciones', false),
+  ('select count(*) from public.wa_messages', 'no lee mensajes', false),
+  ('select count(*) from public.wa_instance_status', 'no lee el estado de WhatsApp', true),
+  ('insert into public.wa_conversations (phone) values (''+56900009999'')', 'no crea conversaciones', false),
+  ('insert into public.wa_messages (conversation_id, wa_message_id, direction, type, sent_at) values (1, ''DEMO-WA-X'', ''entrante'', ''texto'', now())', 'no crea mensajes', false),
+  ('insert into public.wa_instance_status (instance) values (''otra'')', 'no escribe el estado de WhatsApp', true);
 grant select on closed_statements to authenticated, anon;
 
 select is((select count(*) from public.wa_conversations), 3::bigint, 'el seed deja 3 conversaciones');
 
 select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
-select throws_ok(sql, '42501', null, 'gerencia ' || label) from closed_statements;
+select throws_ok(sql, '42501', null, 'gerencia ' || label) from closed_statements where instance_only;
 reset role;
 select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
-select throws_ok(sql, '42501', null, 'ejecutivo ' || label) from closed_statements;
+select throws_ok(sql, '42501', null, 'ejecutivo ' || label) from closed_statements where instance_only;
 reset role;
 select pg_temp.login_as('pablo.herrera@tekfusion-demo.cl');
-select throws_ok(sql, '42501', null, 'lector ' || label) from closed_statements;
+select throws_ok(sql, '42501', null, 'lector ' || label) from closed_statements where instance_only;
 reset role;
 select set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
 set local role anon;

@@ -2,8 +2,11 @@
 -- TekFusion WhatsApp tables (Fase 4, schema only). docs/05 (conversaciones,
 -- mensajes, estado_whatsapp) and docs/07 (Receptor). Evolution -> Edge
 -- Function (service role) -> these tables; n8n never stores messages.
--- RLS is on and there are no policies yet: closed to every API role but the
--- service role until the per-role policies land (🔒 task).
+-- RLS (docs/08): conversations and messages are read-only for logged-in users
+-- (managers all; executives theirs and the unassigned ones; readers none) and
+-- written only by the service role and its RPCs. wa_instance_status stays
+-- closed to every API role but the service role.
+-- Tests: supabase/tests/32_whatsapp_tablas, 34_wa_ingest, 35_rls_whatsapp.
 --
 
 create type public.wa_direction as enum ('entrante', 'saliente');
@@ -59,6 +62,24 @@ alter table public.wa_instance_status enable row level security;
 
 create index wa_messages_conversation_sent_idx on public.wa_messages using btree (conversation_id, sent_at);
 create index wa_messages_deal_id_idx on public.wa_messages using btree (deal_id);
+-- sales_id: the executive's RLS filter and "Mis chats"; last_message_at: inbox order.
+create index wa_conversations_sales_id_idx on public.wa_conversations using btree (sales_id);
+create index wa_conversations_last_message_at_idx on public.wa_conversations using btree (last_message_at desc);
+
+-- Policies (docs/08, row "conversaciones, mensajes"). Select only: no insert,
+-- update or delete policy on purpose (service role and RPCs write; nothing is
+-- ever deleted, docs/10 decision 3). Helpers go through `(select fn())` as in
+-- deals_select (11_). Unlike deals, the role is checked on the executive
+-- branch too: a reader that still owns a conversation (demoted) sees none.
+create policy wa_conversations_select on public.wa_conversations for select to authenticated using (
+    (select public.is_manager())
+    or ((select public.current_user_role()) = 'executive'
+        and (sales_id = (select public.current_sales_id()) or sales_id is null))
+);
+-- A message is visible when its conversation is (the subquery runs under the
+-- wa_conversations RLS of the caller, like deal_notes_select).
+create policy wa_messages_select on public.wa_messages for select to authenticated
+    using (exists (select 1 from public.wa_conversations c where c.id = conversation_id));
 
 --
 -- Ingest (docs/07, Receptor). Only the service role (Edge Function) calls
@@ -137,8 +158,11 @@ $$;
 
 -- Grants live here (not in 12_): schema files load alphabetically, so 12_
 -- runs before these tables exist. Default privileges would hand authenticated
--- full DML: close them to the API roles; only the service role writes and reads.
+-- full DML: close them to the API roles; only the service role writes.
+-- authenticated gets select alone on conversations and messages (the policies
+-- above filter the rows); wa_instance_status stays without any privilege.
 revoke all on table public.wa_conversations, public.wa_messages, public.wa_instance_status from authenticated, anon;
+grant select on table public.wa_conversations, public.wa_messages to authenticated;
 grant all on table public.wa_conversations, public.wa_messages, public.wa_instance_status to service_role;
 revoke all on sequence public.wa_conversations_id_seq, public.wa_messages_id_seq, public.wa_instance_status_id_seq from authenticated, anon;
 grant all on sequence public.wa_conversations_id_seq, public.wa_messages_id_seq, public.wa_instance_status_id_seq to service_role;

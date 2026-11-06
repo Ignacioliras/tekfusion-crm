@@ -324,6 +324,20 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **Descartado:** hacer los pasos desde la Edge Function con supabase-js (varias llamadas, sin transacción); un trigger en `wa_messages` (escondería la regla y no sabría si fue reintento).
 - **Consecuencias:** un saliente sin `job_id` se toma como escrito desde el teléfono (`origin = 'telefono'`, `from_me_phone`, autor = ejecutivo de la conversación). Un saliente con `job_id` queda sin `origin` (lo completará el envío del CRM o del seguimiento). `p_instance` no se guarda todavía (un solo número corporativo). pgTAP `34_wa_ingest`.
 
+## 2026-11-06 · 🔒 Policies de WhatsApp: solo lectura por rol (cola nocturna 2026-11-06-c, T5)
+**Pendiente: revisión de `database-reviewer` antes del merge.**
+- **Decisión:** `wa_conversations` y `wa_messages` dejan de estar cerradas y pasan a **solo lectura** para usuarios logueados, según la fila "conversaciones, mensajes" de `docs/08`: gerencia ve todas; el ejecutivo, las suyas (`sales_id = current_sales_id()`) y las sin asignar (`sales_id is null`); el lector, ninguna. Un mensaje se ve si se ve su conversación (`exists` sobre `wa_conversations`, que corre bajo la RLS de quien consulta, igual que `deal_notes_select`). `authenticated` recibe **solo `select`** en esas dos tablas y no hay policy de insert, update ni delete: escriben el service role y sus RPC. `wa_instance_status` sigue sin ningún privilegio para usuarios. `anon`, nada.
+- **Motivo:** la bandeja (T9) no puede salir a `main` con las tablas cerradas, y abrirlas sin regla por rol rompería la regla dura 3 (permisos desde el día uno).
+- **Descartado:** repetir la condición por rol dentro de la policy de mensajes (dos lugares que mantener iguales); dar `update` a los usuarios sobre `unread_count`/`archived` con grants por columna (la regla de `docs/08` es que solo escriben service role y RPC).
+- **Consecuencias (mías, no confirmadas por Ignacio):**
+  - **Lector dueño de una conversación:** a diferencia de `deals_select`, la rama del ejecutivo exige el rol `executive`. Un lector que quedó con conversaciones asignadas (por ejemplo, un ejecutivo degradado) no las ve; solo gerencia.
+  - **La bandeja no puede escribir todavía:** marcar como leído al abrir, archivar, tomar o asignar una conversación fallan con 42501 desde el navegador. Cada una necesita su RPC (o la Edge Function `whatsapp-send`); no se crearon aquí.
+  - **`payload` queda legible:** el grant es por tabla, así que quien ve un mensaje también puede leer por la API su `payload` (el JSON crudo de Evolution). Si no debe salir al navegador, cambiar a grant por columnas.
+  - **Estado de conexión:** los usuarios no leen `wa_instance_status`; el aviso "WhatsApp desconectado" dentro del CRM necesitará una RPC o una policy propia.
+  - **Baja de usuario:** `offboard_sale` sigue sin reasignar conversaciones (pendiente ya anotado): las de un ejecutivo dado de baja quedan visibles solo para gerencia.
+  - Índices nuevos: `wa_conversations (sales_id)` y `wa_conversations (last_message_at desc)` (cierran el pendiente de T8).
+- **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261106164101_wa_policies.sql` (generada con `db diff`, sin los fantasmas de pg_cron, pgjwt y vistas), pgTAP `35_rls_whatsapp` (nuevo) y `32_whatsapp_tablas` (ajustado: ya no afirma que todo está cerrado para usuarios logueados).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
