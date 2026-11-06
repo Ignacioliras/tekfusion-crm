@@ -188,12 +188,12 @@
     {
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "7d90bd2648810c66cabd3e8e8e79ecd374d2b3ca",
+      "costo_usd": 1.3732880000000005,
+      "session_id": "4619974a-deda-4da4-82eb-8ad25b49eecd",
       "id": "T7",
       "titulo": "Borrar validateItemsInUse y las claves de validación de etapas sin uso",
       "descripcion": "Decisión de Ignacio (2026-11-05): se borran. Con las etapas en solo lectura (T1 del 2026-11-05), validateItemsInUse de src/components/atomic-crm/settings/SettingsPage.tsx solo la usa su test. Borrar la función, el archivo src/components/atomic-crm/settings/SettingsPage.test.ts si no le queda otro test, y las claves crm.settings.validation.* que ya nadie lee (duplicate, in_use, validating, entities.categories, entities.stages, según lo que confirme la búsqueda). Ojo: las claves en español están tipadas contra las inglesas (PartialCrmMessages de providers/commons/englishCrmMessages.ts), así que se borran en los tres idiomas: englishCrmMessages.ts, frenchCrmMessages.ts y src/lib/i18n/es/settings.ts. Antes de borrar cada clave, buscar con grep en src/ (incluidos strings armados como `${MESSAGES}.x`) que nada la use; las claves tekfusion.settings.validation.* de FollowupSettings y ReportSettings son otras y no se tocan. Si al borrar validateItemsInUse quedan imports o helpers sin uso en SettingsPage.tsx, borrarlos también.",
@@ -208,7 +208,10 @@
       "criterio": "Typecheck y lint limpios; los tests de settings pasan; validateItemsInUse no existe y grep no encuentra usos de las claves borradas.",
       "modelo": "opus",
       "esfuerzo": "high",
-      "inicio": "2026-11-06 01:58:01"
+      "inicio": "2026-11-06 01:58:01",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: borré validateItemsInUse, su test y las claves crm.settings.validation.* en los tres idiomas; typecheck, lint y tests de settings en verde.",
+      "fin": "2026-11-06 02:01:02"
     },
     {
       "depende_de": [],
