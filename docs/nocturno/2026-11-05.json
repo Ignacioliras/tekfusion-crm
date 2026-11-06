@@ -161,9 +161,7 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db && npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "db reset aplica la migración (pg_cron incluido); todos los pgTAP pasan, incluido 31_anonimizar; suite de app en verde con AnonymizeContact.test.tsx; ítem RF-17 de la Fase 3 actualizado en docs/09 (anonimizar y retención hechos; aviso de privacidad pendiente para la Fase 5).",
-      "depende_de": [
-        "T1"
-      ],
+      "depende_de": ["T1"],
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",

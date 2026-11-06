@@ -1,5 +1,6 @@
 name: ✅ Check
 on:
+    workflow_dispatch:
     push:
         branches:
             - main
@@ -94,26 +95,52 @@ jobs:
             - name: 🔎 Unit Tests on Supabase functions
               run: CI=1 npm run test:unit:functions -- --run
 
+    # E2E de TekFusion (e2e/tekfusion, playwright.tekfusion.config.ts) contra el Supabase
+    # local (puerto 54321) con el seed ficticio. Los e2e de Atomic (e2e/*.spec.ts,
+    # `make test-e2e-ci`) ya no corren: esperan la UI en inglés y el seed de Atomic.
     e2e-test:
-      timeout-minutes: 10
-      runs-on: ubuntu-latest
-      steps:
-      - name: 📥 Checkout repo
-        uses: actions/checkout@v7
+        name: 🎭 E2E TekFusion
+        timeout-minutes: 20
+        runs-on: ubuntu-latest
+        if: ${{ !github.event.pull_request.draft || github.event_name == 'push' }}
+        steps:
+            - name: 📥 Checkout repo
+              uses: actions/checkout@v7
 
-      - name: ⚙️ Setup node
-        uses: actions/setup-node@v7
-        with:
-            node-version: 24
-            cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium-headless-shell 1>/dev/null
-      - name: Install wait-on and serve
-        run: npm install -g wait-on serve
-      - name: Run Playwright tests
-        run: make test-e2e-ci
+            - name: ⚙️ Setup node
+              uses: actions/setup-node@v7
+              with:
+                  node-version: 24
+                  cache: npm
+
+            - name: 📥 Download deps
+              run: npm ci
+
+            - name: 🎭 Install Playwright browsers
+              run: npx playwright install --with-deps chromium-headless-shell 1>/dev/null
+
+            # supabase/functions/.env está en .gitignore. Se genera con los valores locales no
+            # secretos de su .env.example (la función `users`, que guarda el Perfil, lo necesita).
+            # La clave publicable sale de `supabase status`, y el edge runtime lee el archivo al
+            # crearse: por eso se levanta, se escribe el .env y se reinicia.
+            - name: 🗄️ Start Supabase + supabase/functions/.env
+              run: |
+                  npx supabase start -x studio,imgproxy,logflare,vector
+                  KEY=$(npx supabase status -o env | sed -n 's/^PUBLISHABLE_KEY="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')
+                  test -n "$KEY" || { echo "supabase status no entregó PUBLISHABLE_KEY"; exit 1; }
+                  printf '%s\n' \
+                      "SB_JWT_ISSUER=http://127.0.0.1:54321/auth/v1" \
+                      "SB_PUBLISHABLE_KEY=$KEY" \
+                      "CRM_BASE_URL=http://localhost:5180" > supabase/functions/.env
+                  npx supabase stop
+                  npx supabase start -x studio,imgproxy,logflare,vector
+
+            - name: 🎭 E2E
+              run: CI=1 npm run test:e2e
+
+            - name: 🛑 Stop Supabase
+              if: always()
+              run: npx supabase stop --no-backup
 
     build:
         name: 🔨 Build

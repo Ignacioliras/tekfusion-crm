@@ -51,9 +51,7 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run build",
       "criterio": "Compila, lint limpio, no quedan referencias a las etapas viejas de Atomic en src/ (grep -rn \"proposal-sent\\|opportunity\" src/ no devuelve nada fuera de comentarios).",
-      "depende_de": [
-        "T1"
-      ],
+      "depende_de": ["T1"],
       "necesita_supabase": false,
       "estado": "hecha",
       "intentos": 1,
@@ -70,15 +68,10 @@
       "id": "T3",
       "titulo": "Español como idioma por defecto",
       "descripcion": "Crear src/lib/i18n/es.ts con la traducción al español de Chile de TODOS los mensajes de ra-language-english (los de ra-core: ra.action.*, ra.boolean.*, ra.page.*, ra.input.*, ra.message.*, ra.navigation.*, ra.auth.*, ra.notification.*, ra.validation.*, ra.saved_queries.*, ra.configurable.*), tomando como base la estructura del paquete ra-language-english que está en node_modules (leerlo, no inventarlo). Usar tuteo cercano y claro, sin tecnicismos ('Guardar', 'Cancelar', 'No hay resultados', etc.). Luego modificar src/lib/i18nProvider.ts para que el proveedor devuelva los mensajes en español cuando el locale es 'es', que 'es' sea el locale por defecto, y que la lista de idiomas disponibles sea solo [{ name: 'es', value: 'Español' }, { name: 'en', value: 'English' }]. Mantener allowMissing: true.",
-      "archivos": [
-        "src/lib/i18n/es.ts",
-        "src/lib/i18nProvider.ts"
-      ],
+      "archivos": ["src/lib/i18n/es.ts", "src/lib/i18nProvider.ts"],
       "verificacion": "npm run typecheck && npm run lint && npm run build",
       "criterio": "Compila y al abrir la app (no hace falta probarlo esta noche) la interfaz base de react-admin aparece en español.",
-      "depende_de": [
-        "T1"
-      ],
+      "depende_de": ["T1"],
       "necesita_supabase": false,
       "estado": "hecha",
       "intentos": 1,
@@ -102,9 +95,7 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run build",
       "criterio": "Compila; existe la ruta /creditos; la página menciona Evolution API con enlace.",
-      "depende_de": [
-        "T1"
-      ],
+      "depende_de": ["T1"],
       "necesita_supabase": false,
       "estado": "hecha",
       "intentos": 1,
@@ -121,14 +112,10 @@
       "id": "T5",
       "titulo": "Seed ficticio de TekFusion",
       "descripcion": "Reemplazar el contenido de supabase/seed.sql por datos ficticios de TekFusion que respeten el esquema actual de Atomic (leer supabase/schemas/01_tables.sql y el seed actual para los nombres de columnas y el formato de sales/auth): 4 usuarios en sales (Camila Rojas y Diego Muñoz como ejecutivos, Andrea Soto gerencia, Pablo Herrera lector; correos @tekfusion-demo.cl), 12 companies (empresas chilenas inventadas de minería, construcción, agua y agro), 20 contacts, 60 deals repartidos entre las etapas nuevo/contactado/cotizado/ganado/perdido/archivado (usar los values de src/components/atomic-crm/tekfusion/estados.ts si existe; si no, esos seis strings), con fechas en los últimos 90 días, montos en CLP enteros y descripciones que mencionen válvulas, tuberías HDPE o geoceldas. Nada que parezca una empresa o persona real. Si el seed actual de Atomic crea usuarios en auth.users con una función o formato especial, seguir exactamente ese patrón.",
-      "archivos": [
-        "supabase/seed.sql"
-      ],
+      "archivos": ["supabase/seed.sql"],
       "verificacion": "npx supabase db reset --local",
       "criterio": "db reset termina sin error (si el SQL falla, el comando falla).",
-      "depende_de": [
-        "T2"
-      ],
+      "depende_de": ["T2"],
       "necesita_supabase": true,
       "estado": "hecha",
       "intentos": 1,

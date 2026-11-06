@@ -101,10 +101,7 @@
       ],
       "verificacion": "npm run typecheck:functions && npm run lint && npx vitest --config vitest.config.ts --project functions --run",
       "criterio": "Typecheck y lint limpios; handler.test.ts y el resto de los tests de functions pasan.",
-      "depende_de": [
-        "T2",
-        "T3"
-      ],
+      "depende_de": ["T2", "T3"],
       "necesita_supabase": false,
       "estado": "hecha",
       "intentos": 1,
@@ -130,9 +127,7 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db",
       "criterio": "db reset sin error y todos los pgTAP pasan, incluidos 32, 35 y 14_rls_cobertura.",
-      "depende_de": [
-        "T3"
-      ],
+      "depende_de": ["T3"],
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
@@ -159,9 +154,7 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db",
       "criterio": "db reset sin error y todos los pgTAP pasan, incluido 36_wa_rpc.",
-      "depende_de": [
-        "T5"
-      ],
+      "depende_de": ["T5"],
       "necesita_supabase": true,
       "estado": "hecha",
       "intentos": 1,
@@ -185,9 +178,7 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db",
       "criterio": "db reset sin error y todos los pgTAP pasan, incluido 37_wa_cliente_respondio.",
-      "depende_de": [
-        "T3"
-      ],
+      "depende_de": ["T3"],
       "necesita_supabase": true,
       "estado": "hecha",
       "intentos": 1,
@@ -241,9 +232,7 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db",
       "criterio": "db reset sin error y todos los pgTAP pasan, incluido 38_send_wa_message.",
-      "depende_de": [
-        "T5"
-      ],
+      "depende_de": ["T5"],
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
@@ -268,9 +257,7 @@
       ],
       "verificacion": "npm run test:e2e",
       "criterio": "npm run test:e2e pasa completo, con los tres flujos nuevos.",
-      "depende_de": [
-        "T8"
-      ],
+      "depende_de": ["T8"],
       "necesita_supabase": true,
       "estado": "hecha",
       "intentos": 1,
@@ -294,9 +281,7 @@
       ],
       "verificacion": "npx supabase db reset --local && npx supabase test db && npm run test:e2e",
       "criterio": "db reset sin error, todos los pgTAP pasan (incluida la aserción de 12 meses) y los e2e pasan.",
-      "depende_de": [
-        "T10"
-      ],
+      "depende_de": ["T10"],
       "necesita_supabase": true,
       "estado": "hecha",
       "intentos": 1,

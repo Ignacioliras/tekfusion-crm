@@ -16,7 +16,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] n8n con auth propia y credenciales de staging; Uptime Kuma con los 5 checks y 🔒 avisos a Telegram/WhatsApp de Libux.
 - [x] Repo creado sobre Atomic CRM con el kit fusionado (2026-11-03): `.env.example`, `.gitignore`, `.gitattributes`, `README.md`, hooks de Claude Code (`.claude/settings.json`), pre-commit husky + gitleaks, CI (`check.yml` + `seguridad.yml`), Dependabot, plantilla de PR.
 - [x] Atomic corriendo en local (Windows): `npm install`, `npx supabase start`, `npm run dev`, login OK. (2026-11-03, con el seed ficticio y los 4 usuarios de `docs/16`)
-- [ ] Subir a GitHub (privado) y verificar CI en verde con el esqueleto.
+- [x] Subir a GitHub (privado) y verificar CI en verde con el esqueleto. *(2026-11-06, PR fase-1/ci: prettier al día, nocturno.mjs guarda JSON formateado, job e2e con los specs de TekFusion; Check y Seguridad en verde)*
 - [ ] Limpiar lo que Atomic trae y no usamos (`doc/`, `demo/`, Storybook, registro shadcn, Postmark, `companies` si no aplica), con plan aprobado. Navegación base en español (Pipeline, Leads, WhatsApp, Dashboard, Configuración). *En progreso (2026-11-03): hechos `doc/`, Postmark, Storybook, `mcp`/OAuth, workflows guardados, navegación y español; faltan `demo/` y el registro shadcn; `companies` se queda (B2B). Estado en `docs/atomic/inventario-limpieza.md`.*
 - [ ] Conectar a Supabase staging, desplegar en Cloudflare Pages (`staging.crm.tekfusion.cl`). 🔒 Cloudflare Access delante de staging.
 - [x] Página **Créditos** (texto base) en el panel. (2026-11-03, nocturno T4: `creditos/CreditosPage.tsx`, enlazada desde el menú de usuario)
