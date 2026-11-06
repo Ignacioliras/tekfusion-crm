@@ -68,13 +68,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 05:00:57"
+      "commit": "000889ae923c4674208eb4ad22ebfa73904f6ada",
+      "costo_usd": 2.6614964000000008,
+      "session_id": "f7255c66-8506-482a-800b-ca5f24390f81",
+      "inicio": "2026-11-06 05:00:57",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: canAccess recibe el saleId y, en deals con record, solo deja editar/borrar el lead propio al ejecutivo (canEditDeal); \"Tomar\" sale del CanAccess con record y la ficha tiene tests para ejecutivo (sin asignar, propio, ajeno) y lector.",
+      "fin": "2026-11-06 05:09:35"
     },
     {
       "id": "T3",
