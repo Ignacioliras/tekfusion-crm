@@ -443,9 +443,9 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 - **Consecuencias:** un error permanente de la base (por ejemplo, un dato que viole una restricción) hace que Evolution reintente ese evento hasta agotar sus intentos. `docs/07` quedó al día.
 
 ## 2026-11-06 · El job e2e del CI corre los e2e de TekFusion, no los de Atomic
-- **Motivo:** los specs de Atomic (`e2e/*.spec.ts`, `make test-e2e-ci`) esperan la UI en inglés ("Sign in", "Save") y los usuarios del seed de Atomic (`john@doe.com`); el CRM arranca en español con el seed de TekFusion. Además el target `start-supabase-e2e` lee `supabase/functions/.env`, que no existe en CI. El job `e2e-test` de `check.yml` ahora levanta Supabase local y corre `npm run test:e2e` (`e2e/tekfusion/`), que no llama Edge Functions, así que no necesita ese `.env`.
-- **Descartado:** generar `supabase/functions/.env` en CI para el target de Atomic: la clave publicable sale de `supabase status`, que exige el stack ya levantado (habría que levantarlo dos veces) y los specs fallarían igual por los textos.
-- **Consecuencias:** los specs de Atomic, `playwright.config.ts`, `.env.e2e`, `supabase/config.e2e.toml` y los targets `*-e2e*` del makefile quedan sin uso; se propone borrarlos en un PR aparte. Si un e2e nuestro llega a llamar una Edge Function, hay que generar `supabase/functions/.env` en el job.
+- **Motivo:** los specs de Atomic (`e2e/*.spec.ts`, `make test-e2e-ci`) esperan la UI en inglés ("Sign in", "Save") y los usuarios del seed de Atomic (`john@doe.com`); el CRM arranca en español con el seed de TekFusion. Además el target `start-supabase-e2e` lee `supabase/functions/.env`, que no existe en CI. El job `e2e-test` de `check.yml` ahora levanta el Supabase local por defecto (54321), genera `supabase/functions/.env` con los valores no secretos de su `.env.example` (issuer de 54321, clave publicable de `supabase status`, `CRM_BASE_URL` del Vite de los e2e) y corre `npm run test:e2e` (`e2e/tekfusion/`). El `.env` hace falta: guardar el Perfil pasa por la función `users`.
+- **Descartado:** mantener el target de Atomic con su stack aparte (54341): los specs fallarían igual por los textos.
+- **Consecuencias:** el stack se levanta dos veces en el job (el edge runtime lee el `.env` al crearse y la clave solo existe con el stack arriba). Los specs de Atomic, `playwright.config.ts`, `.env.e2e`, `supabase/config.e2e.toml` y los targets `*-e2e*` del makefile quedan sin uso; se propone borrarlos en un PR aparte.
 
 ## Plantilla para nuevas decisiones
 ```
