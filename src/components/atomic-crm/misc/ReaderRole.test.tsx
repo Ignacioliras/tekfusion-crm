@@ -40,7 +40,8 @@ const renderAs = (role: AccessRole, path: string) =>
     <StoryWrapper
       initialEntries={[path]}
       data={data}
-      authProvider={{ canAccess: async (params) => canAccess(role, params) }}
+      // The signed-in sale (id 0) owns the lead (buildDeal's sales_id).
+      authProvider={{ canAccess: async (params) => canAccess(role, params, 0) }}
     >
       {null}
     </StoryWrapper>,
