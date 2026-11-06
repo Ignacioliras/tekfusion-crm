@@ -94,13 +94,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 05:09:36"
+      "commit": "8057c09b0e0b2d6f4cf9658a575c1b8d26ba39d2",
+      "costo_usd": 1.1096111999999998,
+      "session_id": "9d721bb3-b2b3-4ef8-a62e-a285c3de0755",
+      "inicio": "2026-11-06 05:09:36",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: la lista de contactos vacía muestra un solo botón Import CSV (el de la barra) y el test pasa 3 de 3 corridas sin `.first()` ni cuarentena.",
+      "fin": "2026-11-06 05:13:42"
     },
     {
       "id": "T4",
