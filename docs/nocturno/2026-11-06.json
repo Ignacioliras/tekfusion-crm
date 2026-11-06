@@ -44,12 +44,12 @@
     {
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "6c6769df3d5a1c2b75f8a555dca8f2d982cc3942",
+      "costo_usd": 1.8764100000000001,
+      "session_id": "1798b857-f2e2-4c71-8dce-85e7c766f701",
       "id": "T2",
       "titulo": "Suma pura del resumen y getDashboardSummary / getSalesRankingSummary en los dos data providers",
       "descripcion": "Espejo en TypeScript de las funciones de T1, para FakeRest y para los tests. (1) Tipos en src/components/atomic-crm/types.ts: DashboardSummaryRow (los campos de DashboardDailyRow sin id ni day, más month: string 'YYYY-MM-DD' con el primer día del mes) y SalesRankingSummaryRow (sales_id y los totales de SalesRankingRow, sin id ni day). (2) Nuevo src/components/atomic-crm/management-dashboard/summary.ts, puro y sin React: summarizeDashboard(rows: DashboardDailyRow[], range: DayRange): DashboardSummaryRow[] y summarizeSalesRanking(rows: SalesRankingRow[], range: DayRange): SalesRankingSummaryRow[], con la misma agregación que la base (filtra day dentro del rango inclusive, agrupa por mes × línea × canal o por ejecutivo, promedios ponderados por responded / leads_attended redondeados a 2 decimales, null si el divisor es 0). DayRange ya existe en src/components/atomic-crm/management-dashboard/metrics.ts. (3) Métodos getDashboardSummary(range: DayRange) y getSalesRankingSummary(range: DayRange) en el tipo CrmDataProvider (definido en providers/supabase/dataProvider.ts; providers/types.ts solo lo reexporta), en providers/supabase/dataProvider.ts vía getSupabaseClient().rpc('dashboard_summary' | 'sales_ranking_summary', { date_from, date_to }) lanzando el error si viene (mismo patrón que log_export / take_deal), y en providers/fakerest/leadMethods.ts calculándolos con summary.ts sobre getList de dashboard_daily y sales_ranking (todas las filas). En FakeRest el ranking se devuelve solo si canAccess deja listar sales; si no, []. (4) Test src/components/atomic-crm/management-dashboard/summary.test.ts: suma por mes, línea y canal; respeta los bordes del rango; promedio ponderado (y null sin respondidos); ranking por ejecutivo. Todavía no cambiar ManagementDashboard ni SalesRanking.",
@@ -63,7 +63,10 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/management-dashboard/summary.test.ts",
       "criterio": "Typecheck y lint limpios; summary.test.ts pasa; los dos data providers exponen los dos métodos con la misma firma.",
-      "inicio": "2026-11-06 01:30:33"
+      "inicio": "2026-11-06 01:30:33",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: tipos de resumen, summary.ts puro con su test, y getDashboardSummary/getSalesRankingSummary con la misma firma en los data providers de Supabase (RPC) y FakeRest (summary.ts, ranking solo con canAccess de sales).",
+      "fin": "2026-11-06 01:35:38"
     },
     {
       "depende_de": [
