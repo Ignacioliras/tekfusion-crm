@@ -105,12 +105,12 @@
         "T3"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "c0723019f37f4525e5600303aa8daf032eb9cf23",
+      "costo_usd": 2.0385346,
+      "session_id": "8d3c5517-9141-4d29-a11b-e35385cda3be",
       "id": "T4",
       "titulo": "SalesRanking sobre sales_ranking_summary y documentación del dashboard sumado",
       "descripcion": "src/components/atomic-crm/management-dashboard/SalesRanking.tsx deja de pedir sales_ranking con useGetList y usa dataProvider.getSalesRankingSummary(range) con useQuery (enabled solo para gerencia, como hoy con useCanAccess sales/list: ejecutivo y lector no consultan nada y no ven la sección). Quitar su MAX_ROWS y el comentario ponytail del tope. rankSales de metrics.ts pasa a ordenar filas ya sumadas (SalesRankingSummaryRow) por won_amount, sin filtrar por rango. Ajustar src/components/atomic-crm/management-dashboard/SalesRanking.test.tsx y los fixtures que use. Documentación: en docs/05-modelo-datos.md, sección de vistas, agregar dashboard_summary y sales_ranking_summary (qué suman, por qué existen: el tope de max_rows, y que son security invoker); en docs/09-plan-fases.md, Fase 6, marcar [x] 'Dashboard con filtros de fecha; versión sin ranking para ejecutivo/lector' con una nota corta de lo hecho (funciones por rango, frontend sin tope de filas).",
@@ -125,7 +125,10 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Suite de app completa en verde; SalesRanking ya no consulta sales_ranking ni tiene MAX_ROWS; docs/05 describe las dos funciones; el ítem de la Fase 6 queda [x].",
-      "inicio": "2026-11-06 01:40:07"
+      "inicio": "2026-11-06 01:40:07",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: SalesRanking usa getSalesRankingSummary con useQuery solo para gerencia (sin MAX_ROWS), rankSales ordena las filas sumadas, fixtures/tests ajustados y docs 05/09 actualizados; suite de app en verde.",
+      "fin": "2026-11-06 01:50:32"
     },
     {
       "depende_de": [],
