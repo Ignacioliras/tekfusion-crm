@@ -571,3 +571,124 @@ where m.conversation_id = w.id;
 
 insert into public.wa_instance_status (instance, connected, last_event) values
     ('tekfusion-demo', true, '{"event": "connection.update", "state": "open"}');
+
+-- ---------------------------------------------------------------------
+-- Historia de 12 meses para el dashboard y el ranking (T11). Va al final
+-- para no mover nada de lo de arriba (cotizaciones, seguimientos, alertas y
+-- WhatsApp eligen sus leads por etapa y por id entre los 60 recientes).
+-- * 137 leads cerrados, uno cada 2 días entre 92 y 364 días atrás: ganados
+--   (con monto), perdidos (con motivo) y archivados; línea, canal y
+--   ejecutivo (el dueño de la línea) rotan. Un lead por día y horas de
+--   primera respuesta enteras: así el promedio diario de dashboard_daily y
+--   sales_ranking es exacto y el ponderado por mes cuadra en los pgTAP.
+-- * Todos quedan con archived_at (los ganados y perdidos, 7 días después del
+--   cierre, como el botón "Archivar" de la ficha, que no cambia la etapa):
+--   el kanban (tope de 100 tarjetas) sigue mostrando solo los recientes; con
+--   los históricos a la vista se llena y guardar un lead tarda segundos.
+-- * 2 leads nuevos creados "ahora": el mes en curso siempre tiene datos,
+--   aunque el seed se cargue un día 1.
+-- * Cotización enviada en cada ganado y perdido, tareas cumplidas y
+--   alertas ya leídas (no cambian la campana ni los pendientes).
+-- ---------------------------------------------------------------------
+insert into public.deals (name, company_id, contact_ids, stage, description, amount, created_at, updated_at,
+                          archived_at, expected_closing_date, sales_id, index, business_line, origin_channel,
+                          ai_confidence, won_amount, lost_reason_id, first_response_at, last_activity_at, closed_at)
+select
+    h.name, h.company_id,
+    (select array_agg(ct.id order by ct.id) from public.contacts ct where ct.company_id = h.company_id),
+    h.stage, h.description, h.amount, h.created_at,
+    h.archived_at, h.archived_at,
+    (h.created_at + interval '30 days')::date,
+    (select owner_sales_id from public.business_lines where code = h.line),
+    0, h.line, h.channel,
+    case when h.channel = 'manual' then null else 0.70 + ((h.k * 7) % 30) / 100.0 end,
+    case when h.stage = 'ganado' then h.amount end,
+    case when h.stage = 'perdido'
+         then (select id from public.lost_reasons order by position offset (h.k % 5) limit 1) end,
+    h.first_response_at,
+    h.archived_at,
+    h.closed_at
+from (
+    select b.*,
+           -- archivados: la mitad nunca se contactó (quedó en nuevo 14 días + 48 h)
+           case when b.stage = 'archivado' and b.k % 2 = 0 then null
+                else b.created_at + (((b.k * 7) % 30 + 1) || ' hours')::interval end as first_response_at,
+           case when b.stage in ('ganado', 'perdido')
+                then b.created_at + ((10 + b.k % 40) || ' days')::interval end as closed_at,
+           case when b.stage = 'archivado'
+                then b.created_at + ((16 + b.k % 10) || ' days')::interval
+                else b.created_at + ((17 + b.k % 40) || ' days')::interval end as archived_at
+    from (
+        select g.k,
+               l.line::public.business_line as line,
+               (array['correo','formulario','whatsapp','manual','bot'])[(g.k / 3) % 5 + 1]::public.origin_channel as channel,
+               case when g.k % 20 < 6 then 'ganado' when g.k % 20 < 13 then 'perdido' else 'archivado' end as stage,
+               l.names[(g.k / 3) % 3 + 1] as name,
+               l.descriptions[(g.k / 3) % 3 + 1] as description,
+               (800 + (g.k * 7919) % 47200) * 1000::bigint as amount,
+               now() - ((2 * g.k) || ' days')::interval as created_at,
+               (select array_agg(id order by id) from public.companies) [(g.k * 7) % 12 + 1] as company_id
+        from generate_series(46, 182) as g(k)
+        join (values
+            (0, 'valvulas',
+             array['Válvulas mariposa DN300 para planta', 'Válvulas de compuerta DN100 para APR', 'Válvulas de bola 1 pulgada inox'],
+             array['Recambio de válvulas mariposa con actuador eléctrico.', 'Válvulas de corte para ampliación de red rural.', 'Válvulas de bola inoxidable para línea de químicos.']),
+            (1, 'tuberias',
+             array['Tubería HDPE PE100 SDR11 de 160 mm', 'Tubería PVC C10 de 110 mm para riego', 'Tubería HDPE para impulsión de agua'],
+             array['Tiras de 12 m con fittings de electrofusión.', 'Conducción de riego tecnificado con uniones cementar.', 'Línea de impulsión de 2 km, PN10.']),
+            (2, 'geoceldas',
+             array['Geoceldas para talud de relleno', 'Geoceldas para camino forestal', 'Geomembrana HDPE para tranque'],
+             array['Estabilización de talud de 4 m con geocelda de 100 mm.', 'Confinamiento de base granular en camino de 800 m.', 'Impermeabilización de tranque de riego de 3.000 m2.'])
+        ) as l(n, line, names, descriptions) on l.n = g.k % 3
+    ) b
+) h
+order by h.k desc;
+
+insert into public.deals (name, company_id, contact_ids, stage, description, amount, created_at, updated_at,
+                          expected_closing_date, sales_id, index, business_line, origin_channel, ai_confidence, last_activity_at)
+select n.name, co.id,
+       (select array_agg(ct.id order by ct.id) from public.contacts ct where ct.company_id = co.id),
+       'nuevo', n.description, n.amount, now(), now(), (now() + interval '30 days')::date,
+       (select owner_sales_id from public.business_lines where code = n.line::public.business_line),
+       10, n.line::public.business_line, n.channel::public.origin_channel, 0.85, now()
+from (values
+    ('Válvulas check DN80 para pozo',    'Consulta recién llegada por el formulario web.', 2400000, 'valvulas', 'formulario', 3),
+    ('Tubería HDPE de 90 mm para matriz', 'Consulta recién llegada por WhatsApp.',          5600000, 'tuberias', 'whatsapp',   8)
+) as n(name, description, amount, line, channel, company_n)
+join lateral (select id from public.companies order by id offset n.company_n - 1 limit 1) co on true;
+
+-- Cotización enviada (v1 vigente) en cada ganado y perdido histórico.
+insert into public.quotes (deal_id, version, amount, pdf_path, is_current, sent_at, sent_channels, delivery_status, sales_id, created_at)
+select d.id, 1, d.amount,
+       format('deals/%s/%s.pdf', d.id, gen_random_uuid()),
+       true,
+       d.created_at + interval '5 days',
+       case d.id % 3 when 0 then array['correo'] when 1 then array['whatsapp'] else array['correo', 'whatsapp'] end::public.send_channel[],
+       (array['entregado', 'leido'])[d.id % 2 + 1]::public.delivery_status,
+       d.sales_id, d.created_at + interval '5 days' - interval '1 hour'
+from public.deals d
+where d.created_at < now() - interval '90 days' and d.stage in ('ganado', 'perdido');
+
+-- Tareas cumplidas: un primer contacto en uno de cada dos históricos, sobre
+-- el primer contacto del lead y a nombre del dueño de ese contacto.
+insert into public.tasks (contact_id, type, text, due_date, done_date, sales_id, created_at)
+select c.id, (array['call', 'email', 'follow-up'])[d.id % 3 + 1],
+       'Primer contacto: ' || d.name,
+       d.created_at + interval '1 day', d.created_at + interval '1 day 2 hours',
+       c.sales_id, d.created_at
+from public.deals d
+join public.contacts c on c.id = d.contact_ids[1]
+where d.created_at < now() - interval '90 days' and d.id % 2 = 0;
+
+-- Alertas ya leídas: sin contacto en 24 h (al dueño) y por archivar (a gerencia).
+insert into public.alerts (type, recipient_sales_id, deal_id, message, read_at, created_at)
+select 'sin_contacto_24h'::public.alert_type, d.sales_id, d.id, 'Lead sin contacto hace más de 24 h',
+       d.created_at + interval '26 hours', d.created_at + interval '24 hours'
+from public.deals d
+where d.created_at < now() - interval '90 days' and (d.first_response_at is null or d.first_response_at - d.created_at > interval '24 hours')
+union all
+select 'por_archivar'::public.alert_type, (select id from public.sales where email = 'andrea.soto@tekfusion-demo.cl'), d.id,
+       'Lead con 14 días en nuevo: se archivará en 48 h',
+       d.archived_at - interval '1 day', d.archived_at - interval '48 hours'
+from public.deals d
+where d.created_at < now() - interval '90 days' and d.stage = 'archivado' and d.first_response_at is null;

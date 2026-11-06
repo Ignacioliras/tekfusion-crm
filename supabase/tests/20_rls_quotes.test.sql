@@ -22,7 +22,9 @@ select
   (select min(d.id) from public.deals d where d.sales_id = (select camila from fx) and d.stage = 'cotizado') as own_deal,
   (select min(d.id) from public.deals d where d.sales_id = (select diego from fx) and d.stage = 'cotizado') as foreign_deal,
   (select min(qq.id) from public.quotes qq join public.deals d on d.id = qq.deal_id where d.sales_id = (select diego from fx)) as foreign_quote,
-  (select count(*) from public.quotes qq join public.deals d on d.id = qq.deal_id where d.sales_id = (select camila from fx)) as camila_quotes;
+  (select count(*) from public.quotes qq join public.deals d on d.id = qq.deal_id where d.sales_id = (select camila from fx)) as camila_quotes,
+  -- total contado como postgres (sin RLS): el seed de 12 meses (T11) cambia la cifra
+  (select count(*) from public.quotes) as all_quotes;
 grant select on fx, q to authenticated;
 
 insert into storage.objects (bucket_id, name) values
@@ -37,11 +39,11 @@ select is((select count(*) from public.quotes), (select camila_quotes from q),
 reset role;
 
 select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
-select is((select count(*) from public.quotes), 15::bigint, 'gerencia ve todas las cotizaciones');
+select is((select count(*) from public.quotes), (select all_quotes from q), 'gerencia ve todas las cotizaciones');
 reset role;
 
 select pg_temp.login_as('pablo.herrera@tekfusion-demo.cl');
-select is((select count(*) from public.quotes), 15::bigint, 'lector ve todas las cotizaciones');
+select is((select count(*) from public.quotes), (select all_quotes from q), 'lector ve todas las cotizaciones');
 select throws_ok(format('insert into public.quotes (deal_id, version, amount, pdf_path) values (%s, 9, 1000, %L)',
     (select own_deal from q), format('deals/%s/00000000-0000-4000-8000-000000000009.pdf', (select own_deal from q))),
   '42501', null, 'lector no crea cotizaciones');

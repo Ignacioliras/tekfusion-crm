@@ -3,7 +3,7 @@
 -- seed; un rango de un día trae solo ese día; el ranking es solo de gerencia;
 -- anon no ejecuta ninguna de las dos.
 begin;
-select plan(17);
+select plan(18);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -53,6 +53,15 @@ select is(
     where s.avg_first_response_hours is not distinct from e.avg_hours),
   (select count(*) from expected_groups),
   'avg_first_response_hours ponderado por responded = promedio directo de cada grupo');
+
+-- Últimos 12 meses (del primer día del mes de hace 11 meses a hoy): el seed
+-- trae leads en cada uno de los 12 meses, con fechas relativas a now().
+select is(
+  (select count(distinct month) filter (where leads > 0)
+     from public.dashboard_summary(
+       (date_trunc('month', (now() at time zone 'America/Santiago')::date::timestamp) - interval '11 months')::date,
+       (now() at time zone 'America/Santiago')::date)),
+  12::bigint, 'últimos 12 meses: hay leads en cada uno de los 12 meses');
 
 -- (b) un rango de un solo día trae solo lo de ese día --------------------------
 select is(

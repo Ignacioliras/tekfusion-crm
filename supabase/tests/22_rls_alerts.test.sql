@@ -21,7 +21,9 @@ create temp table a as
 select
   (select min(id) from public.alerts where recipient_sales_id = (select camila from fx) and read_at is null) as own_alert,
   (select min(id) from public.alerts where recipient_sales_id = (select diego from fx) and read_at is null) as foreign_alert,
-  (select count(*) from public.alerts where recipient_sales_id = (select camila from fx)) as camila_alerts;
+  (select count(*) from public.alerts where recipient_sales_id = (select camila from fx)) as camila_alerts,
+  -- total contado como postgres (sin RLS): el seed de 12 meses (T11) cambia la cifra
+  (select count(*) from public.alerts) as all_alerts;
 grant select on fx, a to authenticated, service_role;
 
 -- Lectura ----------------------------------------------------------------------
@@ -30,7 +32,7 @@ select ok((select camila_alerts from a) > 0, 'el seed deja alertas a Camila');
 select is((select count(*) from public.alerts), (select camila_alerts from a), 'ejecutivo ve solo sus alertas');
 reset role;
 select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
-select is((select count(*) from public.alerts), 10::bigint, 'gerencia ve todas las alertas');
+select is((select count(*) from public.alerts), (select all_alerts from a), 'gerencia ve todas las alertas');
 reset role;
 select pg_temp.login_as('pablo.herrera@tekfusion-demo.cl');
 select is((select count(*) from public.alerts), 0::bigint, 'lector no ve alertas ajenas');
