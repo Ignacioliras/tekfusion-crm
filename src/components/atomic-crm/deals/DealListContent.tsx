@@ -1,6 +1,12 @@
 import { DragDropContext, type OnDragEndResponder } from "@hello-pangea/dnd";
 import isEqual from "lodash/isEqual";
-import { useDataProvider, useListContext, type DataProvider } from "ra-core";
+import {
+  useCanAccess,
+  useDataProvider,
+  useGetIdentity,
+  useListContext,
+  type DataProvider,
+} from "ra-core";
 import { useEffect, useState } from "react";
 
 import {
@@ -20,6 +26,15 @@ export const DealListContent = () => {
   const { dealStages } = useConfigurationContext();
   const { data: unorderedDeals, isPending, refetch } = useListContext<Deal>();
   const dataProvider = useDataProvider();
+  const { identity } = useGetIdentity();
+  // Managers shift every lead of the column; an executive only theirs, since
+  // RLS refuses the update of someone else's lead or an unassigned one.
+  const { canAccess: isManager = false } = useCanAccess({
+    resource: "sales",
+    action: "list",
+  });
+  const canReorder = (deal: Deal) =>
+    isManager || deal.sales_id === identity?.id;
 
   const [dealsByStage, setDealsByStage] = useState<DealsByStage>(
     getDealsByStage([], dealStages),
@@ -83,6 +98,7 @@ export const DealListContent = () => {
         sourceDeal,
         destinationDeal,
         dataProvider,
+        canReorder,
         extra,
       ).then(() => {
         refetch();
@@ -182,6 +198,8 @@ const updateDealStage = async (
     index?: number; // undefined if dropped after the last item
   },
   dataProvider: DataProvider,
+  // Whether the user may shift this neighbour's index (the moved deal always moves).
+  canReorder: (deal: Deal) => boolean,
   // Columns written with the move: won_amount / lost_reason_id when closing.
   extra: Partial<Deal> = {},
 ) => {
@@ -205,7 +223,9 @@ const updateDealStage = async (
         ...columnDeals
           .filter(
             (deal) =>
-              deal.index >= destinationIndex && deal.index < source.index,
+              canReorder(deal) &&
+              deal.index >= destinationIndex &&
+              deal.index < source.index,
           )
           .map((deal) =>
             dataProvider.update("deals", {
@@ -231,7 +251,9 @@ const updateDealStage = async (
         ...columnDeals
           .filter(
             (deal) =>
-              deal.index <= destinationIndex && deal.index > source.index,
+              canReorder(deal) &&
+              deal.index <= destinationIndex &&
+              deal.index > source.index,
           )
           .map((deal) =>
             dataProvider.update("deals", {
@@ -269,7 +291,7 @@ const updateDealStage = async (
     await Promise.all([
       // decrease index on the deals after the source index in the source columns
       ...sourceDeals
-        .filter((deal) => deal.index > source.index)
+        .filter((deal) => canReorder(deal) && deal.index > source.index)
         .map((deal) =>
           dataProvider.update("deals", {
             id: deal.id,
@@ -279,7 +301,7 @@ const updateDealStage = async (
         ),
       // increase index on the deals after the destination index in the destination columns
       ...destinationDeals
-        .filter((deal) => deal.index >= destinationIndex)
+        .filter((deal) => canReorder(deal) && deal.index >= destinationIndex)
         .map((deal) =>
           dataProvider.update("deals", {
             id: deal.id,
