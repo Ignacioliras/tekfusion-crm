@@ -17,12 +17,12 @@
     {
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "a2c2603ff247bd7f4e847169d9357c11268be9a9",
+      "costo_usd": 1.6331512000000001,
+      "session_id": "d100c2a4-e1e1-4913-a8f1-6fe782c002f8",
       "id": "T1",
       "titulo": "Dashboard sumado en la base: dashboard_summary y sales_ranking_summary por rango, con pgTAP",
       "descripcion": "Decisión de Ignacio del 2026-11-05 (docs/10): ningún rango del dashboard puede chocar con el tope de filas de PostgREST (max_rows = 1000 en supabase/config.toml). Solo base de datos en esta tarea; el frontend va en T2–T4. En supabase/schemas/13_tekfusion_dashboard.sql agregar: (1) public.dashboard_summary(date_from date, date_to date) RETURNS TABLE(month date, business_line public.business_line, origin_channel public.origin_channel, leads bigint, contacted bigint, quoted bigint, won bigint, lost bigint, archived bigint, responded bigint, first_response_within_24h bigint, avg_first_response_hours numeric, quoted_amount bigint, won_amount bigint), LANGUAGE sql STABLE SECURITY INVOKER, SET search_path TO '', que suma las filas de public.dashboard_daily con day entre date_from y date_to (ambos inclusive) agrupadas por (date_trunc('month', day)::date, business_line, origin_channel); month es el primer día del mes; avg_first_response_hours se pondera por responded: round(sum(avg_first_response_hours * responded) / nullif(sum(responded), 0), 2). Así el resultado tiene a lo más meses × 4 líneas × 6 canales filas. (2) public.sales_ranking_summary(date_from date, date_to date) RETURNS TABLE(sales_id bigint, leads bigint, leads_attended bigint, avg_first_response_hours numeric, quotes_sent bigint, won bigint, won_amount bigint, lost bigint), mismo estilo, que suma public.sales_ranking (una fila por ejecutivo; promedio ponderado por leads_attended). Al ser security invoker sobre las vistas, ejecutivo y lector reciben 0 filas del ranking como hoy. Grants en supabase/schemas/12_tekfusion_grants.sql: revoke execute from public, anon; grant execute to authenticated, service_role. Migración escrita a mano en supabase/migrations/20261106120000_dashboard_suma_en_base.sql con las dos funciones y sus grants (db diff no emite grants de funciones; ver aprendizajes.md). Las funciones del esquema en formato pg_dump: comparar con `npx supabase db dump --local --schema public` y dejarlas idénticas para que no haya diff fantasma. pgTAP nuevo supabase/tests/30_dashboard_summary.test.sql (mismo estilo que 25_dashboard_daily y 26_sales_ranking, con login_as en aal2 para gerencia): sobre todo el rango del seed, la suma de leads, won, lost, quoted_amount y won_amount de dashboard_summary cuadra con count/sum directos sobre deals y quotes (castear sum(...)::bigint); un rango de un solo día devuelve solo lo de ese día; el promedio ponderado cuadra con el cálculo directo; sales_ranking_summary cuadra por ejecutivo con la suma de sales_ranking; ejecutivo y lector reciben 0 filas de sales_ranking_summary; anon no tiene execute en ninguna de las dos. No tocar src/.",
@@ -36,7 +36,10 @@
       "criterio": "db reset aplica la migración nueva; todos los pgTAP pasan, incluido 30_dashboard_summary; ningún archivo de src/ cambia.",
       "modelo": "opus",
       "esfuerzo": "high",
-      "inicio": "2026-11-06 01:25:41"
+      "inicio": "2026-11-06 01:25:41",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: agregué dashboard_summary y sales_ranking_summary (esquema 13_, migración 20261106120000 y pgTAP 30_dashboard_summary); db reset y los 362 tests pgTAP pasan.",
+      "fin": "2026-11-06 01:30:33"
     },
     {
       "depende_de": [],
