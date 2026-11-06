@@ -357,13 +357,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 06:20:40"
+      "commit": "3c689bdf52b5ab3586958dfedfb9b89a7c05cfa5",
+      "costo_usd": 2.774784,
+      "session_id": "42ea9dc8-35f7-4d81-9ba8-647270cea079",
+      "inicio": "2026-11-06 06:20:40",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Escribí el borrador de docs/manual-ejecutivo.md con los textos reales de la interfaz, lo de WhatsApp, correo y alertas automáticas marcado como pendiente Fase 4/5, y pasa prettier.",
+      "fin": "2026-11-06 06:24:06"
     }
   ],
   "corridas": [
