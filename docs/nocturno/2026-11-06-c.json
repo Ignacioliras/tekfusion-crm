@@ -163,13 +163,16 @@
         "T5"
       ],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:44:51"
+      "commit": "c533cfa8a8e6c68a6a84ff0916ee570747d6e268",
+      "costo_usd": 1.5285121999999998,
+      "session_id": "d7162168-93d2-4cde-a623-99e3be29e8dc",
+      "inicio": "2026-11-06 16:44:51",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: RPC take_wa_conversation y mark_wa_conversation_read (sin asignar → 0) con migración limpia, pgTAP 36_wa_rpc y decisión en docs/10.",
+      "fin": "2026-11-06 16:49:32"
     },
     {
       "id": "T7",
