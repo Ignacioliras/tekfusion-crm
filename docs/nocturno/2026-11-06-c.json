@@ -136,13 +136,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:39:05"
+      "commit": "b449aad6504c1bb6a4ed2a9f582042637673c52b",
+      "costo_usd": 4.426131,
+      "session_id": "d78c61c0-1162-40fa-b2f0-5a0da702b0c6",
+      "inicio": "2026-11-06 16:39:05",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: policies de solo lectura por rol en wa_conversations y wa_messages, con grant select, índices, migración limpia, pgTAP 35 nuevo y 32 ajustado; db reset y los 477 tests pasan.",
+      "fin": "2026-11-06 16:44:50"
     },
     {
       "id": "T6",
