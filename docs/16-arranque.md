@@ -21,7 +21,14 @@ npm run dev
 - [ ] Abre http://localhost:5173 → entra con un usuario del seed ficticio (`andrea.soto@tekfusion-demo.cl`, administradora; o `camila.rojas@tekfusion-demo.cl`, ejecutiva; clave `demo-tekfusion`). Si ves el CRM en español con leads de válvulas, tuberías y geoceldas, está sano.
 - [ ] Supabase Studio local (la base de datos por dentro): http://127.0.0.1:54323
 
-No hace falta copiar claves del frontend: `.env.development` (de Atomic) ya apunta al Supabase local. Para las Edge Functions en local, copia `supabase/functions/.env.example` a `supabase/functions/.env` y completa `SB_PUBLISHABLE_KEY` con el valor "Publishable" de `npx supabase status`.
+No hace falta copiar claves del frontend: `.env.development` (de Atomic) ya apunta al Supabase local.
+
+- [ ] **Edge Functions en local:** crea `supabase/functions/.env` (ignorado por git; parte de `supabase/functions/.env.example`) con estas tres variables:
+  - `SB_JWT_ISSUER=http://127.0.0.1:54321/auth/v1`: sin ella, las funciones rechazan todo token con "unexpected iss claim value".
+  - `SB_PUBLISHABLE_KEY=`: el valor "Publishable" de `npx supabase status`.
+  - `CRM_BASE_URL=http://localhost:5173`: viene de Atomic; hoy ninguna función nuestra la usa.
+
+  Después: `npx supabase stop && npx supabase start` (las funciones leen el archivo al arrancar). Ojo: si Docker Desktop se reinicia, el contenedor de Edge Functions es el único que no vuelve solo (`restart=no`); se levanta con el mismo `stop` + `start`.
 
 Si solo quieres mirar sin base de datos: `npm run dev:demo` (datos falsos en el navegador).
 

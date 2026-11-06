@@ -48,6 +48,21 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [x] Completar `offboard_sale` ("Dar de baja"): reasignar también contactos y tareas del usuario, y un suplente por línea cuando tiene varias (hoy todos los leads van al suplente de la primera línea). Hallazgos Info de la revisión, `docs/10`. *Hecho (2026-11-05, fase-3/ajustes; T2 de la cola nocturna 2026-11-04, que falló de noche): cada lead abierto al suplente de su línea (o al de la primera línea), contactos al que recibió la mayoría de sus leads, tareas pendientes con su contacto, cada línea a su suplente; audit_log con leads, contactos y tareas. Migración `offboard_suplente_por_linea`, pgTAP `28_baja_por_linea` (el 17 sigue igual).*
 - [x] Tests e2e (Playwright) de: login, crear lead, mover en kanban, enviar cotización con seed. *Hecho (2026-11-05, nocturno T6): `npm run test:e2e` (`scripts/tekfusion/e2e.mjs` + `playwright.tekfusion.config.ts`, specs en `e2e/tekfusion/`) como Camila: crear lead manual, perderlo con el diálogo (motivo obligatorio → Precio), enviar cotización por correo con PDF (pasa a Cotizado) y programar un seguimiento con plantilla. El cierre en kanban por arrastre queda en el test de componente `CloseDeal.test.tsx`. El e2e destapó un bug: al crear un lead, una ejecutiva no podía reordenar los leads sin asignar (RLS) y el alta no redirigía; `DealCreate` ahora solo reordena los que puede editar.*
 
+### Cola nocturna 2026-11-06-b (mergeada a `main` el 2026-11-06; decisiones en `docs/10`)
+- [x] T1 (2026-11-06): kanban, un ejecutivo no arrastra leads ajenos ni sin asignar; regla única en `deals/canEditDeal.ts`.
+- [x] T2 (2026-11-06): ficha de un lead sin asignar, el ejecutivo solo ve **Tomar** (`canAccess` recibe el record). Falta esconder "Agregar una nota", que la base rechaza.
+- [x] T3 (2026-11-06): test intermitente de `ContactList` arreglado; "Import CSV" solo en la barra de la lista.
+- [x] T4 (2026-11-06): limpieza de avisos: `.eslintignore` borrado, `__dirname` en `vite.config.ts`, fecha del builder de deals.
+- [x] T5 (2026-11-06): `npm run typecheck` incluye `supabase/functions` (`typecheck:functions`, stubs en `deno.d.ts`).
+- [x] T6 (2026-11-06): Dashboard con `React.lazy`; chunk principal de 2,71 a 1,13 MB; tope de 1,2 MB en `scripts/tekfusion/bundle-check.mjs` (a mano, no en CI).
+- [x] T7 (2026-11-06): textos en inglés de contactos, empresas, tareas y notas pasados a `tekfusion.*` en español.
+- [x] T10 (2026-11-06): e2e como Andrea con TOTP: entrar, dashboard y ranking, cadencia y usuarios (`e2e/tekfusion/andrea.spec.ts`).
+- [x] T11 (2026-11-06): `scripts/tekfusion/respaldo.mjs`, respaldo local con `--probar` (11,9 s en la revisión). Ver el 🔒 12 de la Fase 5.
+- [x] T12 (2026-11-06): `weekly_report_data(week_start)` con los siete datos de RF-12, solo gerencia con aal2 (pgTAP `33_weekly_report`). Abierto: n8n (`service_role`) recibe 42501 y el flujo 09 no puede leerla todavía.
+- [x] T13 (2026-11-06): borrador de `docs/manual-ejecutivo.md` (lo que existe hoy; lo de Fases 4/5 marcado como pendiente).
+- [ ] T8: e2e como Camila (alerta leída, importar `deals_sample.csv`, firma en Perfil). Bloqueada: un 403 cierra la sesión (el `authProvider` lo trata como sesión vencida). Ya resuelto: importar es solo gerencia (el paso de importar pasa a Andrea) y las Edge Functions corren en local (`supabase/functions/.env`).
+- [ ] T9: seed de demo con 12 meses de leads por línea y canal. Espera a T8 (mismo bloqueo del 403).
+
 ## Fase 4 · Bandeja de WhatsApp (6 días)
 - [ ] Edge Function `whatsapp-webhook` con validación `apikey`, zod, idempotencia, adjuntos a Storage, creación de conversación y disparo del flujo 02. Tests escritos antes (TDD).
 - [ ] Validar con zod la entrada de la Edge Function `users` (POST, PATCH, DELETE), con el mismo `_shared` que use `whatsapp-webhook` (hallazgo B6 de la revisión de seguridad, `docs/10`).
@@ -64,7 +79,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] 04 Detector de respuestas por correo (IMAP VíaRed por ejecutivo).
 - [ ] 05 Alertas 24/48 h. 06 Archivado. 07 Ganado → facturación.
 - [ ] 08 Monitoreo WhatsApp. 09 Reporte semanal. 10 Reconciliación. 11 Avisos al ejecutivo.
-- [ ] 🔒 12 Respaldos: `pg_dump` semanal y Storage a R2; `rclone` diario del VPS a R2.
+- [ ] 🔒 12 Respaldos: `pg_dump` semanal y Storage a R2; `rclone` diario del VPS a R2. *Avance (2026-11-06, nocturno T11): `scripts/tekfusion/respaldo.mjs` cubre **solo la parte local**: `pg_dump` del Supabase local y, con `--probar`, restauración en una base temporal con comparación de conteos (11,9 s). No toca staging ni producción, no sube a R2 (bloque comentado con TODO), no respalda Storage ni el VPS, no restaura `pg_cron` y no rota `backups/`. Sigue abierto.*
 - [ ] Exportar todos los flujos a `n8n/flows/`. Prueba de reejecución sin duplicados.
 - [ ] 🔒 **Prueba de restauración con reloj** en staging (base + Storage + n8n + Evolution). Anotar tiempos en `10-decisiones.md`.
 - [ ] Medir precisión del clasificador con los 50 correos etiquetados por TekFusion (objetivo ≥ 90 % en línea correcta; si no, ajustar prompt/palabras clave).
