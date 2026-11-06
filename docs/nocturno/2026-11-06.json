@@ -1,0 +1,135 @@
+{
+  "fecha": "2026-11-06",
+  "fase": 6,
+  "modelo": "opus",
+  "esfuerzo": "high",
+  "limites": {
+    "turnos_por_tarea": 60,
+    "usd_por_tarea": 6,
+    "usd_total": 25,
+    "hora_fin": "07:00",
+    "intentos": 2,
+    "minutos_verificacion": 15,
+    "modelo_reintento": "fable",
+    "esfuerzo_reintento": "high"
+  },
+  "tareas": [
+    {
+      "depende_de": [],
+      "necesita_supabase": true,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null,
+      "id": "T1",
+      "titulo": "Dashboard sumado en la base: dashboard_summary y sales_ranking_summary por rango, con pgTAP",
+      "descripcion": "Decisión de Ignacio del 2026-11-05 (docs/10): ningún rango del dashboard puede chocar con el tope de filas de PostgREST (max_rows = 1000 en supabase/config.toml). Solo base de datos en esta tarea; el frontend va en T2–T4. En supabase/schemas/13_tekfusion_dashboard.sql agregar: (1) public.dashboard_summary(date_from date, date_to date) RETURNS TABLE(month date, business_line public.business_line, origin_channel public.origin_channel, leads bigint, contacted bigint, quoted bigint, won bigint, lost bigint, archived bigint, responded bigint, first_response_within_24h bigint, avg_first_response_hours numeric, quoted_amount bigint, won_amount bigint), LANGUAGE sql STABLE SECURITY INVOKER, SET search_path TO '', que suma las filas de public.dashboard_daily con day entre date_from y date_to (ambos inclusive) agrupadas por (date_trunc('month', day)::date, business_line, origin_channel); month es el primer día del mes; avg_first_response_hours se pondera por responded: round(sum(avg_first_response_hours * responded) / nullif(sum(responded), 0), 2). Así el resultado tiene a lo más meses × 4 líneas × 6 canales filas. (2) public.sales_ranking_summary(date_from date, date_to date) RETURNS TABLE(sales_id bigint, leads bigint, leads_attended bigint, avg_first_response_hours numeric, quotes_sent bigint, won bigint, won_amount bigint, lost bigint), mismo estilo, que suma public.sales_ranking (una fila por ejecutivo; promedio ponderado por leads_attended). Al ser security invoker sobre las vistas, ejecutivo y lector reciben 0 filas del ranking como hoy. Grants en supabase/schemas/12_tekfusion_grants.sql: revoke execute from public, anon; grant execute to authenticated, service_role. Migración escrita a mano en supabase/migrations/20261106120000_dashboard_suma_en_base.sql con las dos funciones y sus grants (db diff no emite grants de funciones; ver aprendizajes.md). Las funciones del esquema en formato pg_dump: comparar con `npx supabase db dump --local --schema public` y dejarlas idénticas para que no haya diff fantasma. pgTAP nuevo supabase/tests/30_dashboard_summary.test.sql (mismo estilo que 25_dashboard_daily y 26_sales_ranking, con login_as en aal2 para gerencia): sobre todo el rango del seed, la suma de leads, won, lost, quoted_amount y won_amount de dashboard_summary cuadra con count/sum directos sobre deals y quotes (castear sum(...)::bigint); un rango de un solo día devuelve solo lo de ese día; el promedio ponderado cuadra con el cálculo directo; sales_ranking_summary cuadra por ejecutivo con la suma de sales_ranking; ejecutivo y lector reciben 0 filas de sales_ranking_summary; anon no tiene execute en ninguna de las dos. No tocar src/.",
+      "archivos": [
+        "supabase/schemas/13_tekfusion_dashboard.sql",
+        "supabase/schemas/12_tekfusion_grants.sql",
+        "supabase/migrations/20261106120000_dashboard_suma_en_base.sql",
+        "supabase/tests/30_dashboard_summary.test.sql"
+      ],
+      "verificacion": "npx supabase db reset --local && npx supabase test db",
+      "criterio": "db reset aplica la migración nueva; todos los pgTAP pasan, incluido 30_dashboard_summary; ningún archivo de src/ cambia.",
+      "modelo": "opus",
+      "esfuerzo": "high"
+    },
+    {
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null,
+      "id": "T2",
+      "titulo": "Suma pura del resumen y getDashboardSummary / getSalesRankingSummary en los dos data providers",
+      "descripcion": "Espejo en TypeScript de las funciones de T1, para FakeRest y para los tests. (1) Tipos en src/components/atomic-crm/types.ts: DashboardSummaryRow (los campos de DashboardDailyRow sin id ni day, más month: string 'YYYY-MM-DD' con el primer día del mes) y SalesRankingSummaryRow (sales_id y los totales de SalesRankingRow, sin id ni day). (2) Nuevo src/components/atomic-crm/management-dashboard/summary.ts, puro y sin React: summarizeDashboard(rows: DashboardDailyRow[], range: DayRange): DashboardSummaryRow[] y summarizeSalesRanking(rows: SalesRankingRow[], range: DayRange): SalesRankingSummaryRow[], con la misma agregación que la base (filtra day dentro del rango inclusive, agrupa por mes × línea × canal o por ejecutivo, promedios ponderados por responded / leads_attended redondeados a 2 decimales, null si el divisor es 0). DayRange ya existe en src/components/atomic-crm/management-dashboard/metrics.ts. (3) Métodos getDashboardSummary(range: DayRange) y getSalesRankingSummary(range: DayRange) en el tipo CrmDataProvider (definido en providers/supabase/dataProvider.ts; providers/types.ts solo lo reexporta), en providers/supabase/dataProvider.ts vía getSupabaseClient().rpc('dashboard_summary' | 'sales_ranking_summary', { date_from, date_to }) lanzando el error si viene (mismo patrón que log_export / take_deal), y en providers/fakerest/leadMethods.ts calculándolos con summary.ts sobre getList de dashboard_daily y sales_ranking (todas las filas). En FakeRest el ranking se devuelve solo si canAccess deja listar sales; si no, []. (4) Test src/components/atomic-crm/management-dashboard/summary.test.ts: suma por mes, línea y canal; respeta los bordes del rango; promedio ponderado (y null sin respondidos); ranking por ejecutivo. Todavía no cambiar ManagementDashboard ni SalesRanking.",
+      "archivos": [
+        "src/components/atomic-crm/types.ts",
+        "src/components/atomic-crm/management-dashboard/summary.ts",
+        "src/components/atomic-crm/management-dashboard/summary.test.ts",
+        "src/components/atomic-crm/providers/supabase/dataProvider.ts",
+        "src/components/atomic-crm/providers/fakerest/leadMethods.ts",
+        "src/components/atomic-crm/providers/fakerest/dataProvider.ts"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/management-dashboard/summary.test.ts",
+      "criterio": "Typecheck y lint limpios; summary.test.ts pasa; los dos data providers exponen los dos métodos con la misma firma."
+    },
+    {
+      "depende_de": ["T1", "T2"],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null,
+      "id": "T3",
+      "titulo": "ManagementDashboard sobre el resumen sumado: sin MAX_ROWS ni aviso de datos parciales",
+      "descripcion": "src/components/atomic-crm/management-dashboard/ManagementDashboard.tsx deja de pedir dashboard_daily con useGetList y usa dataProvider.getDashboardSummary con useQuery de @tanstack/react-query: dos llamadas, el rango elegido y previousRange(rango) de metrics.ts, cada una con su queryKey ['dashboard_summary', from, to]. Quitar MAX_ROWS, el aviso 'datos parciales' (clave tekfusion.dashboard.partial en src/lib/i18n/es/tekfusion.ts) y los comentarios ponytail del tope de filas (dejar el del embudo, que es otra cosa). Ajustar src/components/atomic-crm/management-dashboard/metrics.ts para que sumRows, totalsBy y funnel trabajen con DashboardSummaryRow (totalsBy 'month' usa row.month.slice(0, 7)); inRange queda solo si algo lo sigue usando. Ajustar src/components/atomic-crm/management-dashboard/ManagementDashboard.fixtures.tsx (los datos siguen siendo filas de dashboard_daily en FakeRest: el método de T2 las suma) y los tests src/components/atomic-crm/management-dashboard/ManagementDashboard.test.tsx y src/components/atomic-crm/management-dashboard/metrics.test.ts para que sigan verdes con los mismos números visibles. No tocar SalesRanking (T4).",
+      "archivos": [
+        "src/components/atomic-crm/management-dashboard/ManagementDashboard.tsx",
+        "src/components/atomic-crm/management-dashboard/metrics.ts",
+        "src/components/atomic-crm/management-dashboard/metrics.test.ts",
+        "src/components/atomic-crm/management-dashboard/ManagementDashboard.fixtures.tsx",
+        "src/components/atomic-crm/management-dashboard/ManagementDashboard.test.tsx",
+        "src/lib/i18n/es/tekfusion.ts"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/management-dashboard",
+      "criterio": "Typecheck y lint limpios; los tests del módulo pasan; ManagementDashboard ya no consulta dashboard_daily ni muestra 'datos parciales'; no queda MAX_ROWS en ManagementDashboard.tsx."
+    },
+    {
+      "depende_de": ["T1", "T2", "T3"],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null,
+      "id": "T4",
+      "titulo": "SalesRanking sobre sales_ranking_summary y documentación del dashboard sumado",
+      "descripcion": "src/components/atomic-crm/management-dashboard/SalesRanking.tsx deja de pedir sales_ranking con useGetList y usa dataProvider.getSalesRankingSummary(range) con useQuery (enabled solo para gerencia, como hoy con useCanAccess sales/list: ejecutivo y lector no consultan nada y no ven la sección). Quitar su MAX_ROWS y el comentario ponytail del tope. rankSales de metrics.ts pasa a ordenar filas ya sumadas (SalesRankingSummaryRow) por won_amount, sin filtrar por rango. Ajustar src/components/atomic-crm/management-dashboard/SalesRanking.test.tsx y los fixtures que use. Documentación: en docs/05-modelo-datos.md, sección de vistas, agregar dashboard_summary y sales_ranking_summary (qué suman, por qué existen: el tope de max_rows, y que son security invoker); en docs/09-plan-fases.md, Fase 6, marcar [x] 'Dashboard con filtros de fecha; versión sin ranking para ejecutivo/lector' con una nota corta de lo hecho (funciones por rango, frontend sin tope de filas).",
+      "archivos": [
+        "src/components/atomic-crm/management-dashboard/SalesRanking.tsx",
+        "src/components/atomic-crm/management-dashboard/SalesRanking.test.tsx",
+        "src/components/atomic-crm/management-dashboard/metrics.ts",
+        "src/components/atomic-crm/management-dashboard/metrics.test.ts",
+        "src/components/atomic-crm/management-dashboard/ManagementDashboard.fixtures.tsx",
+        "docs/05-modelo-datos.md",
+        "docs/09-plan-fases.md"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
+      "criterio": "Suite de app completa en verde; SalesRanking ya no consulta sales_ranking ni tiene MAX_ROWS; docs/05 describe las dos funciones; el ítem de la Fase 6 queda [x]."
+    },
+    {
+      "depende_de": [],
+      "necesita_supabase": false,
+      "estado": "pendiente",
+      "intentos": 0,
+      "error": null,
+      "commit": null,
+      "costo_usd": 0,
+      "session_id": null,
+      "id": "T5",
+      "titulo": "Kanban: al arrastrar, un ejecutivo solo reordena los leads que puede editar",
+      "descripcion": "Fase 3, pendiente de aprendizajes.md (2026-11-05 T6). Decisión de Ignacio (2026-11-05): el ejecutivo reordena solo los suyos. Un ejecutivo ve los leads sin asignar pero la RLS no le deja actualizarlos, así que al arrastrar una tarjeta en el kanban el update del index de un lead ajeno o sin asignar falla. La lógica está en src/components/atomic-crm/deals/DealListContent.tsx (onDragEnd → updateDealStage, que hace dataProvider.update de index sobre los demás leads de la columna de origen y de destino). Aplicar el mismo criterio que ya usa DealCreate.tsx (useCanAccess({ resource: 'sales', action: 'list' }) para gerencia + useGetIdentity): gerencia corre el index de todos; un ejecutivo solo el de los leads con sales_id = su identidad. El lead arrastrado se actualiza siempre (DealCard ya impide arrastrar si no puede editarlo). Si updateDealStage es más fácil de probar como función pura que devuelve la lista de updates, extraerla a src/components/atomic-crm/deals/stages.ts. Test de componente en src/components/atomic-crm/deals/DealList.test.tsx (o un archivo nuevo DealListReorder.test.tsx en la misma carpeta) con StoryWrapper y authProvider { canAccess: async (p) => canAccess('user', p) } usando el canAccess real de providers/commons/canAccess.ts: el ejecutivo arrastra su propio lead dentro de una columna que tiene además un lead sin asignar y uno de otro ejecutivo; tras soltar, el index de esos dos queda igual en el dataProvider (FakeRest no aplica RLS, por eso se mira el index) y el del arrastrado cambia. Para arrastrar, seguir CloseDeal.test.tsx (esperar el drag handle con expect.poll, no el texto de la tarjeta). Un segundo caso con gerencia ('admin') confirma que ahí sí se corren todos.",
+      "archivos": [
+        "src/components/atomic-crm/deals/DealListContent.tsx",
+        "src/components/atomic-crm/deals/stages.ts",
+        "src/components/atomic-crm/deals/DealList.test.tsx",
+        "src/components/atomic-crm/deals/DealListReorder.test.tsx",
+        "src/components/atomic-crm/deals/DealList.fixtures.tsx"
+      ],
+      "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/deals",
+      "criterio": "Typecheck y lint limpios; los tests de deals pasan, incluido el nuevo caso de ejecutivo (no toca el index de leads ajenos o sin asignar) y el de gerencia (corre todos).",
+      "modelo": "opus",
+      "esfuerzo": "high"
+    }
+  ]
+}
