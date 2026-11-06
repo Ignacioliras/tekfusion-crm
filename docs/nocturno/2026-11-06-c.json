@@ -247,13 +247,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 17:12:28"
+      "commit": "4e1b30bf539f2f1a676796a72ff8e229bd23b560",
+      "costo_usd": 5.0269172499999994,
+      "session_id": "004a3b34-a72e-4e8c-900b-0f174889b7ff",
+      "inicio": "2026-11-06 17:12:28",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: RPC `send_wa_message` con permisos por rol, validación de texto, mensaje pendiente y fila en `send_queue` (que ahora admite mensajes sin cotización), migración a mano y pgTAP 38 en verde; el cambio de `send_queue` queda por confirmar en `docs/10`.",
+      "fin": "2026-11-06 17:19:24"
     },
     {
       "id": "T10",
