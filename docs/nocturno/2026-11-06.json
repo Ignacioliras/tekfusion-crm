@@ -74,12 +74,12 @@
         "T2"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "e73f4d47ee3bd99867d5f4347786c6721f59292b",
+      "costo_usd": 1.6819950000000001,
+      "session_id": "775f65df-2ae9-4277-85bc-cf67f63c5f5f",
       "id": "T3",
       "titulo": "ManagementDashboard sobre el resumen sumado: sin MAX_ROWS ni aviso de datos parciales",
       "descripcion": "src/components/atomic-crm/management-dashboard/ManagementDashboard.tsx deja de pedir dashboard_daily con useGetList y usa dataProvider.getDashboardSummary con useQuery de @tanstack/react-query: dos llamadas, el rango elegido y previousRange(rango) de metrics.ts, cada una con su queryKey ['dashboard_summary', from, to]. Quitar MAX_ROWS, el aviso 'datos parciales' (clave tekfusion.dashboard.partial en src/lib/i18n/es/tekfusion.ts) y los comentarios ponytail del tope de filas (dejar el del embudo, que es otra cosa). Ajustar src/components/atomic-crm/management-dashboard/metrics.ts para que sumRows, totalsBy y funnel trabajen con DashboardSummaryRow (totalsBy 'month' usa row.month.slice(0, 7)); inRange queda solo si algo lo sigue usando. Ajustar src/components/atomic-crm/management-dashboard/ManagementDashboard.fixtures.tsx (los datos siguen siendo filas de dashboard_daily en FakeRest: el método de T2 las suma) y los tests src/components/atomic-crm/management-dashboard/ManagementDashboard.test.tsx y src/components/atomic-crm/management-dashboard/metrics.test.ts para que sigan verdes con los mismos números visibles. No tocar SalesRanking (T4).",
@@ -93,7 +93,10 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/management-dashboard",
       "criterio": "Typecheck y lint limpios; los tests del módulo pasan; ManagementDashboard ya no consulta dashboard_daily ni muestra 'datos parciales'; no queda MAX_ROWS en ManagementDashboard.tsx.",
-      "inicio": "2026-11-06 01:35:38"
+      "inicio": "2026-11-06 01:35:38",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: ManagementDashboard ahora usa getDashboardSummary con useQuery para el rango y el período anterior, sin MAX_ROWS ni aviso de datos parciales, con metrics y tests adaptados a DashboardSummaryRow.",
+      "fin": "2026-11-06 01:40:07"
     },
     {
       "depende_de": [
