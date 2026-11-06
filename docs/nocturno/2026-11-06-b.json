@@ -174,13 +174,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 05:30:54"
+      "commit": "c0e292743087dce2c79787f498ed1e2b7c708318",
+      "costo_usd": 1.628833,
+      "session_id": "3371d15d-6cd9-450f-90b8-f25c369d78aa",
+      "inicio": "2026-11-06 05:30:54",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: pantallas pesadas con React.lazy en CRM.tsx y bundle-check.mjs nuevo; el chunk mayor bajó de 2,71 MB a 1,13 MB y la suite sigue verde.",
+      "fin": "2026-11-06 05:37:02"
     },
     {
       "id": "T7",
