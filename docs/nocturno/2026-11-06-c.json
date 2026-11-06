@@ -52,13 +52,16 @@
       "criterio": "Typecheck y lint limpios; los tests de functions pasan, incluidos los nuevos de messages.update y connection.update.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:28:14"
+      "commit": "56e6d6c9453258f875365793d6383c681199ed59",
+      "costo_usd": 1.3176986,
+      "session_id": "e91641d4-1d29-4dd6-b13f-fec6d05828a1",
+      "inicio": "2026-11-06 16:28:14",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: parseEvolutionEvent devuelve una unión por `kind` con messages.update (estado de entrega) y connection.update en ambas grafías, exporta DeliveryStatus y los tests cubren cada evento.",
+      "fin": "2026-11-06 16:30:24"
     },
     {
       "id": "T3",
