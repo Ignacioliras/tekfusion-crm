@@ -148,13 +148,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 05:25:46"
+      "commit": "a8a02414d125980931ff8ee72ef04568e7de580d",
+      "costo_usd": 1.8079894,
+      "session_id": "893d8b87-87a8-4db5-8ed2-ad51996bbbad",
+      "inicio": "2026-11-06 05:25:46",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: `npm run typecheck` ahora tipa también `supabase/functions` (tsconfig propio y stubs en `deno.d.ts`), con 12 errores de tipos corregidos sin cambiar el comportamiento, y typecheck y lint quedan limpios.",
+      "fin": "2026-11-06 05:30:54"
     },
     {
       "id": "T6",
