@@ -104,7 +104,8 @@ archivar uno tuyo a mano, usa **Archivar** en su ficha.
 ## 5. Ficha del lead
 
 Haz clic en una tarjeta para abrir la ficha. Ejemplo: "Válvulas mariposa DN200
-para planta", de Minera Cerro Cobrizo SpA, a cargo de Camila Rojas.
+para planta", de Constructora Los Arrayanes SpA, a cargo de Camila Rojas (en
+Cotizado).
 
 ### Barra de acciones
 

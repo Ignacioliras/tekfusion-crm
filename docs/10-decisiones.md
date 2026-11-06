@@ -268,6 +268,42 @@ Salvo las dos de Ignacio de abajo, ninguna está confirmada por él. Entraron a 
 
 **Kanban (T5).** Como un ejecutivo ya no corre el índice de leads ajenos ni sin asignar, en una columna pueden quedar índices repetidos (empate, sin error). Sigue pudiendo **arrastrar** una tarjeta ajena o sin asignar: `DealCard` pide permiso sin el registro y el guardado falla por RLS. Pendiente desactivar ese arrastre.
 
+## 2026-11-06 · Importar leads es solo gerencia (decisión de Ignacio)
+- **Decisión:** solo gerencia importa leads (RF-15). Ejecutivos y lectores no.
+- **Contexto (de la revisión, no dicho por Ignacio):** en la cola 2026-11-06-b, T8 quedó bloqueada porque Camila (ejecutiva) importó `deals_sample.csv`: las filas de otra línea se asignan a Diego, la base las rechaza (403) y la app cierra su sesión.
+- **Consecuencias (pendiente, nada implementado todavía):** el botón **Importar CSV** del kanban y la ruta `/import` siguen visibles para un ejecutivo (captura `docs/capturas/2026-11-06-b/camila-kanban.png`); hay que quitárselos a ejecutivo y lector en `canAccess` y en la interfaz. El e2e de importación de T8 pasa a correr como Andrea. Falta reflejarlo en la tabla "Visibilidad por rol" de `docs/03` y en `docs/08`.
+
+## 2026-11-06 · Implícitas en la cola nocturna 2026-11-06-b (anotadas en la revisión de la mañana)
+Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` está en `main`.
+
+**Permisos sobre un lead (T1, T2).**
+- **Una sola regla:** `deals/canEditDeal.ts`. Gerencia edita todo; un ejecutivo solo el lead cuyo `sales_id` es él. Si la identidad todavía no cargó, o falta el id del usuario, **se niega** (antes un lead sin asignar pasaba por `undefined === undefined`).
+- **Kanban:** las tarjetas ajenas y las sin asignar se ven pero no se arrastran (en el seed, Camila ve 26 tarjetas y arrastra 23).
+- **Ficha sin asignar:** el ejecutivo solo ve **Tomar**; sin Editar, Archivar ni las acciones de etapa. "Tomar" pregunta el permiso del rol, no el del lead.
+- **Hueco visto en la revisión:** en esa misma ficha sigue visible el formulario **Agregar una nota**, y la base rechaza la nota (`deal_notes_insert` exige `can_edit_deal`). Con el cierre de sesión ante un 403 que ya está pendiente, guardar la nota sacaría al ejecutivo al login (lo segundo no se probó en el navegador). Falta esconder el formulario.
+
+**Reporte semanal (T12, `weekly_report_data(week_start)`).** Definiciones que la noche eligió; RF-12 solo nombra los datos:
+- **Semana:** `[week_start, week_start + 7)` en días de America/Santiago; `week_start` puede ser cualquier día, no se fuerza a lunes.
+- **Cohorte:** todo se cuenta sobre los leads **ingresados** esa semana, con su etapa **de hoy** (igual que el dashboard). "Ganados" y "perdidos" no son los cerrados durante la semana: `deals` no guarda fecha de cierre.
+- **Contactados:** lead que ya no está en `nuevo` o que tiene `first_response_at`. Cuenta también uno perdido o archivado sin contacto (definición heredada de `dashboard_daily`).
+- **Cotizados:** en etapa `cotizado` o con al menos una cotización.
+- **Perdidos con motivos:** lista `[{reason, count}]` ordenada por cantidad y nombre.
+- **Sin atender:** leads de la semana en `nuevo`, sin `first_response_at` y con más de 24 h corridas (regla "Primer contacto" de `docs/03`). Un lead sin atender de semanas anteriores **no aparece**.
+- **Vencidos:** seguimientos en estado `vencido` (`docs/03`, Seguimientos) cuya fecha programada cae en la semana, de cualquier lead.
+- **Quién la ejecuta:** solo gerencia con verificación en dos pasos. **Problema abierto:** n8n entra con `service_role` (`docs/04`, `docs/06`) y recibe 42501, igual que una conexión directa como `postgres` (probado en la revisión). El flujo 09 no puede leerla tal como está; hay que decidir cómo entra n8n antes de la Fase 5.
+
+**Respaldo local (T11, `scripts/tekfusion/respaldo.mjs`).** Usa `pg_dump`/`pg_restore` dentro del contenedor de la base con el superusuario local. Al restaurar deja fuera `pg_cron` (solo puede vivir en la base `postgres`), así que la tarea diaria de retención **no** queda en la copia restaurada. Compara solo el conteo de `deals`, `contacts`, `companies` y `quotes`. Los dumps se acumulan en `backups/` (ignorada por git), sin rotación. Primera corrida real en la revisión: 11,9 s. No cierra el 🔒 de la Fase 5.
+
+**Tamaño del bundle (T6).** Tope de 1,2 MB por chunk en `scripts/tekfusion/bundle-check.mjs`; hoy el principal pesa 1,13 MB. Solo el Dashboard quedó con carga diferida. El chequeo no está en `package.json` ni en el CI: se corre a mano.
+
+**Tipado de las Edge Functions (T5).** `npm run typecheck` ahora las incluye. Lo que no tiene gemelo en `node_modules` (kysely, postgres de Deno, Sentry de Deno, `Deno`) se declaró a mano en `supabase/functions/deno.d.ts`; el constructor de consultas de kysely queda sin tipos. En `users/index.ts` el código de error al invitar puede seguir llegando vacío (se dejó como estaba).
+
+**Otras.**
+- **Contactos (T3):** "Import CSV" quedó solo en la barra de la lista; se quitó del estado vacío, donde salía duplicado.
+- **`.eslintignore` (T4):** se borró sin migrar sus rutas (ESLint ya no lo leía y esas rutas no existen en el repo).
+- **E2E de gerencia (T10):** el test inscribe el TOTP de Andrea y genera los códigos él mismo (`e2e/tekfusion/fixtures/totp.ts`); los cuatro casos comparten una sesión.
+- **Manual del ejecutivo (T13):** describe solo lo que existe hoy y marca **(pendiente Fase 4/5)** lo que depende de n8n, correo y WhatsApp. No menciona la importación de leads.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
