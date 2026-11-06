@@ -20,6 +20,22 @@
 //
 // remoteJid is "<digits>@s.whatsapp.net" for a person and "<id>@g.us" for a group.
 // Any other key inside `message` (sticker, reaction, location...) becomes type "other".
+//
+// Assumed delivery receipt (MESSAGES_UPDATE / "messages.update"); the message id
+// comes in `keyId` or in `key.id`:
+//
+//   { "event": "messages.update", "instance": "tekfusion",
+//     "data": { "keyId": "3EB0...", "status": "DELIVERY_ACK" } }
+//
+// status: PENDING | SERVER_ACK | DELIVERY_ACK | READ | PLAYED | ERROR, mapped to
+// delivery_status (READ and PLAYED are both "leido"). Any other status is ignored.
+//
+// Assumed connection change (CONNECTION_UPDATE / "connection.update"):
+//
+//   { "event": "connection.update", "instance": "tekfusion",
+//     "data": { "state": "open" } }   // "open" | "close" | "connecting"
+//
+// Only "open" means connected; any other state value is ignored.
 
 import { z } from "npm:zod@^4.3.6";
 
@@ -44,6 +60,42 @@ export interface IgnoredEvent {
   reason: string;
   isGroup?: true;
 }
+
+export type DeliveryStatus =
+  "pendiente" | "enviado" | "entregado" | "leido" | "fallido";
+
+export type ConnectionState = "open" | "close" | "connecting";
+
+export type EvolutionMessageEvent = { kind: "message" } & EvolutionMessage;
+
+export interface EvolutionStatusEvent {
+  kind: "status";
+  instance: string;
+  waMessageId: string;
+  status: DeliveryStatus;
+}
+
+export interface EvolutionConnectionEvent {
+  kind: "connection";
+  instance: string;
+  connected: boolean;
+  state: ConnectionState;
+}
+
+export type EvolutionEvent =
+  | EvolutionMessageEvent
+  | EvolutionStatusEvent
+  | EvolutionConnectionEvent
+  | IgnoredEvent;
+
+const DELIVERY_STATUS: Record<string, DeliveryStatus> = {
+  PENDING: "pendiente",
+  SERVER_ACK: "enviado",
+  DELIVERY_ACK: "entregado",
+  READ: "leido",
+  PLAYED: "leido",
+  ERROR: "fallido",
+};
 
 const PERSON_JID_SUFFIX = "@s.whatsapp.net";
 const GROUP_JID_SUFFIX = "@g.us";
@@ -123,23 +175,58 @@ const readContent = (
   return { type: "other", text: null, mediaMimeType: null };
 };
 
-/** Validates a MESSAGES_UPSERT event and normalizes it, or says why it is ignored. */
-export const parseEvolutionEvent = (
-  body: unknown,
-): EvolutionMessage | IgnoredEvent => {
-  const envelope = envelopeSchema.safeParse(body);
-  if (!envelope.success) return ignore("malformed body");
-  // Body uses "messages.upsert"; accept the config spelling "MESSAGES_UPSERT" too.
-  const event = envelope.data.event.toLowerCase().replace("_", ".");
-  if (event !== "messages.upsert") {
-    return ignore(`unhandled event ${envelope.data.event}`);
-  }
+const statusSchema = z.object({
+  instance: z.string(),
+  data: z.object({
+    keyId: z.string().min(1).optional(),
+    key: z.object({ id: z.string().min(1).optional() }).optional(),
+    status: z.string(),
+  }),
+});
 
-  const parsed = upsertSchema.safeParse(body);
-  if (!parsed.success) {
-    const [issue] = parsed.error.issues;
-    return ignore(`malformed ${issue.path.join(".") || "body"}`);
+const connectionSchema = z.object({
+  instance: z.string(),
+  data: z.object({ state: z.string() }),
+});
+
+const malformed = (error: z.ZodError): IgnoredEvent => {
+  const [issue] = error.issues;
+  return ignore(`malformed ${issue.path.join(".") || "body"}`);
+};
+
+const parseStatus = (body: unknown): EvolutionStatusEvent | IgnoredEvent => {
+  const parsed = statusSchema.safeParse(body);
+  if (!parsed.success) return malformed(parsed.error);
+  const { instance, data } = parsed.data;
+  const waMessageId = data.keyId ?? data.key?.id;
+  if (!waMessageId) return ignore("missing message id");
+  if (!Object.hasOwn(DELIVERY_STATUS, data.status)) {
+    return ignore(`unknown status ${data.status}`);
   }
+  return {
+    kind: "status",
+    instance,
+    waMessageId,
+    status: DELIVERY_STATUS[data.status],
+  };
+};
+
+const parseConnection = (
+  body: unknown,
+): EvolutionConnectionEvent | IgnoredEvent => {
+  const parsed = connectionSchema.safeParse(body);
+  if (!parsed.success) return malformed(parsed.error);
+  const { instance, data } = parsed.data;
+  const { state } = data;
+  if (state !== "open" && state !== "close" && state !== "connecting") {
+    return ignore(`unknown connection state ${state}`);
+  }
+  return { kind: "connection", instance, connected: state === "open", state };
+};
+
+const parseUpsert = (body: unknown): EvolutionMessageEvent | IgnoredEvent => {
+  const parsed = upsertSchema.safeParse(body);
+  if (!parsed.success) return malformed(parsed.error);
   const { instance, data } = parsed.data;
   const { id, remoteJid, fromMe } = data.key;
   if (remoteJid.endsWith(GROUP_JID_SUFFIX)) {
@@ -151,6 +238,7 @@ export const parseEvolutionEvent = (
   if (!E164_DIGITS.test(digits)) return ignore("unsupported remoteJid");
 
   return {
+    kind: "message",
     instance,
     waMessageId: id,
     remoteJid,
@@ -160,6 +248,25 @@ export const parseEvolutionEvent = (
     timestamp: data.messageTimestamp,
     ...readContent(data.message),
   };
+};
+
+/** Validates an event and normalizes it, or says why it is ignored. */
+export const parseEvolutionEvent = (body: unknown): EvolutionEvent => {
+  const envelope = envelopeSchema.safeParse(body);
+  if (!envelope.success) return ignore("malformed body");
+  // Body uses "messages.upsert"; accept the config spelling "MESSAGES_UPSERT" too
+  // (every underscore, not just the first).
+  const event = envelope.data.event.toLowerCase().replace(/_/g, ".");
+  switch (event) {
+    case "messages.upsert":
+      return parseUpsert(body);
+    case "messages.update":
+      return parseStatus(body);
+    case "connection.update":
+      return parseConnection(body);
+    default:
+      return ignore(`unhandled event ${envelope.data.event}`);
+  }
 };
 
 /** Key of the UNIQUE constraint on messages (wa_message_id, docs/05). */

@@ -52,12 +52,13 @@
       "criterio": "Typecheck y lint limpios; los tests de functions pasan, incluidos los nuevos de messages.update y connection.update.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-06 16:28:14"
     },
     {
       "id": "T3",

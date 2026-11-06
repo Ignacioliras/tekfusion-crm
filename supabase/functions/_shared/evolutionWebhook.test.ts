@@ -3,7 +3,7 @@ import {
   dedupeKey,
   isAuthorized,
   parseEvolutionEvent,
-  type EvolutionMessage,
+  type EvolutionMessageEvent,
 } from "./evolutionWebhook";
 
 const SECRET = "secreto-de-prueba-123"; // gitleaks:allow (dato de prueba, no es un secreto)
@@ -27,7 +27,22 @@ const upsert = (
 });
 
 const parseMessage = (body: unknown) =>
-  parseEvolutionEvent(body) as EvolutionMessage;
+  parseEvolutionEvent(body) as EvolutionMessageEvent;
+
+const statusUpdate = (
+  data: Record<string, unknown>,
+  event = "messages.update",
+) => ({
+  event,
+  instance: "tekfusion-staging",
+  data,
+});
+
+const connectionUpdate = (state: unknown, event = "connection.update") => ({
+  event,
+  instance: "tekfusion-staging",
+  data: { state },
+});
 
 describe("isAuthorized", () => {
   it("accepts the correct apikey", () => {
@@ -52,6 +67,7 @@ describe("parseEvolutionEvent", () => {
     expect(
       parseEvolutionEvent(upsert({ conversation: "Hola, cotizo válvulas" })),
     ).toEqual({
+      kind: "message",
       instance: "tekfusion-staging",
       waMessageId: "3EB0FICTICIO0001",
       remoteJid: "56912345678@s.whatsapp.net",
@@ -143,14 +159,14 @@ describe("parseEvolutionEvent", () => {
     ).toEqual({ ignore: true, reason: "group message", isGroup: true });
   });
 
-  it("ignores events that are not MESSAGES_UPSERT", () => {
+  it("ignores events it does not handle", () => {
     expect(
       parseEvolutionEvent({
-        event: "connection.update",
+        event: "qrcode.updated",
         instance: "x",
-        data: { state: "open" },
+        data: { qrcode: {} },
       }),
-    ).toMatchObject({ ignore: true });
+    ).toEqual({ ignore: true, reason: "unhandled event qrcode.updated" });
   });
 
   it("ignores malformed bodies instead of throwing", () => {
@@ -170,6 +186,116 @@ describe("parseEvolutionEvent", () => {
       { ...valid, data: { ...valid.data, message: undefined } },
       upsert({ conversation: "hola" }, { remoteJid: "abc@s.whatsapp.net" }),
       upsert({ conversation: "hola" }, { remoteJid: "56912345678@lid" }),
+    ];
+    for (const body of malformed) {
+      expect(parseEvolutionEvent(body)).toMatchObject({ ignore: true });
+    }
+  });
+});
+
+describe("parseEvolutionEvent: messages.update", () => {
+  it.each([
+    ["PENDING", "pendiente"],
+    ["SERVER_ACK", "enviado"],
+    ["DELIVERY_ACK", "entregado"],
+    ["READ", "leido"],
+    ["PLAYED", "leido"],
+    ["ERROR", "fallido"],
+  ])("maps status %s to %s", (status, expected) => {
+    expect(
+      parseEvolutionEvent(statusUpdate({ keyId: "3EB0FICTICIO0001", status })),
+    ).toEqual({
+      kind: "status",
+      instance: "tekfusion-staging",
+      waMessageId: "3EB0FICTICIO0001",
+      status: expected,
+    });
+  });
+
+  it("reads the message id from key.id when keyId is missing", () => {
+    expect(
+      parseEvolutionEvent(
+        statusUpdate({ key: { id: "3EB0FICTICIO0002" }, status: "READ" }),
+      ),
+    ).toMatchObject({ kind: "status", waMessageId: "3EB0FICTICIO0002" });
+  });
+
+  it("accepts the MESSAGES_UPDATE spelling of the event", () => {
+    expect(
+      parseEvolutionEvent(
+        statusUpdate(
+          { keyId: "3EB0FICTICIO0001", status: "DELIVERY_ACK" },
+          "MESSAGES_UPDATE",
+        ),
+      ),
+    ).toMatchObject({ kind: "status", status: "entregado" });
+  });
+
+  it("ignores an update without message id", () => {
+    expect(parseEvolutionEvent(statusUpdate({ status: "READ" }))).toEqual({
+      ignore: true,
+      reason: "missing message id",
+    });
+    expect(
+      parseEvolutionEvent(statusUpdate({ key: {}, status: "READ" })),
+    ).toMatchObject({ ignore: true });
+  });
+
+  it("ignores an unknown status, including Object prototype keys", () => {
+    for (const status of ["DELETED", "read", "toString", "constructor"]) {
+      expect(
+        parseEvolutionEvent(
+          statusUpdate({ keyId: "3EB0FICTICIO0001", status }),
+        ),
+      ).toEqual({ ignore: true, reason: `unknown status ${status}` });
+    }
+  });
+
+  it("ignores malformed updates instead of throwing", () => {
+    const malformed: unknown[] = [
+      { event: "messages.update", instance: "x" },
+      statusUpdate({ keyId: 1, status: "READ" }),
+      statusUpdate({ keyId: "3EB0FICTICIO0001" }),
+      statusUpdate({ keyId: "3EB0FICTICIO0001", status: 3 }),
+    ];
+    for (const body of malformed) {
+      expect(parseEvolutionEvent(body)).toMatchObject({ ignore: true });
+    }
+  });
+});
+
+describe("parseEvolutionEvent: connection.update", () => {
+  it.each([
+    ["open", true],
+    ["close", false],
+    ["connecting", false],
+  ])("maps state %s to connected %s", (state, connected) => {
+    expect(parseEvolutionEvent(connectionUpdate(state))).toEqual({
+      kind: "connection",
+      instance: "tekfusion-staging",
+      connected,
+      state,
+    });
+  });
+
+  it("accepts the CONNECTION_UPDATE spelling of the event", () => {
+    expect(
+      parseEvolutionEvent(connectionUpdate("open", "CONNECTION_UPDATE")),
+    ).toMatchObject({ kind: "connection", connected: true });
+  });
+
+  it("ignores an unknown state", () => {
+    expect(parseEvolutionEvent(connectionUpdate("refused"))).toEqual({
+      ignore: true,
+      reason: "unknown connection state refused",
+    });
+  });
+
+  it("ignores malformed connection events instead of throwing", () => {
+    const malformed: unknown[] = [
+      connectionUpdate(undefined),
+      connectionUpdate(1),
+      { event: "connection.update", data: { state: "open" } },
     ];
     for (const body of malformed) {
       expect(parseEvolutionEvent(body)).toMatchObject({ ignore: true });
