@@ -5,7 +5,6 @@ import { Plus } from "lucide-react";
 import { useTranslate, CanAccess } from "ra-core";
 
 import useAppBarHeight from "../misc/useAppBarHeight";
-import { DataImportButton } from "../dataImport/DataImportButton";
 import { ContactCreateSheet } from "./ContactCreateSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -48,10 +47,8 @@ export const ContactEmpty = () => {
               </Button>
             </CanAccess>
           ) : (
-            <>
-              <CreateButton label="resources.contacts.action.new" />
-              <DataImportButton resource="contacts" />
-            </>
+            // Import CSV lives in the list toolbar, which stays visible here
+            <CreateButton label="resources.contacts.action.new" />
           )}
         </div>
       </div>

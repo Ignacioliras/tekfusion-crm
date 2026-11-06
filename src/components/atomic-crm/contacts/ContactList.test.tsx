@@ -28,6 +28,12 @@ describe("ContactList", () => {
     await expect
       .element(screen.getByText("It seems your contact list is empty."))
       .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Import CSV" }))
+      .toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Import CSV" }).all(),
+    ).toHaveLength(1);
   });
 
   it("renders contacts in a list", async () => {
