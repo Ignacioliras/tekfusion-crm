@@ -318,6 +318,12 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **Descartado:** leer el cierre desde `audit_log` (`deal.stage_changed`): no registra los cambios hechos con `service_role` y obliga a sacar una métrica de un log. Usar `last_activity_at`: una nota posterior movería el cierre de semana.
 - **Consecuencias:** la migración `20261106140000_weekly_report.sql` se modificó en su lugar (no se había aplicado en ninguna nube) y `schemas/15_tekfusion_weekly_report.sql` quedó idéntico. El reporte de una semana pasada muestra los sin atender y vencidos **de hoy**, no los de entonces. `closed_at` no está en el frontend, la importación ni FakeRest (nada la usa todavía). Un ejecutivo puede escribir `closed_at` de sus propios leads por la API, igual que `won_amount`. pgTAP `33_weekly_report` con un caso por regla.
 
+## 2026-11-06 · El ingreso de WhatsApp es una función SQL atómica (cola nocturna 2026-11-06-c, T3)
+- **Decisión:** el receptor (Edge Function, service role) guarda cada mensaje con `wa_ingest_message(...)`: en una sola transacción hace upsert de la conversación por teléfono, inserta el mensaje con `on conflict (wa_message_id) do nothing` y **solo si insertó** mueve `last_message_at` (`greatest`) y suma 1 a `unread_count` si es entrante. Los acuses van por `wa_update_message_status` (nunca retrocede; `fallido` solo desde `pendiente` o `enviado`) y la conexión por `wa_upsert_instance_status`. Las tres las ejecuta solo `service_role`.
+- **Motivo:** si la función hiciera insert y luego, por separado, el `+1`, un reintento del webhook (mismo `wa_message_id`) sumaría dos veces o dejaría la conversación a medias. En una función, `unread_count` queda correcto ante reintentos y con mensajes concurrentes del mismo número (el upsert bloquea la fila de la conversación).
+- **Descartado:** hacer los pasos desde la Edge Function con supabase-js (varias llamadas, sin transacción); un trigger en `wa_messages` (escondería la regla y no sabría si fue reintento).
+- **Consecuencias:** un saliente sin `job_id` se toma como escrito desde el teléfono (`origin = 'telefono'`, `from_me_phone`, autor = ejecutivo de la conversación). Un saliente con `job_id` queda sin `origin` (lo completará el envío del CRM o del seguimiento). `p_instance` no se guarda todavía (un solo número corporativo). pgTAP `34_wa_ingest`.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

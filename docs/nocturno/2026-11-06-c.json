@@ -77,12 +77,13 @@
       "criterio": "db reset sin error y todos los pgTAP pasan, incluido 34_wa_ingest.",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-06 16:30:28"
     },
     {
       "id": "T4",
