@@ -17,8 +17,8 @@
     {
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
@@ -35,7 +35,8 @@
       "verificacion": "npx supabase db reset --local && npx supabase test db",
       "criterio": "db reset aplica la migración nueva; todos los pgTAP pasan, incluido 30_dashboard_summary; ningún archivo de src/ cambia.",
       "modelo": "opus",
-      "esfuerzo": "high"
+      "esfuerzo": "high",
+      "inicio": "2026-11-06 01:25:41"
     },
     {
       "depende_de": [],
@@ -61,7 +62,10 @@
       "criterio": "Typecheck y lint limpios; summary.test.ts pasa; los dos data providers exponen los dos métodos con la misma firma."
     },
     {
-      "depende_de": ["T1", "T2"],
+      "depende_de": [
+        "T1",
+        "T2"
+      ],
       "necesita_supabase": false,
       "estado": "pendiente",
       "intentos": 0,
@@ -84,7 +88,11 @@
       "criterio": "Typecheck y lint limpios; los tests del módulo pasan; ManagementDashboard ya no consulta dashboard_daily ni muestra 'datos parciales'; no queda MAX_ROWS en ManagementDashboard.tsx."
     },
     {
-      "depende_de": ["T1", "T2", "T3"],
+      "depende_de": [
+        "T1",
+        "T2",
+        "T3"
+      ],
       "necesita_supabase": false,
       "estado": "pendiente",
       "intentos": 0,
@@ -205,7 +213,9 @@
       "esfuerzo": "high"
     },
     {
-      "depende_de": ["T8"],
+      "depende_de": [
+        "T8"
+      ],
       "necesita_supabase": false,
       "estado": "pendiente",
       "intentos": 0,
@@ -234,6 +244,13 @@
       "criterio": "Typecheck y lint limpios; los tests de whatsapp pasan (pestañas por rol, lector sin acceso, HTML mostrado como texto, estados y audio); no hay dangerouslySetInnerHTML en whatsapp/.",
       "modelo": "opus",
       "esfuerzo": "high"
+    }
+  ],
+  "corridas": [
+    {
+      "inicio": "2026-11-06 01:25:38",
+      "modelo": "opus",
+      "simulado": false
     }
   ]
 }
