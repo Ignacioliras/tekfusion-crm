@@ -156,6 +156,76 @@ begin
 end;
 $$;
 
+--
+-- Inbox RPCs (docs/07, Bandeja). Same pattern as take_deal (11_): the tables
+-- are read-only for users, so these security definer functions are the only
+-- way the inbox writes. Errors: 42501 without permission, P0002 when the
+-- conversation does not exist or is not available.
+--
+-- Take an unassigned, not archived conversation for the caller.
+CREATE OR REPLACE FUNCTION "public"."take_wa_conversation"("conversation_id" bigint) RETURNS "public"."wa_conversations"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  me bigint := public.current_sales_id();
+  taken public.wa_conversations;
+begin
+  if me is null or public.current_user_role() not in ('manager', 'executive') then
+    raise exception 'only executives and managers can take a conversation' using errcode = '42501';
+  end if;
+  update public.wa_conversations c
+     set sales_id = me
+   where c.id = take_wa_conversation.conversation_id and c.sales_id is null and not c.archived
+   returning * into taken;
+  if not found then
+    raise exception 'conversation % is not available', take_wa_conversation.conversation_id using errcode = 'P0002';
+  end if;
+  return taken;
+end;
+$$;
+
+-- Mark the incoming messages of a conversation as read; returns how many
+-- changed. An unassigned conversation is left untouched (returns 0, also for
+-- managers) so it keeps showing as new until someone takes it (docs/10).
+CREATE OR REPLACE FUNCTION "public"."mark_wa_conversation_read"("conversation_id" bigint) RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  me bigint := public.current_sales_id();
+  my_role text := public.current_user_role();
+  owner bigint;
+  marked integer;
+begin
+  if me is null or my_role not in ('manager', 'executive') then
+    raise exception 'only executives and managers can read conversations' using errcode = '42501';
+  end if;
+  select c.sales_id into owner
+    from public.wa_conversations c
+   where c.id = mark_wa_conversation_read.conversation_id
+     for update;
+  if not found then
+    raise exception 'conversation % does not exist', mark_wa_conversation_read.conversation_id using errcode = 'P0002';
+  end if;
+  if owner is null then
+    return 0;
+  end if;
+  if my_role <> 'manager' and owner <> me then
+    raise exception 'conversation % belongs to another executive', mark_wa_conversation_read.conversation_id using errcode = '42501';
+  end if;
+  update public.wa_messages m
+     set status = 'leido'
+   where m.conversation_id = mark_wa_conversation_read.conversation_id
+     and m.direction = 'entrante' and m.status <> 'leido';
+  get diagnostics marked = row_count;
+  update public.wa_conversations c
+     set unread_count = 0
+   where c.id = mark_wa_conversation_read.conversation_id;
+  return marked;
+end;
+$$;
+
 -- Grants live here (not in 12_): schema files load alphabetically, so 12_
 -- runs before these tables exist. Default privileges would hand authenticated
 -- full DML: close them to the API roles; only the service role writes.
@@ -172,3 +242,8 @@ revoke execute on function public.wa_update_message_status(text, public.delivery
 grant execute on function public.wa_update_message_status(text, public.delivery_status) to service_role;
 revoke execute on function public.wa_upsert_instance_status(text, boolean, jsonb) from public, anon, authenticated;
 grant execute on function public.wa_upsert_instance_status(text, boolean, jsonb) to service_role;
+-- Inbox RPCs: logged-in users only (they need a sales row; the service role has none).
+revoke execute on function public.take_wa_conversation(bigint) from public, anon, service_role;
+grant execute on function public.take_wa_conversation(bigint) to authenticated;
+revoke execute on function public.mark_wa_conversation_read(bigint) from public, anon, service_role;
+grant execute on function public.mark_wa_conversation_read(bigint) to authenticated;

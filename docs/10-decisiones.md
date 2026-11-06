@@ -338,6 +338,12 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
   - Índices nuevos: `wa_conversations (sales_id)` y `wa_conversations (last_message_at desc)` (cierran el pendiente de T8).
 - **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261106164101_wa_policies.sql` (generada con `db diff`, sin los fantasmas de pg_cron, pgjwt y vistas), pgTAP `35_rls_whatsapp` (nuevo) y `32_whatsapp_tablas` (ajustado: ya no afirma que todo está cerrado para usuarios logueados).
 
+## 2026-11-06 · Abrir una conversación sin asignar no la marca leída (cola nocturna 2026-11-06-c, T6)
+- **Decisión (Ignacio, 2026-11-06):** la bandeja escribe por dos RPC `security definer` (patrón de `take_deal`), ejecutables solo por `authenticated`. `take_wa_conversation(conversation_id)` asigna `sales_id = current_sales_id()` a gerencia o ejecutivo si la conversación está sin asignar y no archivada; si no, P0002; lector o usuario sin sale, 42501. `mark_wa_conversation_read(conversation_id)` (gerencia o el ejecutivo asignado) pasa a `leido` los entrantes que no lo están, deja `unread_count = 0` y devuelve cuántos marcó. **Si la conversación no tiene dueño, no cambia nada y devuelve 0, también para gerencia**, para que siga apareciendo como nueva hasta que alguien la tome. Ejecutivo sobre una ajena, 42501; conversación inexistente, P0002.
+- **Motivo:** si mirar una sin asignar la marcara leída, desaparecería de "nuevas" sin que nadie la atienda.
+- **Descartado:** marcar leída al tomarla (son dos acciones distintas; la interfaz puede llamar a ambas).
+- **Consecuencias:** tomar no cambia el dueño del lead (`active_deal_id`) ni registra evento o alerta; marcar leído no mira si la conversación está archivada. Migración `20261106164603_wa_rpc.sql`, pgTAP `36_wa_rpc`.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
