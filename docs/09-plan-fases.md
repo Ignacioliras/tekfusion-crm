@@ -60,14 +60,30 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [x] T11 (2026-11-06): `scripts/tekfusion/respaldo.mjs`, respaldo local con `--probar` (11,9 s en la revisión). Ver el 🔒 12 de la Fase 5.
 - [x] T12 (2026-11-06): `weekly_report_data(week_start)` con los siete datos de RF-12, solo gerencia con aal2 (pgTAP `33_weekly_report`). n8n (`service_role`) ya puede leerla y la semántica cambió (2026-11-06, `fase-4/permisos`, ver Fase 4).
 - [x] T13 (2026-11-06): borrador de `docs/manual-ejecutivo.md` (lo que existe hoy; lo de Fases 4/5 marcado como pendiente).
-- [ ] T8: e2e como Camila (alerta leída, importar `deals_sample.csv`, firma en Perfil). Bloqueada: un 403 cierra la sesión (el `authProvider` lo trata como sesión vencida). Ya resuelto: importar es solo gerencia (el paso de importar pasa a Andrea) y las Edge Functions corren en local (`supabase/functions/.env`).
-- [ ] T9: seed de demo con 12 meses de leads por línea y canal. Espera a T8 (mismo bloqueo del 403).
+- [x] T8: e2e como Camila (alerta leída, importar `deals_sample.csv`, firma en Perfil). Hecha como T10 de la cola 2026-11-06-c.
+- [x] T9: seed de demo con 12 meses de leads por línea y canal. Hecha como T11 de la cola 2026-11-06-c.
+
+### Cola nocturna 2026-11-06-c (mergeada a `main` el 2026-11-06; revisión 🔒 y decisiones en `docs/10`)
+- [x] T1 (2026-11-06): la Edge Function `users` valida con zod POST, PATCH y DELETE (`_shared/requestBody.ts`, `users/schemas.ts`); el 400 nombra el campo, nunca el valor.
+- [x] T2 (2026-11-06): parser de Evolution con `messages.update` (estado de entrega) y `connection.update`, en ambas grafías.
+- [x] T3 (2026-11-06): ingreso atómico de WhatsApp: `wa_ingest_message`, `wa_update_message_status`, `wa_upsert_instance_status`, solo service role (pgTAP `34_wa_ingest`).
+- [x] T4 (2026-11-06): Edge Function `whatsapp-webhook` (handler testeable). Tras la revisión: 400 con fecha fuera de rango y 503 si falla la base.
+- [x] T5 🔒 (2026-11-06): RLS de solo lectura en `wa_conversations` y `wa_messages` por rol (pgTAP `35_rls_whatsapp`). Revisada; el cuerpo crudo del webhook pasó a `wa_message_payloads`, sin acceso para usuarios.
+- [x] T6 (2026-11-06): RPC `take_wa_conversation` y `mark_wa_conversation_read` (una sin asignar no se marca leída) (pgTAP `36_wa_rpc`).
+- [x] T7 (2026-11-06): trigger `wa_cliente_respondio`: un entrante cancela los seguimientos pendientes del lead activo y avisa a su ejecutivo (pgTAP `37`).
+- [x] T8 (2026-11-06): permisos de ejecutivo en pantalla: Importar solo gerencia, ficha sin asignar solo con Tomar, Marcar contactado con nota obligatoria, "sin permiso" ante 42501.
+- [x] T9 🔒 (2026-11-06): RPC `send_wa_message`: guarda el mensaje pendiente y lo encola en `send_queue` por `message_id`, sin enviar (pgTAP `38`). Revisada.
+- [x] T10 (2026-11-06): e2e de alerta leída y firma en Perfil (Camila) e importar `deals_sample.csv` (Andrea con TOTP).
+- [x] T11 (2026-11-06): seed de demo con 199 leads en 12 meses (137 históricos archivados) y aserción de 12 meses en `30_dashboard_summary`.
+- [x] T12 (2026-11-06): `_shared/weeklyReportHtml.ts`, HTML y texto del correo semanal con los totales de `weekly_report_data` (sin desglose por línea: tarea nueva en la Fase 5).
 
 ## Fase 4 · Bandeja de WhatsApp (6 días)
 - [x] Permisos (2026-11-06, rama `fase-4/permisos`, sin merge): un 403 de la base ya no cierra la sesión (`providers/supabase/accessErrors.ts`, tests `accessErrors.test.ts` y `LeadFileDenied.test.tsx`); `weekly_report_data` acepta `service_role` y cuenta ganados/perdidos por `deals.closed_at` y sin atender/vencidos a la fecha (pgTAP `33_weekly_report`). Decisiones en `docs/10`.
-- [ ] Edge Function `whatsapp-webhook` con validación `apikey`, zod, idempotencia, adjuntos a Storage, creación de conversación y disparo del flujo 02. Tests escritos antes (TDD).
-- [ ] Validar con zod la entrada de la Edge Function `users` (POST, PATCH, DELETE), con el mismo `_shared` que use `whatsapp-webhook` (hallazgo B6 de la revisión de seguridad, `docs/10`).
-- [ ] Edge Function `whatsapp-send` (texto, adjunto, cotización, firma) con reglas anti-bloqueo.
+- [ ] Edge Function `whatsapp-webhook` con validación `apikey`, zod, idempotencia, adjuntos a Storage, creación de conversación y disparo del flujo 02. Tests escritos antes (TDD). *Avance (2026-11-06, cola 2026-11-06-c T2–T4): apikey, zod, idempotencia, conversación por teléfono, acuses y conexión. Faltan adjuntos a Storage, el disparo del flujo 02 y probar remitentes `@lid` en staging.*
+- [x] Validar con zod la entrada de la Edge Function `users` (POST, PATCH, DELETE), con el mismo `_shared` que use `whatsapp-webhook` (hallazgo B6 de la revisión de seguridad, `docs/10`). *Hecho (2026-11-06, cola 2026-11-06-c T1).*
+- [ ] Edge Function `whatsapp-send` (texto, adjunto, cotización, firma) con reglas anti-bloqueo. *🔒 por la revisión de T9 (`docs/10`): la RPC no pone tope, así que el tope diario, el espaciado y el horario hábil van aquí, y tiene que reemplazar el `wa_message_id` provisional (reconciliar por `job_id`) antes del eco del webhook.*
+- [ ] No se escribe en conversaciones archivadas: `send_wa_message` responde error si la conversación está archivada (decisión de Ignacio, 2026-11-06, `docs/10`).
+- [ ] El kanban oculta los leads ganados, perdidos y archivados de más de 30 días (decisión de Ignacio, 2026-11-06, `docs/10`).
 - [ ] Bandeja: lista (Mis chats / Sin asignar / Todos), conversación en tiempo real, estados, adjuntos, audio, respuestas rápidas, "Tomar" conversación.
 - [ ] Indicador de conexión + pantalla de reconexión por QR (Configuración → WhatsApp).
 - [ ] Atribución de mensajes `fromMe` escritos desde el teléfono.
@@ -80,6 +96,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] 04 Detector de respuestas por correo (IMAP VíaRed por ejecutivo).
 - [ ] 05 Alertas 24/48 h. 06 Archivado. 07 Ganado → facturación.
 - [ ] 08 Monitoreo WhatsApp. 09 Reporte semanal. 10 Reconciliación. 11 Avisos al ejecutivo.
+- [ ] Correo semanal con desglose por línea de negocio: `weekly_report_data` (o una RPC más) devuelve filas por línea y `renderWeeklyReport` arma la tabla (decisión de Ignacio, 2026-11-06, `docs/10`).
 - [ ] 🔒 12 Respaldos: `pg_dump` semanal y Storage a R2; `rclone` diario del VPS a R2. *Avance (2026-11-06, nocturno T11): `scripts/tekfusion/respaldo.mjs` cubre **solo la parte local**: `pg_dump` del Supabase local y, con `--probar`, restauración en una base temporal con comparación de conteos (11,9 s). No toca staging ni producción, no sube a R2 (bloque comentado con TODO), no respalda Storage ni el VPS, no restaura `pg_cron` y no rota `backups/`. Sigue abierto.*
 - [ ] Exportar todos los flujos a `n8n/flows/`. Prueba de reejecución sin duplicados.
 - [ ] 🔒 **Prueba de restauración con reloj** en staging (base + Storage + n8n + Evolution). Anotar tiempos en `10-decisiones.md`.
