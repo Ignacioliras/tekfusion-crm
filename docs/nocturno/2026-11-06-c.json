@@ -321,13 +321,16 @@
       "criterio": "Typecheck limpio y los tests de functions pasan, incluidos los dos casos del reporte.",
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 18:01:58"
+      "commit": "4688e3de7324eb2fc1b8dae7ebfc4cb3ed65b74b",
+      "costo_usd": 1.2183462,
+      "session_id": "23f7c7d8-a52c-43ed-96e6-f80698d9ea37",
+      "inicio": "2026-11-06 18:01:58",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé weeklyReportHtml.ts (asunto, HTML con estilos inline y texto escapado, texto plano) con los totales de weekly_report_data y sus tests; la tabla por línea y los enlaces por lead quedan pendientes porque la función solo devuelve totales.",
+      "fin": "2026-11-06 18:06:28"
     }
   ],
   "corridas": [
