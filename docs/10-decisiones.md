@@ -232,6 +232,42 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Reordenamiento al crear (T6):** `DealCreate` solo corre el índice de los leads que el usuario puede editar (gerencia: todos; ejecutivo: los suyos). Los sin asignar no se reordenan para un ejecutivo, porque la RLS lo rechaza.
 - **Rango de retención (T1):** entero de 0 a 120 meses.
 
+## 2026-11-06 · Implícitas en la cola nocturna 2026-11-06 (anotadas en la revisión de la mañana)
+Salvo las dos de Ignacio de abajo, ninguna está confirmada por él. Entraron a `main` T1–T8; T9 (bandeja) sigue solo en la rama `nocturno/2026-11-06`.
+
+**Decisiones de Ignacio (2026-11-06):**
+- **Leído:** un mensaje entrante se marca leído al abrir la conversación.
+- **Bandeja (T9) fuera de `main`:** no se mergea hasta que existan las policies de `wa_*` y la app deje de cerrar la sesión ante un 403.
+
+**Modelo de datos de WhatsApp (T8, `14_tekfusion_whatsapp.sql`).** Diferencias con lo que decía `docs/05`:
+- **Ids y enums:** `bigint` y valores en español, como el resto del esquema (no `uuid`).
+- **Estado del mensaje:** `wa_messages.status` reutiliza el enum `delivery_status` de las cotizaciones (`pendiente`, `enviado`, `entregado`, `leido`, `fallido`) en vez de crear `mensaje_estado`. Por defecto `pendiente`.
+- **No leídos:** el seed usa ese mismo `status` en los mensajes **entrantes** para decir "el ejecutivo ya lo abrió" (`leido`) y calcula `unread_count` como los entrantes que no están en `leido`. Ignacio decidió que se marcan leídos al abrir la conversación (arriba); la Fase 4 lo implementa.
+- **Origen:** `origin` pasó de texto libre a enum `wa_message_origin` (`crm`, `seguimiento`, `telefono`) y queda vacío en los entrantes.
+- **Columna nueva `job_id` (única):** no estaba en `docs/05`; es para que un envío del CRM o de n8n reintentado no cree dos mensajes, igual que en `followups`.
+- **Restricciones nuevas:** `phone` único y en E.164 (`^\+[1-9][0-9]{7,14}$`), `unread_count >= 0`, `wa_instance_status.instance` único. `sent_at` es obligatorio y sin valor por defecto; `text` y `payload` son opcionales; ambas tablas llevan además `created_at`.
+- **Borrados:** si se borra el contacto, el lead o el ejecutivo, la conversación y sus mensajes quedan con esa referencia vacía. Una conversación con mensajes **no se puede borrar** (`on delete restrict`): los mensajes nunca se van en cascada.
+- **Índices:** solo `(conversation_id, sent_at)` y `(deal_id)` en mensajes. Faltan los de `wa_conversations` por `sales_id` y `last_message_at`; van con las policies.
+- **Migración:** `db diff` le puso una hora anterior a migraciones ya escritas; se renombró a `20261106130000_whatsapp_tablas.sql`.
+
+**Tablas cerradas (T8).** RLS activa sin policies y `revoke all` a `authenticated` y `anon`; solo `service_role` lee y escribe. Un usuario logueado que las consulta recibe el error 42501 (403 en la API), **no cero filas**. Al escribir las policies por rol hay que darles también `grant select`.
+
+**Pendiente que T8 deja abierto (Fase 4):** la anonimización y la retención (RF-17) no tocan `wa_conversations` ni `wa_messages` (el TODO ya estaba en `anonymize_expired_contacts`), y `offboard_sale` no reasigna conversaciones.
+
+**Bandeja de solo lectura (T9, en la rama `nocturno/2026-11-06`, no en `main`).**
+- **Solo funciona en la demo:** contra Supabase las tablas están cerradas, la lista recibe 403 y la app **cierra la sesión** de gerencia y de ejecutivos al entrar a `/whatsapp` (ra-core trata el 403 como sesión vencida). Visto en la revisión del 2026-11-06 (capturas de la bandeja en `docs/capturas/2026-11-06/` del worktree, no en `main`). En `main` sigue el aviso "próximamente" inofensivo. Por eso T9 espera (decisión de Ignacio, arriba).
+- **Lector:** no tiene ninguna acción sobre `wa_*` en `canAccess`; ve "Tu perfil no tiene acceso…" y no se consulta nada. La pestaña WhatsApp del menú sigue visible para él.
+- **Pestaña Todos:** acción propia `list_all` sobre `wa_conversations`, solo gerencia. "Mis chats" filtra por `sales_id` = usuario y "Sin asignar" por `sales_id` vacío; en FakeRest eso es solo un filtro de la interfaz (no hay RLS).
+- **Archivadas:** la lista esconde las conversaciones con `archived`; no hay forma de verlas.
+- **Topes provisionales:** 100 conversaciones por pestaña, 500 mensajes por conversación y hasta 1000 mensajes leídos para armar el extracto de la lista (comentarios `ponytail:` en el código; se reemplazan con Realtime y paginación en la Fase 4).
+- **Adjuntos:** solo una ruta de Storage simple se vuelve enlace (cualquier cosa con esquema, `..` o caracteres raros se muestra sin enlace); hoy el enlace es la ruta cruda, sin URL firmada. El audio usa el reproductor del navegador.
+- **Texto:** siempre texto plano (React lo escapa); sin HTML ni Markdown.
+- **"Tomar" y "Enviar":** visibles pero deshabilitados, con la leyenda "Disponible en la Fase 4".
+
+**Dashboard sumado (T1–T4).** El promedio de primera respuesta del rango es un promedio ponderado por leads respondidos (resumen) o atendidos (ranking), a 2 decimales y vacío si nadie respondió. Las dos funciones son `security invoker` con `execute` solo para `authenticated` y `service_role`. FakeRest las imita en `management-dashboard/summary.ts`.
+
+**Kanban (T5).** Como un ejecutivo ya no corre el índice de leads ajenos ni sin asignar, en una columna pueden quedar índices repetidos (empate, sin error). Sigue pudiendo **arrastrar** una tarjeta ajena o sin asignar: `DealCard` pide permiso sin el registro y el guardado falla por RLS. Pendiente desactivar ese arrastre.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
