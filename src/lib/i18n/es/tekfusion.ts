@@ -12,6 +12,7 @@ export const tekfusionMessages = {
       unassigned: "Sin asignar",
       saved: "Cambios guardados",
       save_error: "No se pudo guardar el cambio. Intenta de nuevo.",
+      forbidden: "No tienes permiso para hacer esto.",
     },
     lead: {
       data: {

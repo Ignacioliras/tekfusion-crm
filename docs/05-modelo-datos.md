@@ -6,7 +6,7 @@
 > |---|---|---|
 > | `perfiles` | `sales` (Atomic) + `role`, `whatsapp_phone`, `signature` (hecho, Fase 2). `activo` = `disabled`; el suplente vive en `business_lines`; SMTP/IMAP irán en `sales_mail_accounts` (Fase 5, Vault) | `sales` ya está ligada a `auth.users` por triggers; Atomic desactiva, no borra |
 > | `contactos` | `contacts` + `companies` (Atomic) | Atomic separa empresa y persona; mantenerlo |
-> | `leads` | `deals` (Atomic) + `business_line`, `ai_confidence`, `origin_channel`, `raw_source`, `first_response_at`, `last_activity_at`, `lost_reason_id`, `won_amount`, `previous_deal_id`, `followups_enabled` (hecho, Fase 2); `archived_at` ya existía | etapa = `deals.stage` con `check` (`estados.ts` es la única fuente) |
+> | `leads` | `deals` (Atomic) + `business_line`, `ai_confidence`, `origin_channel`, `raw_source`, `first_response_at`, `last_activity_at`, `lost_reason_id`, `won_amount`, `previous_deal_id`, `followups_enabled` (hecho, Fase 2); `closed_at` (2026-11-06, fecha de cierre, la mantiene el trigger `set_deal_closed_at`); `archived_at` ya existía | etapa = `deals.stage` con `check` (`estados.ts` es la única fuente) |
 > | `actividades` | `deal_notes` / `contact_notes` + vista de actividad de Atomic (`activity_log`) + tabla `deal_events` para eventos de sistema | reutilizar la vista existente |
 > | `lineas_negocio` | `business_lines` | |
 > | `ausencias` | `sales_absences` | |

@@ -341,7 +341,9 @@ update public.deals set
     lost_reason_id = case when stage = 'perdido'
         then (select id from public.lost_reasons order by position offset (public.deals.id % 5) limit 1) end,
     first_response_at = case when stage <> 'nuevo' then created_at + interval '3 hours' end,
-    last_activity_at = updated_at;
+    last_activity_at = updated_at,
+    -- fecha de cierre de los ganados y perdidos (el reporte semanal cuenta por ella)
+    closed_at = case when stage in ('ganado', 'perdido') then updated_at end;
 
 -- Tres leads nuevos sin asignar: la cola que los ejecutivos pueden tomar (take_deal).
 update public.deals set sales_id = null

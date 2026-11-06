@@ -282,7 +282,7 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **Ficha sin asignar:** el ejecutivo solo ve **Tomar**; sin Editar, Archivar ni las acciones de etapa. "Tomar" pregunta el permiso del rol, no el del lead.
 - **Hueco visto en la revisión:** en esa misma ficha sigue visible el formulario **Agregar una nota**, y la base rechaza la nota (`deal_notes_insert` exige `can_edit_deal`). Con el cierre de sesión ante un 403 que ya está pendiente, guardar la nota sacaría al ejecutivo al login (lo segundo no se probó en el navegador). Falta esconder el formulario.
 
-**Reporte semanal (T12, `weekly_report_data(week_start)`).** Definiciones que la noche eligió; RF-12 solo nombra los datos:
+**Reporte semanal (T12, `weekly_report_data(week_start)`).** Definiciones que la noche eligió; RF-12 solo nombra los datos. **Cohorte, sin atender, vencidos y quién la ejecuta quedaron reemplazados** por la decisión "Reporte semanal: cerrados por fecha de cierre…" de más abajo:
 - **Semana:** `[week_start, week_start + 7)` en días de America/Santiago; `week_start` puede ser cualquier día, no se fuerza a lunes.
 - **Cohorte:** todo se cuenta sobre los leads **ingresados** esa semana, con su etapa **de hoy** (igual que el dashboard). "Ganados" y "perdidos" no son los cerrados durante la semana: `deals` no guarda fecha de cierre.
 - **Contactados:** lead que ya no está en `nuevo` o que tiene `first_response_at`. Cuenta también uno perdido o archivado sin contacto (definición heredada de `dashboard_daily`).
@@ -303,6 +303,20 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **`.eslintignore` (T4):** se borró sin migrar sus rutas (ESLint ya no lo leía y esas rutas no existen en el repo).
 - **E2E de gerencia (T10):** el test inscribe el TOTP de Andrea y genera los códigos él mismo (`e2e/tekfusion/fixtures/totp.ts`); los cuatro casos comparten una sesión.
 - **Manual del ejecutivo (T13):** describe solo lo que existe hoy y marca **(pendiente Fase 4/5)** lo que depende de n8n, correo y WhatsApp. No menciona la importación de leads.
+
+## 2026-11-06 · Un 403 de la base no cierra la sesión (rama `fase-4/permisos`)
+- **Decisión:** la sesión se cierra solo cuando de verdad se perdió: 401, el 400 `AuthSessionMissingError` de supabase-js y el 403 de Auth con código `session_not_found` o `bad_jwt`. Un 403 de PostgREST (RLS o función que responde 42501) **no** cierra la sesión: se muestra como error en pantalla y el usuario sigue adentro.
+- **Motivo:** el `checkError` de ra-supabase-core trataba cualquier 403 como sesión vencida. Por eso la bandeja sacaba a gerencia al login, y lo mismo importar leads o guardar una nota rechazada por RLS (pendientes anotados arriba).
+- **Cómo:** `providers/supabase/accessErrors.ts` tiene la regla (`isSessionLost`, función pura con test) y un envoltorio del dataProvider de Supabase que cambia el mensaje en inglés de un 42501 por `tekfusion.common.forbidden` ("No tienes permiso para hacer esto."). `authProvider.checkError` usa la regla.
+- **Descartado:** cerrar sesión ante cualquier 403 que no sea 42501 (lista de exclusión). Se prefirió lista de inclusión: un 403 desconocido deja al usuario adentro con un error, no lo expulsa.
+- **Consecuencias (mías, no confirmadas por Ignacio):** las pantallas que ya muestran un texto fijo al fallar (`tekfusion.common.save_error`, por ejemplo la edición en línea de la ficha) siguen mostrando ese texto y no el de "sin permiso". Un 403 de Auth con cualquier otro código tampoco cierra la sesión; si la sesión de verdad terminó, el siguiente pedido responde 401 y ahí sí se cierra. La demo (FakeRest) no cambia: nunca cerró sesión por errores.
+
+## 2026-11-06 · Reporte semanal: cerrados por fecha de cierre, pendientes a la fecha, y entra n8n (decisión de Ignacio; rama `fase-4/permisos`)
+- **Decisión de Ignacio (2026-11-06):** en `weekly_report_data(week_start)`, **ganados y perdidos** (con su monto y sus motivos) son los leads **cerrados en esa semana por fecha de cierre**, hayan ingresado cuando hayan ingresado. **Sin atender y vencidos** son **todos los que están así a la fecha**, de cualquier semana: `week_start` no los filtra. Entradas, contactados y cotizados siguen siendo los leads ingresados esa semana.
+- **Quién la ejecuta:** gerencia con verificación en dos pasos y, además, `service_role` (`auth.role() = 'service_role'`, mismo patrón que `anonymize_expired_contacts`), que es como entra n8n (flujo 09). Ejecutivo, lector, gerencia sin TOTP y una conexión sin JWT siguen recibiendo 42501.
+- **Fecha de cierre (técnica, mía):** `deals` no la guardaba. Se agrega `deals.closed_at`, mantenida por el trigger `set_deal_closed_at`: se fija al pasar a `ganado` o `perdido` y se borra si el lead se reabre o se archiva. Un lead insertado ya cerrado (importación RF-15) queda con `closed_at` vacío salvo que se le entregue: su fecha real no se conoce y **no cuenta en ninguna semana**. El seed la llena con `updated_at`.
+- **Descartado:** leer el cierre desde `audit_log` (`deal.stage_changed`): no registra los cambios hechos con `service_role` y obliga a sacar una métrica de un log. Usar `last_activity_at`: una nota posterior movería el cierre de semana.
+- **Consecuencias:** la migración `20261106140000_weekly_report.sql` se modificó en su lugar (no se había aplicado en ninguna nube) y `schemas/15_tekfusion_weekly_report.sql` quedó idéntico. El reporte de una semana pasada muestra los sin atender y vencidos **de hoy**, no los de entonces. `closed_at` no está en el frontend, la importación ni FakeRest (nada la usa todavía). Un ejecutivo puede escribir `closed_at` de sus propios leads por la API, igual que `won_amount`. pgTAP `33_weekly_report` con un caso por regla.
 
 ## Plantilla para nuevas decisiones
 ```

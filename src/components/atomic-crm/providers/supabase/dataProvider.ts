@@ -29,6 +29,7 @@ import {
   quotePdfPath,
   validateQuoteFile,
 } from "../commons/quoteFile";
+import { withPermissionDeniedMessage } from "./accessErrors";
 import { getIsInitialized } from "./authProvider";
 import { searchDealCategories } from "./searchDealCategories";
 import {
@@ -589,10 +590,12 @@ export const getDataProvider = () => {
       "Please set the VITE_SB_PUBLISHABLE_KEY environment variable",
     );
   }
-  return withLifecycleCallbacks(
-    getDataProviderWithCustomMethods(),
-    lifeCycleCallbacks,
-  ) as CrmDataProvider;
+  return withPermissionDeniedMessage(
+    withLifecycleCallbacks(
+      getDataProviderWithCustomMethods(),
+      lifeCycleCallbacks,
+    ) as CrmDataProvider,
+  );
 };
 
 const applyFullTextSearch = (columns: string[]) => (params: GetListParams) => {

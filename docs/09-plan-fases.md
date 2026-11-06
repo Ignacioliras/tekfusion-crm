@@ -58,12 +58,13 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [x] T7 (2026-11-06): textos en inglés de contactos, empresas, tareas y notas pasados a `tekfusion.*` en español.
 - [x] T10 (2026-11-06): e2e como Andrea con TOTP: entrar, dashboard y ranking, cadencia y usuarios (`e2e/tekfusion/andrea.spec.ts`).
 - [x] T11 (2026-11-06): `scripts/tekfusion/respaldo.mjs`, respaldo local con `--probar` (11,9 s en la revisión). Ver el 🔒 12 de la Fase 5.
-- [x] T12 (2026-11-06): `weekly_report_data(week_start)` con los siete datos de RF-12, solo gerencia con aal2 (pgTAP `33_weekly_report`). Abierto: n8n (`service_role`) recibe 42501 y el flujo 09 no puede leerla todavía.
+- [x] T12 (2026-11-06): `weekly_report_data(week_start)` con los siete datos de RF-12, solo gerencia con aal2 (pgTAP `33_weekly_report`). n8n (`service_role`) ya puede leerla y la semántica cambió (2026-11-06, `fase-4/permisos`, ver Fase 4).
 - [x] T13 (2026-11-06): borrador de `docs/manual-ejecutivo.md` (lo que existe hoy; lo de Fases 4/5 marcado como pendiente).
 - [ ] T8: e2e como Camila (alerta leída, importar `deals_sample.csv`, firma en Perfil). Bloqueada: un 403 cierra la sesión (el `authProvider` lo trata como sesión vencida). Ya resuelto: importar es solo gerencia (el paso de importar pasa a Andrea) y las Edge Functions corren en local (`supabase/functions/.env`).
 - [ ] T9: seed de demo con 12 meses de leads por línea y canal. Espera a T8 (mismo bloqueo del 403).
 
 ## Fase 4 · Bandeja de WhatsApp (6 días)
+- [x] Permisos (2026-11-06, rama `fase-4/permisos`, sin merge): un 403 de la base ya no cierra la sesión (`providers/supabase/accessErrors.ts`, tests `accessErrors.test.ts` y `LeadFileDenied.test.tsx`); `weekly_report_data` acepta `service_role` y cuenta ganados/perdidos por `deals.closed_at` y sin atender/vencidos a la fecha (pgTAP `33_weekly_report`). Decisiones en `docs/10`.
 - [ ] Edge Function `whatsapp-webhook` con validación `apikey`, zod, idempotencia, adjuntos a Storage, creación de conversación y disparo del flujo 02. Tests escritos antes (TDD).
 - [ ] Validar con zod la entrada de la Edge Function `users` (POST, PATCH, DELETE), con el mismo `_shared` que use `whatsapp-webhook` (hallazgo B6 de la revisión de seguridad, `docs/10`).
 - [ ] Edge Function `whatsapp-send` (texto, adjunto, cotización, firma) con reglas anti-bloqueo.

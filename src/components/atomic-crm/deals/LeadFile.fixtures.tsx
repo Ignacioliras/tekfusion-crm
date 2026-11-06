@@ -1,4 +1,4 @@
-import type { AuthProvider } from "ra-core";
+import type { AuthProvider, DataProvider } from "ra-core";
 import { ResourceContextProvider } from "ra-core";
 
 import {
@@ -121,11 +121,17 @@ export const readerAccess: Partial<AuthProvider> = {
 export const LeadFile = ({
   deal,
   authProvider,
+  dataProvider,
 }: {
   deal?: Partial<Deal>;
   authProvider?: Partial<AuthProvider>;
+  dataProvider?: Partial<DataProvider>;
 }) => (
-  <StoryWrapper data={leadFileData(deal)} authProvider={authProvider}>
+  <StoryWrapper
+    data={leadFileData(deal)}
+    authProvider={authProvider}
+    dataProvider={dataProvider}
+  >
     <ResourceContextProvider value="deals">
       <DealShow open id="1" />
     </ResourceContextProvider>

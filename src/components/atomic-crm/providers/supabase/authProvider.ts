@@ -4,6 +4,7 @@ import { supabaseAuthProvider } from "ra-supabase-core";
 import { canAccess, getAccessRole } from "../commons/canAccess";
 import type { MfaApi, MfaRequirement } from "../../mfa/mfaApi";
 import { clearPersistedCache } from "../../root/clearPersistedCache";
+import { isSessionLost } from "./accessErrors";
 import { resetSigner } from "./signedUrls";
 import { getSupabaseClient } from "./supabase";
 
@@ -93,6 +94,17 @@ function clearCache() {
   storage?.removeItem(CURRENT_SALE_CACHE_KEY);
 }
 
+/**
+ * ra-supabase-core logs out on any 403. An action refused by RLS is a 403 too
+ * and the session is still good, so only a lost session rejects here
+ * (accessErrors.ts).
+ */
+export const checkError: AuthProvider["checkError"] = async (error) => {
+  if (isSessionLost(error)) {
+    throw new Error("ra.notification.logged_out");
+  }
+};
+
 export const getAuthProvider = (): AuthProvider => {
   const baseAuthProvider = getBaseAuthProvider();
   return {
@@ -151,6 +163,7 @@ export const getAuthProvider = (): AuthProvider => {
 
       return baseAuthProvider.checkAuth(params);
     },
+    checkError,
     canAccess: async (params) => {
       const isInitialized = await getIsInitialized();
       if (!isInitialized) return false;
