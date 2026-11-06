@@ -222,6 +222,14 @@ Formato: fecha · decisión · motivo · alternativas descartadas · consecuenci
 - **Retención (RF-17):** configurable por gerencia en `configuration.config.dataRetentionMonths`; **24 meses por defecto** (docs/08), **0 la desactiva**.
 - **Tarea programada con `pg_cron`:** la anonimización por retención corre a diario dentro de la base (no en n8n): no depende del VPS y queda con su pgTAP. Sentry: `@sentry/react` (instalado de día porque el loop nocturno no instala) y `npm:@sentry/deno` en las Edge Functions; ambos apagados con DSN vacío.
 
+## 2026-11-05 · Implícitas en la cola nocturna 2026-11-05 (anotadas en la revisión de la mañana)
+- **Qué se anonimiza por retención (T5) — PROVISIONAL, por confirmar con Ignacio/TekFusion:** un contacto entra solo si **todos** sus leads están en `perdido`/`archivado` y ninguno tuvo actividad (`last_activity_at`) dentro del plazo; un contacto **sin leads no se toca**. Corre a las 07:00 UTC. Las notas de un lead compartido con otro contacto no se vacían. Preguntas abiertas: (1) ¿una nota, tarea o mensaje reciente del contacto debe frenar la retención? Hoy solo cuenta `deals.last_activity_at`. (2) Los leads importados (RF-15) reciben `last_activity_at` = fecha de importación, así que el histórico espera 24 meses más desde la migración: ¿se importa la fecha real? (3) ¿Qué datos del lead se borran al anonimizar? `raw_source`, nombre y descripción del lead, `followups.messages`, `alerts.message`, `tasks.text` y los PDF de cotización hoy sobreviven (auditoría del 2026-11-05).
+- **Qué deja la anonimización (T5):** nombre "Contacto anonimizado #id", sin correo, teléfono, avatar, cargo, antecedentes ni LinkedIn; texto de sus notas → "[contenido anonimizado]". Leads, montos, etapas y fechas quedan intactos (las métricas sobreviven). Un contacto ya anonimizado se reconoce por ese nombre.
+- **Archivos de la retención automática (T5, pendiente):** la corrida de `pg_cron` quita la referencia al adjunto pero el archivo queda en el bucket; el botón manual sí lo borra. Falta la purga de huérfanos.
+- **Dueño del lead manual (T2):** solo gerencia elige ejecutivo (vacío = sin asignar); el ejecutivo queda siempre como dueño de lo que crea.
+- **Reordenamiento al crear (T6):** `DealCreate` solo corre el índice de los leads que el usuario puede editar (gerencia: todos; ejecutivo: los suyos). Los sin asignar no se reordenan para un ejecutivo, porque la RLS lo rechaza.
+- **Rango de retención (T1):** entero de 0 a 120 meses.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
