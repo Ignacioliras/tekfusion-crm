@@ -5,39 +5,33 @@ import type {
   LayoutComponent,
 } from "ra-core";
 import { CustomRoutes, localStorageStore, Resource } from "ra-core";
-import { useEffect, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, type ComponentType } from "react";
 import { Route } from "react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { setPersistedQueryClient } from "./clearPersistedCache";
 import { Admin } from "@/components/admin/admin";
+import { Loading } from "@/components/admin/loading";
 import { ForgotPasswordPage } from "@/components/supabase/forgot-password-page";
 import { SetPasswordPage } from "@/components/supabase/set-password-page";
 import { MfaEnrollPage, MfaVerifyPage } from "../mfa/MfaPages";
 
 import companies from "../companies";
 import contacts from "../contacts";
-import { Dashboard } from "../dashboard/Dashboard";
-import { MobileDashboard } from "../dashboard/MobileDashboard";
 import deals from "../deals";
 import { Layout } from "../layout/Layout";
 import { MobileLayout } from "../layout/MobileLayout";
 import { SignupPage } from "../login/SignupPage";
 import { ConfirmationRequired } from "../login/ConfirmationRequired";
-import { ImportPage } from "../misc/ImportPage";
 import { ChangelogPage } from "../misc/ChangelogPage";
-import { CreditosPage } from "../creditos/CreditosPage";
 import { DealTableList } from "../deals/DealTableList";
-import { WhatsAppPage } from "../whatsapp/WhatsAppPage";
 import {
   getAuthProvider as defaultAuthProviderBuilder,
   getDataProvider as defaultDataProviderBuilder,
 } from "../providers/supabase";
 import sales from "../sales";
-import { SettingsPageMobile } from "../settings/SettingsPageMobile";
 import { ProfilePage } from "../settings/ProfilePage";
-import { SettingsPage } from "../settings/SettingsPage";
 import {
   CONFIGURATION_STORE_KEY,
   type ConfigurationContextValue,
@@ -65,6 +59,54 @@ import { CompanyShow } from "../companies/CompanyShow.tsx";
 import { NoteShowPage } from "../notes/NoteShowPage.tsx";
 
 const defaultStore = localStorageStore(undefined, "CRM");
+
+// Heavy screens load on demand (own chunk). Paths are literals so this file does
+// not import the page modules statically (that would pull them back into the
+// main chunk); they must match each page's `.path`.
+const lazyPage = <K extends string>(
+  load: () => Promise<Record<K, ComponentType>>,
+  name: K,
+) => {
+  const Page = lazy<ComponentType>(() =>
+    load().then((module) => ({ default: module[name] })),
+  );
+  const LazyPage = () => (
+    <Suspense fallback={<Loading />}>
+      <Page />
+    </Suspense>
+  );
+  return LazyPage;
+};
+
+const Dashboard = lazyPage(() => import("../dashboard/Dashboard"), "Dashboard");
+const MobileDashboard = lazyPage(
+  () => import("../dashboard/MobileDashboard"),
+  "MobileDashboard",
+);
+const SettingsPage = lazyPage(
+  () => import("../settings/SettingsPage"),
+  "SettingsPage",
+);
+const SettingsPageMobile = lazyPage(
+  () => import("../settings/SettingsPageMobile"),
+  "SettingsPageMobile",
+);
+const ImportPage = lazyPage(() => import("../misc/ImportPage"), "ImportPage");
+const CreditosPage = lazyPage(
+  () => import("../creditos/CreditosPage"),
+  "CreditosPage",
+);
+const WhatsAppPage = lazyPage(
+  () => import("../whatsapp/WhatsAppPage"),
+  "WhatsAppPage",
+);
+
+const LAZY_PATHS = {
+  settings: "/settings",
+  import: "/import",
+  creditos: "/creditos",
+  whatsapp: "/whatsapp",
+} as const;
 
 export type CRMProps = {
   dataProvider?: CrmDataProvider;
@@ -264,12 +306,12 @@ const DesktopAdmin = (
 
       <CustomRoutes>
         <Route path={ProfilePage.path} element={<ProfilePage />} />
-        <Route path={SettingsPage.path} element={<SettingsPage />} />
-        <Route path={ImportPage.path} element={<ImportPage />} />
+        <Route path={LAZY_PATHS.settings} element={<SettingsPage />} />
+        <Route path={LAZY_PATHS.import} element={<ImportPage />} />
         <Route path={ChangelogPage.path} element={<ChangelogPage />} />
-        <Route path={CreditosPage.path} element={<CreditosPage />} />
+        <Route path={LAZY_PATHS.creditos} element={<CreditosPage />} />
         <Route path={DealTableList.path} element={<DealTableList />} />
-        <Route path={WhatsAppPage.path} element={<WhatsAppPage />} />
+        <Route path={LAZY_PATHS.whatsapp} element={<WhatsAppPage />} />
       </CustomRoutes>
       <Resource name="deals" {...deals} />
       <Resource name="contacts" {...contacts} />
@@ -342,13 +384,10 @@ const MobileAdmin = (
           />
         </CustomRoutes>
         <CustomRoutes>
-          <Route
-            path={SettingsPageMobile.path}
-            element={<SettingsPageMobile />}
-          />
+          <Route path={LAZY_PATHS.settings} element={<SettingsPageMobile />} />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
           <Route path={DealTableList.path} element={<DealTableList />} />
-          <Route path={WhatsAppPage.path} element={<WhatsAppPage />} />
+          <Route path={LAZY_PATHS.whatsapp} element={<WhatsAppPage />} />
         </CustomRoutes>
         {/* Desktop screens reused on small screens: no mobile-specific flows (CLAUDE.md rule 9). */}
         <Resource name="deals" {...deals} />
