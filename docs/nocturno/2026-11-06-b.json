@@ -305,13 +305,16 @@
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 06:10:38"
+      "commit": "07a8b29a3aa839f1f243948c5dbe746b15901b88",
+      "costo_usd": 1.3906104,
+      "session_id": "ecfbda6e-a786-467e-bde8-38e7d62abb4b",
+      "inicio": "2026-11-06 06:10:38",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creado scripts/tekfusion/respaldo.mjs (pg_dump vía contenedor, --probar con base temporal, conteos, tiempo y limpieza) y backups/ en .gitignore; la verificación no la pude correr por permisos, la valida el script nocturno.",
+      "fin": "2026-11-06 06:14:04"
     },
     {
       "id": "T12",
