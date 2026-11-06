@@ -31,7 +31,8 @@ export const TODAY = santiagoDay(new Date());
 export const EARLIER = addDays(TODAY, -40);
 
 /**
- * Two periods of fictitious rows, precalculated as the view would return them.
+ * Two periods of fictitious dashboard_daily rows; FakeRest's getDashboardSummary
+ * sums them per range, as dashboard_summary() does in the database.
  * Last 30 days: 6 leads, 3 of 4 responded within 24 h (75%), 8,5 h on average.
  * The 30 days before: 3 leads, 0 of 2 within 24 h. Both periods: 9 leads, 3 of 6 (50%).
  */

@@ -1,8 +1,8 @@
-// Pure calculations of the management dashboard (RF-11) over dashboard_daily
+// Pure calculations of the management dashboard (RF-11) over dashboard_summary
 // rows. Every ratio returns null when its denominator is zero; the UI shows "—".
 import type { Identifier } from "ra-core";
 
-import type { DashboardDailyRow, SalesRankingRow } from "../types";
+import type { DashboardSummaryRow, SalesRankingRow } from "../types";
 import type { Etapa } from "../tekfusion/estados";
 import { addDays, santiagoDay } from "../tekfusion/santiago";
 
@@ -35,7 +35,7 @@ const ZERO: Totals = {
   wonAmount: 0,
 };
 
-const addRow = (totals: Totals, row: DashboardDailyRow): Totals => ({
+const addRow = (totals: Totals, row: DashboardSummaryRow): Totals => ({
   leads: totals.leads + row.leads,
   contacted: totals.contacted + row.contacted,
   quoted: totals.quoted + row.quoted,
@@ -51,17 +51,17 @@ const addRow = (totals: Totals, row: DashboardDailyRow): Totals => ({
   wonAmount: totals.wonAmount + row.won_amount,
 });
 
-export const sumRows = (rows: readonly DashboardDailyRow[]): Totals =>
+export const sumRows = (rows: readonly DashboardSummaryRow[]): Totals =>
   rows.reduce(addRow, ZERO);
 
 /** Totals per value of a column, e.g. per business_line. */
 export const totalsBy = (
-  rows: readonly DashboardDailyRow[],
+  rows: readonly DashboardSummaryRow[],
   key: "business_line" | "origin_channel" | "month",
 ): Map<string, Totals> =>
   rows.reduce((groups, row) => {
-    // "month": "YYYY-MM" of the row's day.
-    const group = key === "month" ? row.day.slice(0, 7) : row[key];
+    // "month": "YYYY-MM" of the row's month ("YYYY-MM-01").
+    const group = key === "month" ? row.month.slice(0, 7) : row[key];
     const next = new Map(groups);
     next.set(group, addRow(groups.get(group) ?? ZERO, row));
     return next;

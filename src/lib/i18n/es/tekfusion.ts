@@ -311,7 +311,6 @@ export const tekfusionMessages = {
       compared_with: "Comparado con el período anterior: %{range}",
       previous_row: "Período anterior (%{range})",
       period: "Período",
-      partial: "rango muy largo: datos parciales",
       presets: {
         this_month: "Este mes",
         last_month: "Mes pasado",

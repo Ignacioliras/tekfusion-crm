@@ -1,4 +1,5 @@
-import { useGetList, useTranslate } from "ra-core";
+import { useQuery } from "@tanstack/react-query";
+import { useDataProvider, useTranslate } from "ra-core";
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { CANALES_ORIGEN, labelOf } from "../tekfusion/canales";
 import { ETAPAS } from "../tekfusion/estados";
 import { LINEAS_NEGOCIO } from "../tekfusion/lineas";
 import { formatAmount } from "../tekfusion/money";
-import type { DashboardDailyRow } from "../types";
+import type { CrmDataProvider } from "../providers/types";
 import {
   avgFirstResponseHours,
   closeRate,
@@ -25,7 +26,6 @@ import {
   formatHours,
   formatPercent,
   funnel,
-  inRange,
   PRESETS,
   presetRange,
   previousRange,
@@ -39,10 +39,6 @@ import {
 import { SalesRanking } from "./SalesRanking";
 
 const CURRENCY = "CLP";
-// ponytail: one request capped by PostgREST (max_rows = 1000 in config.toml),
-// ~1 row per day today; past it the page says the data is partial. Upgrade:
-// aggregate the range in the database (an RPC) if a long range ever hits it.
-const MAX_ROWS = 1000;
 // ponytail: below this many leads the funnel scales to it, so 1 of 1 does not
 // draw as a full bar; a real volume (dozens a month) scales to its own leads.
 const FUNNEL_MIN_SCALE = 10;
@@ -65,10 +61,19 @@ const dayLabel = (day: string): string =>
 const rangeLabel = ({ from, to }: DayRange): string =>
   `${dayLabel(from)} – ${dayLabel(to)}`;
 
+/** One range summed in the database (RPC dashboard_summary). */
+const useDashboardSummary = ({ from, to }: DayRange) => {
+  const dataProvider = useDataProvider<CrmDataProvider>();
+  return useQuery({
+    queryKey: ["dashboard_summary", from, to],
+    queryFn: () => dataProvider.getDashboardSummary({ from, to }),
+  });
+};
+
 /**
- * Commercial metrics over the dashboard_daily view (RF-11), for a date range
- * against the range of the same length right before it. The view applies the
- * RLS: an executive sees their own leads, managers and readers see all.
+ * Commercial metrics over dashboard_summary (RF-11), for a date range against
+ * the range of the same length right before it. The underlying view applies
+ * the RLS: an executive sees their own leads, managers and readers see all.
  * Managers also get the executive ranking for the same range.
  */
 export const ManagementDashboard = () => {
@@ -81,18 +86,12 @@ export const ManagementDashboard = () => {
     range.from <= range.to ? range : { from: range.to, to: range.from };
   const previous = previousRange(ordered);
 
-  const {
-    data = [],
-    total,
-    isPending,
-  } = useGetList<DashboardDailyRow>("dashboard_daily", {
-    pagination: { page: 1, perPage: MAX_ROWS },
-    sort: { field: "day", order: "ASC" },
-    filter: { "day@gte": previous.from, "day@lte": ordered.to },
-  });
-
-  const currentRows = data.filter((row) => inRange(row, ordered));
-  const previousRows = data.filter((row) => inRange(row, previous));
+  const currentQuery = useDashboardSummary(ordered);
+  const previousQuery = useDashboardSummary(previous);
+  const isPending = currentQuery.isPending || previousQuery.isPending;
+  const error = currentQuery.error ?? previousQuery.error;
+  const currentRows = currentQuery.data ?? [];
+  const previousRows = previousQuery.data ?? [];
   const current = sumRows(currentRows);
   const before = sumRows(previousRows);
 
@@ -148,13 +147,14 @@ export const ManagementDashboard = () => {
           {translate("tekfusion.dashboard.compared_with", {
             range: rangeLabel(previous),
           })}
-          {total != null && total > data.length
-            ? ` · ${translate("tekfusion.dashboard.partial")}`
-            : null}
         </p>
       </CardHeader>
       <CardContent>
-        {isPending ? null : currentRows.length === 0 ? (
+        {error ? (
+          <p role="alert" className="text-destructive text-sm">
+            {translate("ra.notification.http_error")}
+          </p>
+        ) : isPending ? null : currentRows.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             {translate("tekfusion.dashboard.empty")}
           </p>

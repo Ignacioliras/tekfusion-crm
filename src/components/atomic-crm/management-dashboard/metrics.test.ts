@@ -14,6 +14,9 @@ import {
   totalsBy,
   within24hRate,
 } from "./metrics";
+import { summarizeDashboard } from "./summary";
+
+const YEAR = { from: "2026-01-01", to: "2026-12-31" };
 
 const rows = [
   buildRow({
@@ -46,10 +49,12 @@ const rows = [
     quoted_amount: 1_000_000,
   }),
 ];
+// The rows as dashboard_summary returns them: one per month, line and channel.
+const summary = summarizeDashboard(rows, YEAR);
 
 describe("metrics del dashboard de gerencia", () => {
   it("adds up counts and amounts across rows", () => {
-    const totals = sumRows(rows);
+    const totals = sumRows(summary);
     expect(totals).toMatchObject({
       leads: 6,
       contacted: 4,
@@ -64,22 +69,22 @@ describe("metrics del dashboard de gerencia", () => {
   });
 
   it("computes the share within 24 h over the responded leads", () => {
-    expect(within24hRate(sumRows(rows))).toBe(0.75);
+    expect(within24hRate(sumRows(summary))).toBe(0.75);
   });
 
   it("weights the average first response by responded leads", () => {
     // (10 h × 3 + 4 h × 1) / 4 = 8,5 h
-    expect(avgFirstResponseHours(sumRows(rows))).toBe(8.5);
+    expect(avgFirstResponseHours(sumRows(summary))).toBe(8.5);
     expect(formatHours(8.5)).toBe("8,5 h");
   });
 
   it("computes the close rate as won / (won + lost)", () => {
-    expect(closeRate(sumRows(rows))).toBe(0.25);
+    expect(closeRate(sumRows(summary))).toBe(0.25);
     expect(formatPercent(0.25)).toBe("25%");
   });
 
   it("returns the funnel nuevo → contactado → cotizado → ganado", () => {
-    expect(funnel(sumRows(rows))).toEqual([
+    expect(funnel(sumRows(summary))).toEqual([
       { stage: "nuevo", value: 6 },
       { stage: "contactado", value: 4 },
       { stage: "cotizado", value: 3 },
@@ -88,8 +93,8 @@ describe("metrics del dashboard de gerencia", () => {
   });
 
   it("groups totals by line, channel and month", () => {
-    expect(totalsBy(rows, "business_line").get("tuberias")?.lost).toBe(2);
-    expect(totalsBy(rows, "origin_channel").get("correo")?.leads).toBe(6);
+    expect(totalsBy(summary, "business_line").get("tuberias")?.lost).toBe(2);
+    expect(totalsBy(summary, "origin_channel").get("correo")?.leads).toBe(6);
   });
 
   it("returns null and shows a dash instead of dividing by zero", () => {
@@ -100,7 +105,9 @@ describe("metrics del dashboard de gerencia", () => {
     expect(formatPercent(null)).toBe(EMPTY_VALUE);
     expect(formatHours(null)).toBe(EMPTY_VALUE);
     // Leads that nobody answered yet: no average, no share.
-    const unanswered = sumRows([buildRow({ leads: 3 })]);
+    const unanswered = sumRows(
+      summarizeDashboard([buildRow({ day: "2026-10-15", leads: 3 })], YEAR),
+    );
     expect(formatPercent(within24hRate(unanswered))).toBe("—");
     expect(formatHours(avgFirstResponseHours(unanswered))).toBe("—");
   });
@@ -146,7 +153,10 @@ describe("metrics del dashboard de gerencia", () => {
     expect(inRange(rows[1], { from: "2026-10-01", to: "2026-10-31" })).toBe(
       false,
     );
-    expect([...totalsBy(rows, "month").keys()]).toEqual(["2026-10", "2026-11"]);
+    expect([...totalsBy(summary, "month").keys()]).toEqual([
+      "2026-10",
+      "2026-11",
+    ]);
   });
 
   it("ranks executives by won amount over the days in range", () => {

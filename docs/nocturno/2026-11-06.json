@@ -74,8 +74,8 @@
         "T2"
       ],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
@@ -92,7 +92,8 @@
         "src/lib/i18n/es/tekfusion.ts"
       ],
       "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/management-dashboard",
-      "criterio": "Typecheck y lint limpios; los tests del módulo pasan; ManagementDashboard ya no consulta dashboard_daily ni muestra 'datos parciales'; no queda MAX_ROWS en ManagementDashboard.tsx."
+      "criterio": "Typecheck y lint limpios; los tests del módulo pasan; ManagementDashboard ya no consulta dashboard_daily ni muestra 'datos parciales'; no queda MAX_ROWS en ManagementDashboard.tsx.",
+      "inicio": "2026-11-06 01:35:38"
     },
     {
       "depende_de": [
