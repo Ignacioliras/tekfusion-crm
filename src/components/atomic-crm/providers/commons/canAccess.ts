@@ -12,6 +12,8 @@ type CanAccessParams<
 // this keeps the interface from offering what the database would refuse.
 const READ_ACTIONS = ["list", "show"];
 
+const WHATSAPP_RESOURCES = ["wa_conversations", "wa_messages"];
+
 export type AccessRole = "admin" | "user" | "reader";
 
 /** The access role of a sales row: TekFusion's role first, Atomic's flag second. */
@@ -34,6 +36,12 @@ export const canAccess = <
   // Exporting a CSV takes the data out of the CRM: managers only (docs/08).
   if (params.action === "export") {
     return false;
+  }
+
+  // WhatsApp inbox (docs/08): the reader sees no conversation, and the
+  // "Todos" tab (action "list_all") is for managers only.
+  if (WHATSAPP_RESOURCES.includes(params.resource)) {
+    return role !== "reader" && params.action !== "list_all";
   }
 
   if (role === "reader" && !READ_ACTIONS.includes(params.action)) {

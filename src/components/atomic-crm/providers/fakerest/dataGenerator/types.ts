@@ -18,6 +18,8 @@ import type {
   SalesRankingRow,
   Tag,
   Task,
+  WaConversation,
+  WaMessage,
 } from "../../../types";
 import type { ConfigurationContextValue } from "../../../root/ConfigurationContext";
 
@@ -44,5 +46,7 @@ export interface Db {
   // A view in Supabase; FakeRest has no views, so it stays empty in the demo.
   dashboard_daily: DashboardDailyRow[];
   sales_ranking: SalesRankingRow[];
+  wa_conversations: WaConversation[];
+  wa_messages: WaMessage[];
   configuration: Array<{ id: number; config: ConfigurationContextValue }>;
 }

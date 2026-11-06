@@ -33,6 +33,21 @@ it("lets only managers export, on every resource", () => {
   }
 });
 
+it("keeps the reader out of WhatsApp and the 'Todos' tab for managers", () => {
+  for (const resource of ["wa_conversations", "wa_messages"]) {
+    expect(canAccess("reader", { resource, action: "list" })).toBe(false);
+    expect(canAccess("reader", { resource, action: "show" })).toBe(false);
+    expect(canAccess("user", { resource, action: "list" })).toBe(true);
+    expect(canAccess("admin", { resource, action: "list" })).toBe(true);
+  }
+  expect(
+    canAccess("user", { resource: "wa_conversations", action: "list_all" }),
+  ).toBe(false);
+  expect(
+    canAccess("admin", { resource: "wa_conversations", action: "list_all" }),
+  ).toBe(true);
+});
+
 describe("getAccessRole", () => {
   it("maps TekFusion's role first and Atomic's administrator flag second", () => {
     expect(getAccessRole({ role: "reader", administrator: false })).toBe(
