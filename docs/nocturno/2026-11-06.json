@@ -161,12 +161,12 @@
     {
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
+      "commit": "fe03c6dc0a10a8ace39a23bc3f69182311c4750b",
+      "costo_usd": 1.261922,
+      "session_id": "fb30a63a-46f5-4fe8-872e-ee79a0f60f27",
       "id": "T6",
       "titulo": "CSV de ejemplo del importador de leads con las seis etapas de TekFusion",
       "descripcion": "Pendiente de aprendizajes.md (2026-11-03). src/components/atomic-crm/dataImport/deals_sample.csv hoy tiene solo 2 filas (Nuevo y Cotizado). Dejarlo con al menos una fila por cada etapa: nuevo, contactado, cotizado, ganado, perdido y archivado (mezclando el valor guardado, ej. 'perdido', y la etiqueta, ej. 'Ganado', que toConfiguredValue acepta), datos ficticios con dominios .example y las mismas columnas de hoy. Revisar el comentario de parseCell.ts cerca de la línea 55 (doc de toConfiguredValue) y cualquier otro comentario de dataImport/ que cite etapas de Atomic ('Opportunity', 'Proposal Sent', 'proposal-sent'): deben citar etapas de TekFusion (estados.ts). Test en src/components/atomic-crm/dataImport/LeadImport.test.tsx (o leadRow.test.ts si basta con la función pura): carga deals_sample.csv tal cual (import con ?raw o leyendo el archivo como ya hagan los tests de la carpeta) y verifica que cada fila queda con su etapa esperada y ninguna cae a 'nuevo' por etapa desconocida (ni aparece el aviso de etapa desconocida en el reporte). Si el importador necesita una regla nueva para alguna etapa (por ejemplo, ganado sin monto final o perdido sin motivo), no cambiar reglas: ajustar el CSV para que cumpla las que existen y anotarlo en aprendizajes.md.",
@@ -180,7 +180,10 @@
       "criterio": "Typecheck y lint limpios; los tests de dataImport pasan, incluido el que carga deals_sample.csv y comprueba las seis etapas; ningún comentario de dataImport/ cita etapas de Atomic.",
       "modelo": "opus",
       "esfuerzo": "high",
-      "inicio": "2026-11-06 01:55:42"
+      "inicio": "2026-11-06 01:55:42",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: deals_sample.csv tiene una fila por cada una de las seis etapas de TekFusion (mezclando valor y etiqueta) y LeadImport.test.tsx lo importa tal cual y comprueba 6 creados, 0 errores y la etapa de cada lead.",
+      "fin": "2026-11-06 01:58:01"
     },
     {
       "depende_de": [],
