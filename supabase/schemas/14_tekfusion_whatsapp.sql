@@ -226,6 +226,34 @@ begin
 end;
 $$;
 
+-- tg_mensaje_entrante (docs/05, CLAUDE.md §1.4): a client message on a lead
+-- cancels its pending followups and alerts the lead owner (no owner, no
+-- alert). A webhook retry inserts nothing, so it fires nothing. An already
+-- open cliente_respondio alert for the same lead is not repeated
+-- (alerts_open_key).
+CREATE OR REPLACE FUNCTION "public"."wa_cliente_respondio"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  d public.deals;
+begin
+  update public.followups f
+     set status = 'cancelado', cancel_reason = 'Cliente respondió por WhatsApp'
+   where f.deal_id = new.deal_id and f.status = 'pendiente';
+
+  select * into d from public.deals where id = new.deal_id;
+  if d.sales_id is not null then
+    insert into public.alerts (type, recipient_sales_id, deal_id, message)
+    values ('cliente_respondio', d.sales_id, d.id, format('El cliente respondió por WhatsApp en el lead «%s»', d.name))
+    on conflict do nothing;
+  end if;
+  return null;
+end;
+$$;
+
+CREATE OR REPLACE TRIGGER "wa_cliente_respondio" AFTER INSERT ON "public"."wa_messages" FOR EACH ROW WHEN ((("new"."direction" = 'entrante'::"public"."wa_direction") AND ("new"."deal_id" IS NOT NULL))) EXECUTE FUNCTION "public"."wa_cliente_respondio"();
+
 -- Grants live here (not in 12_): schema files load alphabetically, so 12_
 -- runs before these tables exist. Default privileges would hand authenticated
 -- full DML: close them to the API roles; only the service role writes.
@@ -247,3 +275,5 @@ revoke execute on function public.take_wa_conversation(bigint) from public, anon
 grant execute on function public.take_wa_conversation(bigint) to authenticated;
 revoke execute on function public.mark_wa_conversation_read(bigint) from public, anon, service_role;
 grant execute on function public.mark_wa_conversation_read(bigint) to authenticated;
+-- Trigger function: no API role calls it.
+revoke execute on function public.wa_cliente_respondio() from public, anon, authenticated, service_role;

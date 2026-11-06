@@ -532,6 +532,9 @@ cross join lateral (
     order by x.id offset c.nth limit 1
 ) d;
 
+-- Historical messages: their alerts and followups are already seeded above,
+-- so the cliente_respondio trigger must not fire for them.
+alter table public.wa_messages disable trigger wa_cliente_respondio;
 insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, attachment_path, status, from_me_phone, author_sales_id, origin, sent_at)
 select w.id, w.active_deal_id, m.wa_message_id, m.direction::public.wa_direction, m.type::public.wa_message_type,
        m.text, m.attachment_path, m.status::public.delivery_status, m.from_me_phone,
@@ -553,6 +556,7 @@ from (values
     ('+56900000003', 'DEMO-WA-0013', 'entrante', 'video',     null, 'whatsapp/demo/recorrido-demo.mp4', 'entregado', false, null, 285)
 ) as m(phone, wa_message_id, direction, type, text, attachment_path, status, from_me_phone, origin, minutes)
 join public.wa_conversations w on w.phone = m.phone;
+alter table public.wa_messages enable trigger wa_cliente_respondio;
 
 -- Último mensaje y no leídos (entrantes que el ejecutivo aún no abrió).
 update public.wa_conversations w set
