@@ -331,13 +331,16 @@
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 06:14:05"
+      "commit": "5fe83d96bd9812ac2ee376919c1c5f147a3374d5",
+      "costo_usd": 2.0823232000000003,
+      "session_id": "c86310ec-c688-40ce-b198-731c2d4760c9",
+      "inicio": "2026-11-06 06:14:05",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: weekly_report_data(week_start) en 15_tekfusion_weekly_report.sql + migración 20261106140000 + pgTAP 33 en verde; devuelve los siete datos de RF-12 solo a gerencia con aal2.",
+      "fin": "2026-11-06 06:20:40"
     },
     {
       "id": "T13",
