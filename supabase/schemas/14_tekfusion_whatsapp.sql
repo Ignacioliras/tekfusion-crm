@@ -6,7 +6,8 @@
 -- (managers all; executives theirs and the unassigned ones; readers none) and
 -- written only by the service role and its RPCs. wa_instance_status stays
 -- closed to every API role but the service role.
--- Tests: supabase/tests/32_whatsapp_tablas, 34_wa_ingest, 35_rls_whatsapp.
+-- Tests: supabase/tests/32_whatsapp_tablas, 34_wa_ingest, 35_rls_whatsapp,
+-- 36_wa_rpc, 37_wa_cliente_respondio, 38_send_wa_message.
 --
 
 create type public.wa_direction as enum ('entrante', 'saliente');
@@ -55,6 +56,20 @@ create table public.wa_instance_status (
     last_event jsonb,
     updated_at timestamp with time zone not null default now()
 );
+
+-- send_queue (10_) was born for quotes only (deal and quote mandatory). A text
+-- written in the inbox has no quote and its conversation may have no lead, so
+-- a queue row now targets either a quote (with its lead, as before) or one
+-- wa_messages row over WhatsApp (docs/10). Altered here, not in 10_: the
+-- foreign key needs wa_messages, which is created in this file.
+alter table public.send_queue
+    alter column deal_id drop not null,
+    alter column quote_id drop not null,
+    add column message_id bigint references public.wa_messages (id) on delete restrict,
+    add constraint send_queue_message_key unique (message_id),
+    add constraint send_queue_target_check check (
+        (quote_id is not null and deal_id is not null and message_id is null)
+        or (quote_id is null and message_id is not null and channel = 'whatsapp'));
 
 alter table public.wa_conversations enable row level security;
 alter table public.wa_messages enable row level security;
@@ -226,6 +241,61 @@ begin
 end;
 $$;
 
+-- Write a text from the inbox. Nothing is sent here: the message is stored as
+-- 'pendiente' and enqueued in send_queue (channel whatsapp, like send_quote in
+-- 11_); the sender (whatsapp-send) takes it from there. Executives only in
+-- their own conversations, managers (aal2, through current_user_role()) in
+-- any; readers and everyone else get 42501. Empty or too long text: 22023.
+-- wa_message_id is provisional ('pending:' || job_id): the sender replaces it
+-- with the id Evolution returns (docs/10).
+CREATE OR REPLACE FUNCTION "public"."send_wa_message"("conversation_id" bigint, "text" "text") RETURNS "public"."wa_messages"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  -- Longest text body WhatsApp accepts in one message.
+  max_text_length constant integer := 4096;
+  me bigint := public.current_sales_id();
+  my_role text := public.current_user_role();
+  body text := btrim(send_wa_message.text, E' \t\n\r');
+  job text := 'crm-' || gen_random_uuid()::text;
+  conv public.wa_conversations;
+  msg public.wa_messages;
+begin
+  if me is null or my_role not in ('manager', 'executive') then
+    raise exception 'only executives and managers can send messages' using errcode = '42501';
+  end if;
+  select * into conv
+    from public.wa_conversations c
+   where c.id = send_wa_message.conversation_id
+     for update;
+  if not found then
+    raise exception 'conversation % does not exist', send_wa_message.conversation_id using errcode = 'P0002';
+  end if;
+  if my_role <> 'manager' and conv.sales_id is distinct from me then
+    raise exception 'conversation % is not assigned to you', conv.id using errcode = '42501';
+  end if;
+  if body is null or body = '' then
+    raise exception 'the message text is empty' using errcode = '22023';
+  end if;
+  if char_length(body) > max_text_length then
+    raise exception 'the message text is longer than % characters', max_text_length using errcode = '22023';
+  end if;
+
+  insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, status, origin, author_sales_id, job_id, sent_at)
+  values (conv.id, conv.active_deal_id, 'pending:' || job, 'saliente', 'texto', body, 'pendiente', 'crm', me, job, now())
+  returning * into msg;
+
+  insert into public.send_queue (deal_id, message_id, channel, sales_id)
+  values (conv.active_deal_id, msg.id, 'whatsapp', me);
+
+  update public.wa_conversations c
+     set last_message_at = greatest(c.last_message_at, msg.sent_at)
+   where c.id = conv.id;
+  return msg;
+end;
+$$;
+
 -- tg_mensaje_entrante (docs/05, CLAUDE.md §1.4): a client message on a lead
 -- cancels its pending followups and alerts the lead owner (no owner, no
 -- alert). A webhook retry inserts nothing, so it fires nothing. An already
@@ -275,5 +345,7 @@ revoke execute on function public.take_wa_conversation(bigint) from public, anon
 grant execute on function public.take_wa_conversation(bigint) to authenticated;
 revoke execute on function public.mark_wa_conversation_read(bigint) from public, anon, service_role;
 grant execute on function public.mark_wa_conversation_read(bigint) to authenticated;
+revoke execute on function public.send_wa_message(bigint, text) from public, anon, service_role;
+grant execute on function public.send_wa_message(bigint, text) to authenticated;
 -- Trigger function: no API role calls it.
 revoke execute on function public.wa_cliente_respondio() from public, anon, authenticated, service_role;
