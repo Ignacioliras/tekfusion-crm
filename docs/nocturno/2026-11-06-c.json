@@ -29,13 +29,16 @@
       "criterio": "Typecheck de functions y lint limpios; los tests de functions pasan; users/index.ts ya no lee req.json() sin validar.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:24:55"
+      "commit": "13037cd287998e7a257fcf5ac4141718536d472d",
+      "costo_usd": 1.8985424000000002,
+      "session_id": "c6eb8c3c-53e6-40b6-9b62-d21fceba470c",
+      "inicio": "2026-11-06 16:24:55",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: la Edge Function users valida con zod el cuerpo de POST, PATCH y DELETE mediante `_shared/requestBody.ts` y `users/schemas.ts`, con tests, y la verificación completa pasa.",
+      "fin": "2026-11-06 16:28:13"
     },
     {
       "id": "T2",
