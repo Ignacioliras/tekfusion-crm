@@ -373,7 +373,9 @@
     {
       "inicio": "2026-11-06 04:57:35",
       "modelo": "opus",
-      "simulado": false
+      "simulado": false,
+      "fin": "2026-11-06 06:24:06",
+      "motivo": "cola terminada"
     }
   ]
 }
