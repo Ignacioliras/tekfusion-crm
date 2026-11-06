@@ -218,13 +218,16 @@
       "criterio": "Typecheck y lint limpios; toda la suite app pasa, con tests nuevos para ejecutivo y gerencia en los cuatro puntos.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:54:55"
+      "commit": "434dc0c43fa177782374fdc8bc4d6e68281950e1",
+      "costo_usd": 3.601884600000001,
+      "session_id": "5eb0f679-3a67-470f-a045-3d6ba1f97520",
+      "inicio": "2026-11-06 16:54:55",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Importar CSV del kanban solo para gerencia, ficha sin asignar sin formulario de nota para el ejecutivo, Marcar contactado con nota obligatoria guardada junto a la etapa y \"sin permiso\" ante 42501/403 en la ficha, con tests por rol y la decisión de closed_at en docs/10.",
+      "fin": "2026-11-06 17:12:27"
     },
     {
       "id": "T9",
