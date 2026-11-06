@@ -509,3 +509,59 @@ left join lateral (
                else x.sales_id = s.id end
     order by x.id offset a.nth limit 1
 ) d on true;
+
+-- ---------------------------------------------------------------------
+-- Fase 4: WhatsApp (3 conversaciones, 13 mensajes). Teléfonos +56 9 0000
+-- xxxx inventados. Una de Camila (el lead cotizado de su alerta
+-- "cliente respondió por WhatsApp"), una de Diego y una sin asignar
+-- (lead nuevo sin dueño). Rutas de adjuntos inventadas.
+-- ---------------------------------------------------------------------
+insert into public.wa_conversations (phone, contact_id, active_deal_id, sales_id)
+select c.phone, d.contact_ids[1], d.id, d.sales_id
+from (values
+    ('+56900000001', 'camila.rojas@tekfusion-demo.cl', 'cotizado',   1),
+    ('+56900000002', 'diego.munoz@tekfusion-demo.cl',  'contactado', 0),
+    ('+56900000003', null,                             'nuevo',      0)
+) as c(phone, email, stage, nth)
+left join public.sales s on s.email = c.email
+cross join lateral (
+    select x.id, x.contact_ids, x.sales_id from public.deals x
+    where x.stage = c.stage and x.sales_id is not distinct from s.id
+    order by x.id offset c.nth limit 1
+) d;
+
+insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, attachment_path, status, from_me_phone, author_sales_id, origin, sent_at)
+select w.id, w.active_deal_id, m.wa_message_id, m.direction::public.wa_direction, m.type::public.wa_message_type,
+       m.text, m.attachment_path, m.status::public.delivery_status, m.from_me_phone,
+       case when m.origin = 'crm' then w.sales_id end, m.origin::public.wa_message_origin,
+       now() - (m.minutes || ' minutes')::interval
+from (values
+    ('+56900000001', 'DEMO-WA-0001', 'entrante', 'texto',     'Hola, ¿me confirman el plazo de entrega de las válvulas?', null, 'leido', false, null, 1500),
+    ('+56900000001', 'DEMO-WA-0002', 'saliente', 'texto',     'Hola, el plazo es de 10 días hábiles desde la orden de compra.', null, 'leido', false, 'crm', 1490),
+    ('+56900000001', 'DEMO-WA-0003', 'saliente', 'documento', 'Le adjunto la ficha técnica.', 'whatsapp/demo/ficha-tecnica-demo.pdf', 'entregado', false, 'crm', 1485),
+    ('+56900000001', 'DEMO-WA-0004', 'entrante', 'audio',     null, 'whatsapp/demo/nota-de-voz-demo.ogg', 'entregado', false, null, 90),
+    ('+56900000001', 'DEMO-WA-0005', 'entrante', 'texto',     'Quedo atento a la cotización actualizada.', null, 'entregado', false, null, 60),
+    ('+56900000002', 'DEMO-WA-0006', 'saliente', 'texto',     'Buenos días, le escribo por su consulta de tubería HDPE.', null, 'leido', false, 'seguimiento', 2900),
+    ('+56900000002', 'DEMO-WA-0007', 'entrante', 'texto',     'Gracias, necesitamos 300 m en 250 mm.', null, 'leido', false, null, 2880),
+    ('+56900000002', 'DEMO-WA-0008', 'saliente', 'texto',     'Perfecto, se lo cotizo hoy mismo.', null, 'enviado', true, 'telefono', 2870),
+    ('+56900000002', 'DEMO-WA-0009', 'saliente', 'imagen',    'Foto de referencia del fitting.', 'whatsapp/demo/fitting-demo.jpg', 'fallido', false, 'crm', 2860),
+    ('+56900000003', 'DEMO-WA-0010', 'entrante', 'texto',     'Hola, ¿venden geoceldas para un camino de faena?', null, 'entregado', false, null, 300),
+    ('+56900000003', 'DEMO-WA-0011', 'entrante', 'texto',     'Serían unos 2.000 m2.', null, 'entregado', false, null, 295),
+    ('+56900000003', 'DEMO-WA-0012', 'entrante', 'imagen',    'Así está el camino hoy.', 'whatsapp/demo/camino-demo.jpg', 'entregado', false, null, 290),
+    ('+56900000003', 'DEMO-WA-0013', 'entrante', 'video',     null, 'whatsapp/demo/recorrido-demo.mp4', 'entregado', false, null, 285)
+) as m(phone, wa_message_id, direction, type, text, attachment_path, status, from_me_phone, origin, minutes)
+join public.wa_conversations w on w.phone = m.phone;
+
+-- Último mensaje y no leídos (entrantes que el ejecutivo aún no abrió).
+update public.wa_conversations w set
+    last_message_at = m.last_at,
+    unread_count = m.unread
+from (
+    select conversation_id, max(sent_at) as last_at,
+           count(*) filter (where direction = 'entrante' and status <> 'leido')::integer as unread
+    from public.wa_messages group by conversation_id
+) m
+where m.conversation_id = w.id;
+
+insert into public.wa_instance_status (instance, connected, last_event) values
+    ('tekfusion-demo', true, '{"event": "connection.update", "state": "open"}');

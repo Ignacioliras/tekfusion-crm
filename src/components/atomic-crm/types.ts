@@ -140,6 +140,42 @@ export type Alert = {
   read_at?: string | null;
 } & Pick<RaRecord, "id">;
 
+export type WaConversation = {
+  created_at: string;
+  phone: string;
+  contact_id?: Identifier | null;
+  active_deal_id?: Identifier | null;
+  sales_id?: Identifier | null;
+  last_message_at?: string | null;
+  unread_count: number;
+  archived: boolean;
+} & Pick<RaRecord, "id">;
+
+export type WaMessage = {
+  created_at: string;
+  conversation_id: Identifier;
+  deal_id?: Identifier | null;
+  wa_message_id: string;
+  direction: "entrante" | "saliente";
+  type: "texto" | "imagen" | "documento" | "audio" | "video" | "otro";
+  text?: string | null;
+  attachment_path?: string | null;
+  status: DeliveryStatus;
+  from_me_phone: boolean;
+  author_sales_id?: Identifier | null;
+  origin?: "crm" | "seguimiento" | "telefono" | null;
+  job_id?: string | null;
+  payload?: Record<string, unknown> | null;
+  sent_at: string;
+} & Pick<RaRecord, "id">;
+
+export type WaInstanceStatus = {
+  instance: string;
+  connected: boolean;
+  last_event?: Record<string, unknown> | null;
+  updated_at: string;
+} & Pick<RaRecord, "id">;
+
 export type AuditLogEntry = {
   created_at: string;
   actor_sales_id?: Identifier | null;

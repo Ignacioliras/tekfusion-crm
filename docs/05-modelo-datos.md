@@ -14,13 +14,13 @@
 > | adjuntos (Storage) | bucket `attachments` **privado** (Fase 2): archivos bajo `deals/<id>/`, `contacts/<id>/`, `companies/`, `sales/`, `config/`; lectura por URL firmada de 60 min y policy `can_read_attachment` / `can_write_attachment` | la base guarda la URL pública como referencia estable; el data provider la firma al leer |
 > | `cotizaciones` | `quotes` (hecho, Fase 3): `deal_id`, `version`, `amount`, `pdf_path`, `is_current`, `sent_at`, `sent_channels`, `delivery_status`, `sales_id` (autor) | PDF en el bucket privado `quotes`, `deals/<id>/<uuid>.pdf`, solo PDF, 15 MB |
 > | `seguimientos` | `followups` (hecho, Fase 3) | cancelar = update; `job_id` único |
-> | `conversaciones` / `mensajes` | `wa_conversations` / `wa_messages` | `wa_message_id` UNIQUE |
+> | `conversaciones` / `mensajes` | `wa_conversations` / `wa_messages` (hechas, Fase 4, solo esquema: `supabase/schemas/14_tekfusion_whatsapp.sql`; enums `wa_direction`, `wa_message_type`, `wa_message_origin`; `status` usa `delivery_status`; `job_id` único para envíos del CRM). RLS activa **sin policies**: solo el service role lee y escribe hasta las policies por rol | `wa_message_id` UNIQUE |
 > | `correos` | `emails` | |
 > | cola de envío | `send_queue` (hecho, Fase 3): una fila por canal de cada cotización enviada (`deal_id`, `quote_id`, `channel`, `status`, `sales_id`, `sent_at`, `attempts`, `error`); la escribe solo `send_quote()` y la consume n8n (Fase 5) | `unique (quote_id, channel)`; nadie la borra |
 | `alertas` | `alerts` (hecho, Fase 3): `recipient_sales_id` = destinatario | el usuario solo escribe `read_at` |
 > | `plantillas`, `respuestas_rapidas`, `motivos_perdida` | `templates`, `quick_replies` (hechas, Fase 3), `lost_reasons` | Atomic tuvo `deals.lost_reason` y lo eliminó (migración 2026-09-28): usar tabla propia |
 > | `configuracion` | `configuration` (Atomic) | ya existe; extender sus claves |
-> | `estado_whatsapp`, `importaciones` | `wa_instance_status`, `imports` (nuevas) | Atomic ya trae importador CSV de contactos en el frontend (`contacts/`): extenderlo para deals |
+> | `estado_whatsapp`, `importaciones` | `wa_instance_status` (hecha, Fase 4, cerrada como las `wa_*`), `imports` (nueva) | Atomic ya trae importador CSV de contactos en el frontend (`contacts/`): extenderlo para deals |
 > | enum `rol_usuario` | `user_role` (`manager`,`executive`,`reader`) | etiquetas en español en la interfaz |
 >
 > **Implementado el 2026-11-03** (`docs/fase-2-propuesta.md` aprobada; decisiones en `10-decisiones.md`): `supabase/schemas/10_tekfusion_tables.sql` (tipos `user_role`, `business_line`, `origin_channel`; tablas `business_lines`, `lost_reasons`, `sales_absences`; columnas en `sales`, `deals`, `contacts`), `11_tekfusion_policies.sql` (RLS, `take_deal`, triggers de guarda) y `12_tekfusion_grants.sql`. Ids `bigint` (no `uuid`) y valores de enum en español. Las tablas de las Fases 3–5 (`quotes`, `followups`, `wa_*`, `emails`, `alerts`, `templates`, …) se crean en su fase, con RLS y tests desde el primer día.

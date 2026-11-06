@@ -216,8 +216,8 @@
     {
       "depende_de": [],
       "necesita_supabase": true,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
@@ -237,7 +237,8 @@
       "verificacion": "npx supabase db reset --local && npx supabase test db",
       "criterio": "db reset aplica la migración y el seed; todos los pgTAP pasan, incluidos 32_whatsapp_tablas y 14_rls_cobertura; la migración no trae drops de extensiones ni vistas sin security_invoker.",
       "modelo": "opus",
-      "esfuerzo": "high"
+      "esfuerzo": "high",
+      "inicio": "2026-11-06 02:01:03"
     },
     {
       "depende_de": [
