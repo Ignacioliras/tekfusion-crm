@@ -189,13 +189,16 @@
         "T3"
       ],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:49:32"
+      "commit": "0c86143af75388c0eee36fade5c2e4f214561f86",
+      "costo_usd": 1.5545330000000002,
+      "session_id": "bda54935-9f3e-465e-83e5-df60587c5dbf",
+      "inicio": "2026-11-06 16:49:32",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: trigger wa_cliente_respondio en wa_messages que cancela los seguimientos pendientes del lead y alerta a su ejecutivo, con migración limpia, pgTAP 37 en verde y el seed cargando sus mensajes históricos con el trigger desactivado.",
+      "fin": "2026-11-06 16:54:54"
     },
     {
       "id": "T8",
