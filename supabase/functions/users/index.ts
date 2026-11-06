@@ -17,8 +17,14 @@ import {
   normalizeSecondaryEmails,
 } from "./secondaryEmails.ts";
 import { isUserRole, roleUpdate, type UserRole } from "./role.ts";
+import { parseJsonBody } from "../_shared/requestBody.ts";
+import {
+  inviteUserSchema,
+  offboardUserSchema,
+  patchUserSchema,
+} from "./schemas.ts";
 
-async function updateSaleDisabled(user_id: string, disabled: boolean) {
+async function updateSaleDisabled(user_id: string, disabled?: boolean) {
   return await supabaseAdmin
     .from("sales")
     .update({ disabled })
@@ -58,11 +64,11 @@ async function createSale(
   user_id: string,
   data: {
     email: string;
-    password: string;
+    password?: string;
     first_name: string;
     last_name: string;
-    disabled: boolean;
-    administrator: boolean;
+    disabled?: boolean;
+    administrator?: boolean;
     role?: UserRole;
   },
 ) {
@@ -133,7 +139,10 @@ async function updateSaleSecondaryEmails(
   }
 }
 
-async function updateSaleAvatar(user_id: string, avatar: string) {
+async function updateSaleAvatar(
+  user_id: string,
+  avatar: Record<string, unknown>,
+) {
   const { data: sales, error: salesError } = await supabaseAdmin
     .from("sales")
     .update({ avatar })
@@ -148,6 +157,8 @@ async function updateSaleAvatar(user_id: string, avatar: string) {
 }
 
 async function inviteUser(req: Request, currentUserSale: any) {
+  const body = await parseJsonBody(req, inviteUserSchema);
+  if ("response" in body) return body.response;
   const {
     email,
     password,
@@ -156,7 +167,7 @@ async function inviteUser(req: Request, currentUserSale: any) {
     disabled,
     administrator,
     role,
-  } = await req.json();
+  } = body.data;
 
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
@@ -297,6 +308,8 @@ async function inviteUser(req: Request, currentUserSale: any) {
 }
 
 async function patchUser(req: Request, currentUserSale: any) {
+  const body = await parseJsonBody(req, patchUserSchema);
+  if ("response" in body) return body.response;
   const {
     sales_id,
     email,
@@ -307,7 +320,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     administrator,
     disabled,
     role,
-  } = await req.json();
+  } = body.data;
   const { data: sale } = await supabaseAdmin
     .from("sales")
     .select("*")
@@ -480,7 +493,9 @@ async function patchUser(req: Request, currentUserSale: any) {
  * step not in the database transaction: if the RPC refuses, the ban is lifted.
  */
 async function offboardUser(req: Request, currentUserSale: any) {
-  const { sales_id } = await req.json();
+  const body = await parseJsonBody(req, offboardUserSchema);
+  if ("response" in body) return body.response;
+  const { sales_id } = body.data;
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
   }
