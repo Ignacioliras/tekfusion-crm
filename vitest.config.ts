@@ -72,7 +72,6 @@ export default defineConfig({
             "**/node_modules/**",
             "doc/**",
             "supabase/**",
-            ".supabase-e2e/**",
             "e2e/**/*.spec.{ts,tsx}",
             // Atomic's harness hook tests: harness disabled, not run.
             ".claude/**",
@@ -104,7 +103,7 @@ export default defineConfig({
           globals: true,
           environment: "node",
           include: ["supabase/functions/**/*.test.ts"],
-          exclude: ["**/node_modules/**", ".supabase-e2e/**"],
+          exclude: ["**/node_modules/**"],
         },
       },
     ],

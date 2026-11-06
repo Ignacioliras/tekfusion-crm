@@ -29,7 +29,6 @@ yarn-debug.log*
 yarn-error.log*
 supabase/.branches
 supabase/.temp
-.supabase-e2e/
 backups/
 
 dist/
