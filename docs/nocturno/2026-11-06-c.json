@@ -298,13 +298,16 @@
         "T10"
       ],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 17:26:42"
+      "commit": "0b53e9d984f809ea0791a0060d11b08eccb0e26b",
+      "costo_usd": 4.010531,
+      "session_id": "ccf66dc0-e61c-41d8-9ed0-6c45685c3066",
+      "inicio": "2026-11-06 17:26:42",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: amplié supabase/seed.sql con 12 meses de leads ficticios (137 históricos archivados más 2 de hoy, con cotizaciones, tareas y alertas leídas), ajusté los conteos de 20/22, agregué la aserción de 12 meses a 30_dashboard_summary, y pasan db reset, todos los pgTAP y los e2e.",
+      "fin": "2026-11-06 18:01:57"
     },
     {
       "id": "T12",
