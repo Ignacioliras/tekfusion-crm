@@ -325,7 +325,7 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **Consecuencias:** un saliente sin `job_id` se toma como escrito desde el teléfono (`origin = 'telefono'`, `from_me_phone`, autor = ejecutivo de la conversación). Un saliente con `job_id` queda sin `origin` (lo completará el envío del CRM o del seguimiento). `p_instance` no se guarda todavía (un solo número corporativo). pgTAP `34_wa_ingest`.
 
 ## 2026-11-06 · 🔒 Policies de WhatsApp: solo lectura por rol (cola nocturna 2026-11-06-c, T5)
-**Pendiente: revisión de `database-reviewer` antes del merge.**
+**Revisada el 2026-11-06 (`database-reviewer`, `security-reviewer` y consultas por rol): sin agujeros de autorización; queda por cerrar el `payload`. Ver "Cola nocturna 2026-11-06-c: resultado de la revisión 🔒…" más abajo.**
 - **Decisión:** `wa_conversations` y `wa_messages` dejan de estar cerradas y pasan a **solo lectura** para usuarios logueados, según la fila "conversaciones, mensajes" de `docs/08`: gerencia ve todas; el ejecutivo, las suyas (`sales_id = current_sales_id()`) y las sin asignar (`sales_id is null`); el lector, ninguna. Un mensaje se ve si se ve su conversación (`exists` sobre `wa_conversations`, que corre bajo la RLS de quien consulta, igual que `deal_notes_select`). `authenticated` recibe **solo `select`** en esas dos tablas y no hay policy de insert, update ni delete: escriben el service role y sus RPC. `wa_instance_status` sigue sin ningún privilegio para usuarios. `anon`, nada.
 - **Motivo:** la bandeja (T9) no puede salir a `main` con las tablas cerradas, y abrirlas sin regla por rol rompería la regla dura 3 (permisos desde el día uno).
 - **Descartado:** repetir la condición por rol dentro de la policy de mensajes (dos lugares que mantener iguales); dar `update` a los usuarios sobre `unread_count`/`archived` con grants por columna (la regla de `docs/08` es que solo escriben service role y RPC).
@@ -356,7 +356,7 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **"Sin permiso" en vez del texto fijo:** `errorMessageKey(error, fallback)` de `providers/supabase/accessErrors.ts` devuelve `tekfusion.common.forbidden` ante 42501 o 403 y el texto propio de la pantalla en cualquier otro error. Aplicado en la ficha: Tomar, Marcar contactado, Reasignar y la edición en línea. Siguen con texto fijo: Archivar/Desarchivar (`DealShow`), Ganado/Perdido (`useCloseDeal`) y las pantallas fuera de `deals/`.
 
 ## 2026-11-06 · 🔒 Escribir desde la bandeja: `send_wa_message` guarda y encola, no envía (cola nocturna 2026-11-06-c, T9)
-**Pendiente: revisión antes del merge (🔒). Incluye un cambio en `send_queue` que la tarea no pedía y que Ignacio no ha confirmado (ver "Cambio en `send_queue`").**
+**Revisada el 2026-11-06 (sin agujeros de autorización; ver "Cola nocturna 2026-11-06-c: resultado de la revisión 🔒…" más abajo). Incluye un cambio en `send_queue` que la tarea no pedía y que Ignacio no ha confirmado (ver "Cambio en `send_queue`").**
 - **Decisión:** la bandeja escribe por la RPC `send_wa_message(conversation_id, text)` (`security definer`, `search_path ''`, solo `authenticated`). Guarda el mensaje en `wa_messages` como `saliente`, `texto`, `pendiente`, origen `crm`, autor = quien lo escribe, `deal_id` = lead activo de la conversación y `sent_at = now()`; deja una fila en `send_queue` con canal `whatsapp` y sube `last_message_at` (nunca lo retrocede). Devuelve la fila del mensaje. **No llama a Evolution**: el envío real lo hará `whatsapp-send` leyendo la cola.
 - **Permisos:** el ejecutivo solo en conversaciones con `sales_id` igual al suyo (ajena o sin asignar, 42501: primero tiene que tomarla); gerencia en cualquiera, también sin asignar, y solo con verificación en dos pasos (pasa por `current_user_role()`, igual que las demás RPC de gerencia); lector, usuario sin sale y gerencia en aal1, 42501. Conversación inexistente, P0002 (como `mark_wa_conversation_read`).
 - **Texto:** se guarda recortado (espacios, tabuladores y saltos de línea de los extremos). Vacío, nulo o de más de **4096 caracteres** (constante `max_text_length` en la función; es el máximo de un mensaje de texto de WhatsApp), 22023.
@@ -370,6 +370,77 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
   - No toca el lead: ni `last_activity_at` ni `first_response_at`, ni pasa la etapa a `contactado`.
   - `revoke` también a `service_role`, como las otras RPC de la bandeja (la tarea pedía solo `public`/`anon`): sin sale no podría usarla igual.
 - **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración escrita a mano `20261106170000_send_wa_message.sql` (el `db diff` residual solo muestra los fantasmas de siempre), pgTAP `38_send_wa_message` (34 casos). La interfaz se conecta de día.
+
+## 2026-11-06 · Cola nocturna 2026-11-06-c: resultado de la revisión 🔒 e implícitas (anotadas en la revisión de la mañana)
+Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-c` está en `main`.
+
+**Revisión 🔒 de T5 y T9.** Hecha con `database-reviewer`, `security-reviewer` y consultas reales en la base local como cada usuario del seed. **No hay agujeros de autorización.** Lo comprobado:
+
+| Quién | Ve | Puede | No puede (42501) |
+|---|---|---|---|
+| Camila (ejecutiva) | su conversación y la sin asignar, con sus mensajes (9 de 13) | tomar la sin asignar; escribir y marcar leída en la suya | leer la de Diego; insertar, cambiar o borrar conversaciones y mensajes, aunque sean suyos; escribir en la de Diego o en la sin asignar; marcar leída la de Diego; leer el estado de conexión; llamar al ingreso; insertar en `send_queue` |
+| Andrea sin TOTP (aal1) | nada (0 conversaciones, 0 mensajes) | nada | tomar, marcar leída, escribir |
+| Andrea con TOTP (aal2) | las 3 conversaciones y los 13 mensajes | escribir en cualquiera (queda como autora) | cambiar o borrar filas directo; leer el estado de conexión |
+| Pablo (lector) | nada, tampoco si queda como dueño de una conversación | nada | tomar, marcar leída, escribir |
+| Sin sesión (anon) | nada | nada | todo |
+
+Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
+
+**Qué deja `send_wa_message` en `send_queue`:** una fila por mensaje con `message_id`, `channel = whatsapp`, `status = pendiente`, `sales_id` = quien escribe, `deal_id` = lead activo de la conversación (vacío si no tiene), `attempts = 0` y sin `quote_id`. No guarda teléfono ni texto: quien envíe los lee de `wa_messages` y `wa_conversations`.
+
+**Hallazgos de la revisión (ninguno es un permiso mal puesto).**
+1. **El `payload` crudo queda legible desde el navegador.** El receptor guarda el cuerpo completo del webhook (`whatsapp-webhook/handler.ts:64`) y T5 da `select` sobre toda la tabla (`schemas/14_tekfusion_whatsapp.sql:333`). Probado: un cuerpo con los campos `apikey` y `server_url` (Evolution v2 los incluye en cada webhook; falta confirmarlo con un evento real de staging) queda guardado, y Camila lo lee por la API en una conversación sin asignar. **Resuelto el mismo día**: ver "El cuerpo crudo del webhook sale de `wa_messages`…" más abajo.
+2. **Un `messageTimestamp` enorme responde 500** (`handler.ts:63`: `toISOString()` lanza fuera del `try`). Probado con `9e15`. Evolution reintentaría ese evento sin fin. **Resuelto el mismo día**: ahora responde 400 (ver "Respuestas del receptor…" más abajo).
+3. **Sin tope de envíos en la RPC.** Probado: 200 llamadas seguidas dejan 200 filas pendientes. El tope diario, el espaciado y el horario hábil (regla dura 4) quedan enteros para `whatsapp-send`, que tiene que ser 🔒.
+4. **Eco del webhook.** El receptor nunca pasa `p_job_id`. Si el eco de un mensaje escrito en el CRM llega antes de que `whatsapp-send` cambie el id provisional, el mensaje queda dos veces (la segunda como "desde el teléfono"). `whatsapp-send` tiene que reconciliar por `job_id`; también 🔒.
+5. **Se puede escribir en una conversación archivada** (tomarla no se puede). Falta decidir si es a propósito.
+6. **Una fila de la cola sin lead no la ve nadie por la API**, gerencia incluida (`send_queue_select` mira el lead, `schemas/11_tekfusion_policies.sql:999`). El estado del envío se lee de `wa_messages.status`.
+
+**Receptor de WhatsApp (T2, T4).** Probado contra la Edge Function local:
+- Sin `apikey`, con una mala, con una casi igual o vacía: 401 con cuerpo `{"error":"unauthorized"}` y nada más. Otro método: 405.
+- Grupos (`@g.us`), `status@broadcast`, JSON inválido y eventos que no manejamos: 200 con el motivo, sin tocar la base.
+- El mismo evento entregado tres veces (también con la grafía `MESSAGES_UPSERT`): un mensaje, una conversación, `unread_count = 1`.
+- Un acuse no retrocede (`DELIVERY_ACK` y después `SERVER_ACK` deja `entregado`).
+- **Elegido por la noche:** responde 200 `{ok:false}` también cuando falla la base, para que Evolution no reintente; ese mensaje se pierde hasta que exista la reconciliación (flujo 10). **Cambiado el mismo día a 503** (ver "Respuestas del receptor…" más abajo). Un entrante queda con estado `pendiente` (el valor por defecto de la columna), no `entregado` como en el seed. Los video quedan como tipo `otro`. Los adjuntos no se descargan y el flujo 02 no se dispara (ambos TODO en el handler).
+- **Remitentes `@lid` se ignoran** como "unsupported remoteJid". Las versiones recientes de Baileys entregan algunos contactos con ese identificador en vez del número: esos mensajes no entrarían al CRM. Falta verlo con el número de prueba en staging.
+
+**Trigger cliente respondió (T7).** Probado en la base:
+- Cancela solo los seguimientos `pendiente` del **lead activo de la conversación** (`deal_id` del mensaje). Los de otro lead del mismo ejecutivo no se tocan. Un reintento no cambia nada.
+- **No cancela los `vencido`** (`send_quote` sí lo hace al enviar una cotización nueva). Elegido por la noche.
+- **No mira la etapa del lead.** Si el lead activo ya está ganado, perdido o archivado: el mensaje queda colgado de ese lead cerrado, se cancelan sus pendientes si quedaba alguno y se crea igual la alerta "cliente respondió" para su ejecutivo. El lead no se reabre ni se crea uno nuevo, y nada limpia `active_deal_id`, así que un cliente que vuelve a escribir meses después nunca dispara el flujo 02. **Falta decidir (Ignacio)** qué pasa con un mensaje en un lead cerrado.
+- Visto de paso, anterior a esta cola: cerrar o archivar un lead no cancela sus seguimientos pendientes, como pide `docs/03` (Seguimientos, "Se detiene").
+
+**Validación de `users` (T1).** Los cuerpos son estrictos: un campo que el formulario no manda responde 400 con el nombre del campo, nunca con el valor. `avatar` se acepta como objeto con `src` (o vacío). Probado con el cuerpo real del Perfil de Camila: 200.
+
+**Seed de demo (T11).** Quedan **199 leads**: 137 históricos (uno cada dos días, de 92 a 364 días atrás, **todos con `archived_at`**) y 62 recientes, de los que 52 se ven en el kanban. Reparto: válvulas 70, tuberías 65, geoceldas 64; 12 a 21 leads por mes en los 12 meses. Los tests `20_rls_quotes` y `22_rls_alerts` ya no comparan contra un número fijo sino contra el total contado como `postgres`. **Falta decidir (Ignacio):** con datos reales los ganados y perdidos no se archivan solos; el kanban muestra hasta 100 tarjetas sin filtro de antigüedad.
+
+**Dashboard con 12 meses (visto en la captura).** Carga en 1,5 s y las tablas se leen bien. Dos detalles: "Monto cotizado" y "Monto ganado" con cifras de 10 dígitos se salen de su tarjeta a 1440 px, y no hay botón de "Últimos 12 meses" (se llega escribiendo la fecha "Desde"; "Este año" parte el 1 de enero).
+
+**Correo semanal (T12).** `renderWeeklyReport` recibe además `weekStart`, porque la RPC no devuelve la semana. **No trae la tabla por línea de negocio ni enlaces a cada lead**, que la tarea pedía: `weekly_report_data` solo devuelve totales. Los pendientes enlazan a la lista de leads. RF-12 pide el resumen, no el desglose: falta decidir si se amplía la RPC.
+
+**Entorno (para las próximas revisiones).** El contenedor de Edge Functions monta `supabase/functions` del checkout desde el que se hizo `supabase start`, con su `.env`. Un worktree no trae ese `.env` (está ignorado por git): levantado desde ahí, `users` responde 401 a todo (`SB_JWT_ISSUER` vacío) y el e2e de la firma en Perfil falla. De noche ese e2e pasó contra las funciones de `main`, sin la validación de T1. Para probar las funciones de un worktree: `npx supabase functions serve --env-file <archivo con los valores de .env.example>`.
+
+## 2026-11-06 · Decisiones de Ignacio tras la revisión de la cola 2026-11-06-c
+1. **Un mensaje en un lead cerrado no lo reabre.** Si el lead activo de la conversación ya está ganado, perdido o archivado, el mensaje entrante queda en ese lead, que sigue cerrado. Es lo que el trigger `wa_cliente_respondio` ya hace (cancela los seguimientos pendientes que quedaran y avisa al ejecutivo con la alerta "cliente respondió"). Nada que cambiar.
+2. **`send_queue` queda por `message_id`.** Confirmado el cambio que T9 hizo sin que la tarea lo pidiera: una fila de la cola es de una cotización (con su lead) o de un mensaje de WhatsApp (`message_id`, sin cotización). Quien consuma la cola distingue por esa columna. Queda pendiente poner al día `docs/05`, que todavía la describe como solo de cotizaciones.
+3. **No se escribe en conversaciones archivadas.** Hoy `send_wa_message` lo permite. **Tarea nueva, sin hacer.**
+4. **El kanban oculta los leads cerrados de más de 30 días.** Hoy muestra hasta 100 tarjetas sin filtro de antigüedad. **Tarea nueva, sin hacer.**
+5. **El correo semanal lleva desglose por línea de negocio.** Hoy `weekly_report_data` y `renderWeeklyReport` solo traen totales. **Tarea nueva, sin hacer.**
+
+## 2026-11-06 · El cuerpo crudo del webhook sale de `wa_messages` (rama `nocturno/2026-11-06-c`)
+- **Decisión (Ignacio):** el cuerpo crudo de cada evento de Evolution no debe ser legible por la API. Se guarda en una tabla aparte, `wa_message_payloads` (`message_id` como clave, `payload`), con RLS activa, sin policies y sin ningún privilegio para `authenticated` ni `anon`: solo el service role la lee y escribe. `wa_messages` ya no tiene la columna `payload`.
+- **Motivo:** Evolution agrega a cada webhook el `apikey` de la instancia y el `server_url`. Con la columna dentro de `wa_messages`, cualquier usuario que viera la conversación (todo ejecutivo, en las sin asignar) los leía por la API.
+- **Descartado:** dar `select` por columnas sin `payload` (un `select *` sobre `wa_messages`, que es lo que pide el dataProvider por defecto, pasaría a fallar con 42501); guardar el cuerpo recortado (habría que mantener una lista de campos sensibles que Evolution puede cambiar).
+- **Consecuencias:** `wa_ingest_message` conserva su firma y escribe el cuerpo en la tabla nueva solo cuando inserta el mensaje (un reintento no lo repite). El `apikey` sigue guardado en la base, ahora solo al alcance del service role; si tampoco debe quedar ahí, el receptor tendría que quitarlo antes de guardar. `wa_instance_status.last_event` también guarda cuerpos crudos y ya estaba cerrada. La migración copia los `payload` que hubiera antes de borrar la columna. pgTAP: `34_wa_ingest` (dónde queda el cuerpo) y `35_rls_whatsapp` (gerencia, ejecutiva y anon reciben 42501; `wa_messages` ya no lo expone).
+- **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261106191401_wa_payload_privado.sql` (generada con `db diff` y limpiada de los fantasmas de siempre, con el `revoke` escrito a mano).
+
+## 2026-11-06 · Respuestas del receptor de WhatsApp: 400 por fecha fuera de rango, 503 si falla la base (rama `nocturno/2026-11-06-c`)
+- **Decisión (Ignacio):** reemplaza el "siempre 200" que la noche tomó de `docs/07`.
+  - **Base caída o con error:** 503 con `{ok:false}`, para que Evolution reintente. El reintento es seguro: `wa_message_id` es único y el ingreso no cambia nada la segunda vez. Aplica a los tres eventos (mensaje, acuse, conexión).
+  - **`messageTimestamp` fuera de rango:** 400 con `{ok:false, error:"messageTimestamp out of range"}`, sin tocar la base. Antes respondía 500 y Evolution lo reintentaba.
+- **Qué es "fuera de rango" (elegido al implementar, sin confirmar):** una fecha que no se puede representar, o más de **24 horas en el futuro** (`MAX_FUTURE_MS` en `whatsapp-webhook/handler.ts`). El tope a futuro evita que un mensaje con fecha adelantada deje su conversación fija arriba de la bandeja; unos minutos de desfase de reloj se aceptan. No hay tope hacia el pasado (la sincronización de historial trae mensajes antiguos).
+- **Sin cambios:** grupos, eventos que no manejamos y cuerpos mal formados siguen respondiendo 200 con el motivo; un `messageTimestamp` que no es un entero positivo sigue contando como mal formado (200).
+- **Consecuencias:** un error permanente de la base (por ejemplo, un dato que viole una restricción) hace que Evolution reintente ese evento hasta agotar sus intentos. `docs/07` quedó al día.
 
 ## Plantilla para nuevas decisiones
 ```

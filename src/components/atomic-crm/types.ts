@@ -165,7 +165,6 @@ export type WaMessage = {
   author_sales_id?: Identifier | null;
   origin?: "crm" | "seguimiento" | "telefono" | null;
   job_id?: string | null;
-  payload?: Record<string, unknown> | null;
   sent_at: string;
 } & Pick<RaRecord, "id">;
 

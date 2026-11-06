@@ -2,7 +2,7 @@
 -- wa_update_message_status y wa_upsert_instance_status. Solo el service role
 -- las ejecuta; un reintento del webhook (mismo wa_message_id) no cambia nada.
 begin;
-select plan(36);
+select plan(38);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -33,6 +33,12 @@ select is(
   (select m.conversation_id from public.wa_messages m where m.wa_message_id = 'DEMO-T34-0001'),
   (select id from public.wa_conversations where phone = '+56900003401'),
   'el mensaje cuelga de la conversación nueva');
+-- El cuerpo crudo va a wa_message_payloads, no a wa_messages (docs/10).
+select is(
+  (select p.payload ->> 'demo' from public.wa_message_payloads p
+     join public.wa_messages m on m.id = p.message_id where m.wa_message_id = 'DEMO-T34-0001'),
+  'true', 'el cuerpo crudo del webhook queda en wa_message_payloads');
+select hasnt_column('public', 'wa_messages', 'payload', 'wa_messages no guarda el cuerpo crudo');
 
 -- Conversación existente -----------------------------------------------------
 select is(

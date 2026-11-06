@@ -17,7 +17,7 @@
    - `messages.upsert`: normaliza (teléfono E.164, tipo, texto, `fromMe`, timestamp, `wa_message_id`). Upsert en `conversaciones` por teléfono. Insert en `mensajes` con `on conflict (wa_message_id) do nothing`. Si hay adjunto, lo descarga desde Evolution y lo guarda en Storage (`adjuntos-whatsapp/<conversacion>/<id>.<ext>`). Si la conversación no tiene `lead_activo_id` y el mensaje es entrante, dispara el flujo 02 (por trigger de Postgres). Si `fromMe` y no viene de nuestro envío (sin `job_id` conocido), marca `from_me_telefono=true` y `origen='telefono'`.
    - `messages.update`: actualiza `mensajes.estado` (entregado/leído) por `wa_message_id`.
    - `connection.update`: upsert en `estado_whatsapp`.
-3. Siempre responde 200 (aunque el mensaje ya existiera) para que Evolution no reintente sin fin. Errores internos se registran y responden 200 con `{ok:false}`; la reconciliación (flujo 10) rescata lo que falte.
+3. Responde 200 a lo que guardó, a lo que ya existía y a lo que ignora (grupos, eventos que no maneja, cuerpo mal formado). Un `messageTimestamp` fuera de rango responde 400 (Evolution no lo reintenta). Si la base falla, registra el error y responde 503 para que Evolution reintente: el reintento es seguro porque `wa_message_id` es único (`docs/10`, 2026-11-06). La reconciliación (flujo 10) rescata lo que igual falte.
 4. Tiempo objetivo: < 500 ms por evento.
 
 ## Envío (`supabase/functions/whatsapp-send` y flujo 03)

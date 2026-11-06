@@ -4,7 +4,7 @@
 -- logueado inserta, actualiza ni borra (solo service role y sus RPC); anon, nada.
 -- Seed: +56900000001 es de Camila, +56900000002 de Diego, +56900000003 sin asignar.
 begin;
-select plan(41);
+select plan(46);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -103,10 +103,26 @@ select is((select count(*) from public.wa_conversations), 0::bigint, 'gerencia s
 select is((select count(*) from public.wa_messages), 0::bigint, 'gerencia sin TOTP verificado no ve mensajes');
 reset role;
 
+-- El cuerpo crudo del webhook (trae el apikey y el server_url de Evolution) no
+-- sale por la API: vive en wa_message_payloads, sin privilegios para usuarios.
+insert into public.wa_message_payloads (message_id, payload)
+select id, '{"apikey": "FICTICIO"}' from public.wa_messages where wa_message_id = 'DEMO-WA-0010';
+select ok(not has_table_privilege('authenticated', 'public.wa_message_payloads', 'select')
+      and not has_table_privilege('anon', 'public.wa_message_payloads', 'select'),
+  'authenticated y anon no tienen select sobre wa_message_payloads');
+select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
+select throws_ok('select payload from public.wa_message_payloads', '42501', null, 'gerencia no lee el cuerpo crudo del webhook');
+reset role;
+select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
+select throws_ok('select payload from public.wa_message_payloads', '42501', null, 'la ejecutiva no lee el cuerpo crudo de un mensaje que sí ve');
+select throws_ok('select payload from public.wa_messages', '42703', null, 'wa_messages no expone el cuerpo crudo');
+reset role;
+
 -- anon ---------------------------------------------------------------------------
 select set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
 set local role anon;
 select throws_ok(sql, '42501', null, 'anon ' || label) from closed_statements;
+select throws_ok('select payload from public.wa_message_payloads', '42501', null, 'anon no lee el cuerpo crudo del webhook');
 reset role;
 
 select * from finish();

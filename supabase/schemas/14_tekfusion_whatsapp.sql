@@ -4,8 +4,9 @@
 -- Function (service role) -> these tables; n8n never stores messages.
 -- RLS (docs/08): conversations and messages are read-only for logged-in users
 -- (managers all; executives theirs and the unassigned ones; readers none) and
--- written only by the service role and its RPCs. wa_instance_status stays
--- closed to every API role but the service role.
+-- written only by the service role and its RPCs. wa_instance_status and
+-- wa_message_payloads (raw webhook bodies) stay closed to every API role but
+-- the service role.
 -- Tests: supabase/tests/32_whatsapp_tablas, 34_wa_ingest, 35_rls_whatsapp,
 -- 36_wa_rpc, 37_wa_cliente_respondio, 38_send_wa_message.
 --
@@ -45,8 +46,15 @@ create table public.wa_messages (
     author_sales_id bigint references public.sales (id) on delete set null,
     origin public.wa_message_origin,
     job_id text unique,
-    payload jsonb,
     sent_at timestamp with time zone not null
+);
+
+-- Raw webhook body of a message (debugging, reconciliation). It carries what
+-- Evolution adds to every event (instance apikey, server_url), so it lives
+-- apart from wa_messages: no API role but the service role reads it (docs/10).
+create table public.wa_message_payloads (
+    message_id bigint primary key references public.wa_messages (id) on delete cascade,
+    payload jsonb not null
 );
 
 create table public.wa_instance_status (
@@ -74,6 +82,7 @@ alter table public.send_queue
 alter table public.wa_conversations enable row level security;
 alter table public.wa_messages enable row level security;
 alter table public.wa_instance_status enable row level security;
+alter table public.wa_message_payloads enable row level security;
 
 create index wa_messages_conversation_sent_idx on public.wa_messages using btree (conversation_id, sent_at);
 create index wa_messages_deal_id_idx on public.wa_messages using btree (deal_id);
@@ -121,8 +130,8 @@ begin
   on conflict (phone) do update set phone = excluded.phone
   returning * into v_conversation;
 
-  insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, sent_at, payload, job_id, origin, from_me_phone, author_sales_id)
-  values (v_conversation.id, v_conversation.active_deal_id, p_wa_message_id, p_direction, p_type, p_text, p_sent_at, p_payload, p_job_id,
+  insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, sent_at, job_id, origin, from_me_phone, author_sales_id)
+  values (v_conversation.id, v_conversation.active_deal_id, p_wa_message_id, p_direction, p_type, p_text, p_sent_at, p_job_id,
           case when v_from_phone then 'telefono'::public.wa_message_origin end,
           v_from_phone,
           case when v_from_phone then v_conversation.sales_id end)
@@ -132,6 +141,10 @@ begin
   if v_message_id is null then
     select m.id into v_message_id from public.wa_messages m where m.wa_message_id = p_wa_message_id;
     return jsonb_build_object('conversation_id', v_conversation.id, 'message_id', v_message_id, 'inserted', false);
+  end if;
+
+  if p_payload is not null then
+    insert into public.wa_message_payloads (message_id, payload) values (v_message_id, p_payload);
   end if;
 
   update public.wa_conversations
@@ -328,10 +341,11 @@ CREATE OR REPLACE TRIGGER "wa_cliente_respondio" AFTER INSERT ON "public"."wa_me
 -- runs before these tables exist. Default privileges would hand authenticated
 -- full DML: close them to the API roles; only the service role writes.
 -- authenticated gets select alone on conversations and messages (the policies
--- above filter the rows); wa_instance_status stays without any privilege.
-revoke all on table public.wa_conversations, public.wa_messages, public.wa_instance_status from authenticated, anon;
+-- above filter the rows); wa_instance_status and wa_message_payloads stay
+-- without any privilege.
+revoke all on table public.wa_conversations, public.wa_messages, public.wa_instance_status, public.wa_message_payloads from authenticated, anon;
 grant select on table public.wa_conversations, public.wa_messages to authenticated;
-grant all on table public.wa_conversations, public.wa_messages, public.wa_instance_status to service_role;
+grant all on table public.wa_conversations, public.wa_messages, public.wa_instance_status, public.wa_message_payloads to service_role;
 revoke all on sequence public.wa_conversations_id_seq, public.wa_messages_id_seq, public.wa_instance_status_id_seq from authenticated, anon;
 grant all on sequence public.wa_conversations_id_seq, public.wa_messages_id_seq, public.wa_instance_status_id_seq to service_role;
 revoke execute on function public.wa_ingest_message(text, text, text, public.wa_direction, public.wa_message_type, text, timestamp with time zone, jsonb, text) from public, anon, authenticated;

@@ -167,7 +167,7 @@ create type alerta_tipo as enum ('sin_contacto_24h','sin_contacto_48h','seguimie
 | from_me_telefono | boolean default false | escrito desde el teléfono físico |
 | autor_id | uuid FK perfiles NULL | quien lo envió desde el CRM |
 | origen | text | 'crm' / 'seguimiento' / 'telefono' |
-| payload | jsonb | evento crudo de Evolution |
+| payload | jsonb | evento crudo de Evolution. En la base vive en la tabla aparte `wa_message_payloads` (una fila por mensaje), sin acceso para usuarios: trae el apikey de la instancia (`docs/10`, 2026-11-06) |
 | enviado_en | timestamptz | timestamp de WhatsApp |
 
 ### `correos`

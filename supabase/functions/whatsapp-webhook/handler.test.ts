@@ -171,22 +171,60 @@ describe("whatsapp-webhook handler", () => {
     ]);
   });
 
-  it("answers 200 ok:false and logs when the rpc returns an error", async () => {
-    const dbError = { message: "violates check constraint" };
+  it.each([
+    ["too large to be a date", 9e15],
+    [
+      "more than a day in the future",
+      Math.floor(Date.now() / 1000) + 2 * 86400,
+    ],
+  ])(
+    "answers 400 without calling the database when messageTimestamp is %s",
+    async (_, messageTimestamp) => {
+      const { handler, calls } = setup();
+      const body = upsert();
+
+      const res = await handler(
+        post({ ...body, data: { ...body.data, messageTimestamp } }),
+      );
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({
+        ok: false,
+        error: "messageTimestamp out of range",
+      });
+      expect(calls).toHaveLength(0);
+    },
+  );
+
+  it("accepts a message dated a few minutes ahead (clock skew)", async () => {
+    const { handler, calls } = setup();
+    const body = upsert();
+    const messageTimestamp = Math.floor(Date.now() / 1000) + 300;
+
+    const res = await handler(
+      post({ ...body, data: { ...body.data, messageTimestamp } }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("answers 503 and logs when the rpc returns an error, so Evolution retries", async () => {
+    const dbError = { message: "connection refused" };
     const { handler, logs } = setup({
       result: async () => ({ error: dbError }),
     });
 
     const res = await handler(post(upsert()));
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ ok: false });
     expect(logs).toEqual([
       ["whatsapp-webhook: wa_ingest_message failed", dbError],
     ]);
   });
 
-  it("answers 200 ok:false and logs when the rpc throws", async () => {
+  it("answers 503 and logs when the rpc throws", async () => {
     const { handler, logs } = setup({
       result: async () => {
         throw new Error("network down");
@@ -195,8 +233,24 @@ describe("whatsapp-webhook handler", () => {
 
     const res = await handler(post(upsert()));
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ ok: false });
     expect(logs).toHaveLength(1);
+  });
+
+  it("answers 503 when a status update fails in the database", async () => {
+    const { handler } = setup({
+      result: async () => ({ error: { message: "timeout" } }),
+    });
+
+    const res = await handler(
+      post({
+        event: "messages.update",
+        instance: "tekfusion-staging",
+        data: { keyId: "3EB0FICTICIO0001", status: "READ" },
+      }),
+    );
+
+    expect(res.status).toBe(503);
   });
 });

@@ -41,13 +41,29 @@ const readBody = async (req: Request): Promise<unknown> => {
   }
 };
 
+// A message dated further ahead than this is rejected: its date would keep the
+// conversation on top of the inbox (last_message_at) for good.
+const MAX_FUTURE_MS = 24 * 60 * 60 * 1000;
+
+/** Not a date Postgres can store (seconds too large) or too far in the future. */
+const isOutOfRange = (date: Date): boolean => {
+  const ms = date.getTime();
+  return Number.isNaN(ms) || ms > Date.now() + MAX_FUTURE_MS;
+};
+
 const toRpcCall = (
   body: unknown,
-): { name: string; args: Record<string, unknown> } | { ignored: string } => {
+):
+  | { name: string; args: Record<string, unknown> }
+  | { ignored: string }
+  | { invalid: string } => {
   const evt = parseEvolutionEvent(body);
   if ("ignore" in evt) return { ignored: evt.reason };
   switch (evt.kind) {
     case "message":
+      if (isOutOfRange(evt.timestamp)) {
+        return { invalid: "messageTimestamp out of range" };
+      }
       // TODO(docs/07): download attachments from Evolution into Storage
       // (adjuntos-whatsapp/<conversation>/<id>.<ext>) and fill attachment_path.
       // TODO(docs/06 flujo 02): new inbound conversation without lead -> flow 02.
@@ -82,8 +98,10 @@ const toRpcCall = (
 };
 
 /**
- * Always answers 200 once authorized (errors included, as {ok:false}) so
- * Evolution does not retry forever; reconciliation (flow 10) recovers gaps.
+ * Once authorized: 200 for what was stored, already existed or is ignored;
+ * 400 for a message whose timestamp is out of range (Evolution does not retry
+ * a 400); 503 when the database fails, so Evolution retries. Retrying is safe:
+ * wa_message_id is unique and the ingest changes nothing the second time.
  */
 export const createHandler =
   ({ secret, rpc, log }: HandlerDeps) =>
@@ -96,16 +114,17 @@ export const createHandler =
 
     const call = toRpcCall(await readBody(req));
     if ("ignored" in call) return json({ ok: true, ignored: call.ignored });
+    if ("invalid" in call) return json({ ok: false, error: call.invalid }, 400);
 
     try {
       const { error } = await rpc(call.name, call.args);
       if (error) {
         log(`whatsapp-webhook: ${call.name} failed`, error);
-        return json({ ok: false });
+        return json({ ok: false }, 503);
       }
     } catch (error) {
       log(`whatsapp-webhook: ${call.name} threw`, error);
-      return json({ ok: false });
+      return json({ ok: false }, 503);
     }
     return json({ ok: true });
   };
