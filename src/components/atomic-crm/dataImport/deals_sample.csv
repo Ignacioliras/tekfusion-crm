@@ -1,3 +1,7 @@
 name,company,contact_first_name,contact_last_name,email,phone,business_line,stage,sales_email,amount,expected_closing_date,description
 Válvulas mariposa 8 pulgadas,Minera Cerro Cobrizo SpA,Ana,Pérez,ana.perez@cerrocobrizo.example,+56 9 1234 5678,Válvulas,Nuevo,camila.rojas@tekfusion-demo.cl,4500000,2026-12-15,Recambio en planta de flotación
+Geoceldas para talud de acceso,Áridos del Maule Ltda,Jorge,Fuentes,jfuentes@aridosmaule.example,,geoceldas,contactado,,,,Pide ficha técnica y plazo de entrega
 Tubería HDPE 315 mm,Constructora Los Arrayanes SpA,Luis,Soto,,9 8765 4321,tuberias,Cotizado,,12800000,2027-01-20,
+Válvulas de compuerta 12 pulgadas,Sanitaria Valle Verde SA,Marta,Cáceres,mcaceres@valleverde.example,+56 9 2233 4455,valvulas,Ganado,camila.rojas@tekfusion-demo.cl,7300000,2026-11-30,Orden de compra recibida
+Tubería PVC 160 mm,Agrícola Santa Elena Ltda,Pedro,Muñoz,pmunoz@santaelena.example,,Tuberías,perdido,,3200000,,Eligió a otro proveedor por precio
+Geomembrana para piscina de relaves,Inmobiliaria Puerto Claro SpA,Sofía,Vera,svera@puertoclaro.example,,Geoceldas y geosintéticos,archivado,,,,Sin respuesta tras tres seguimientos

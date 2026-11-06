@@ -12,6 +12,7 @@ import {
 } from "@/test/StoryWrapper";
 import leadsCsv from "../../../../test-data/leads-30.csv?raw";
 import { DataImportButton } from "./DataImportButton";
+import dealsSampleCsv from "./deals_sample.csv?raw";
 
 // RF-15: the lead importer, driven through the dialog with the 30 fictitious
 // rows of test-data/leads-30.csv: 3 duplicates (an open lead found by e-mail,
@@ -125,7 +126,7 @@ const allDeals = async (dataProvider: DataProvider) =>
     })
   ).data;
 
-const importLeads = async () => {
+const importLeads = async (csv = leadsCsv) => {
   const dataProvider = createDataProvider({
     db: db(),
     latency: 0,
@@ -139,7 +140,7 @@ const importLeads = async () => {
   await screen.getByRole("button", { name: "Import CSV" }).click();
   await screen
     .getByLabelText("CSV File")
-    .upload(new File([leadsCsv], "leads-30.csv", { type: "text/csv" }));
+    .upload(new File([csv], "leads.csv", { type: "text/csv" }));
   await screen.getByRole("button", { name: "Start import" }).click();
   const report = screen.getByRole("dialog", { name: "Import result" });
   await expect.element(report).toBeVisible();
@@ -210,6 +211,28 @@ describe("lead import (RF-15)", () => {
     ]);
     expect(byName("Tubería HDPE 250 mm (2 km)").contact_ids).toEqual([
       paula?.id,
+    ]);
+  });
+
+  it("imports the sample CSV offered in the dialog with one lead per TekFusion stage", async () => {
+    const { dataProvider, report } = await importLeads(dealsSampleCsv);
+
+    // created, duplicates, errors: no row rejected as an unknown stage
+    expect(
+      report
+        .getByRole("definition")
+        .elements()
+        .map((dd) => dd.textContent),
+    ).toEqual(["6", "0", "0"]);
+
+    const deals = await allDeals(dataProvider);
+    expect(deals.slice(3).map(({ name, stage }) => ({ name, stage }))).toEqual([
+      { name: "Válvulas mariposa 8 pulgadas", stage: "nuevo" },
+      { name: "Geoceldas para talud de acceso", stage: "contactado" },
+      { name: "Tubería HDPE 315 mm", stage: "cotizado" },
+      { name: "Válvulas de compuerta 12 pulgadas", stage: "ganado" },
+      { name: "Tubería PVC 160 mm", stage: "perdido" },
+      { name: "Geomembrana para piscina de relaves", stage: "archivado" },
     ]);
   });
 });
