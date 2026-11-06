@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import type { User } from "jsr:@supabase/supabase-js@2";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
@@ -205,14 +206,16 @@ async function inviteUser(req: Request, currentUserSale: any) {
       return createErrorResponse(500, "Internal Server Error");
     }
 
-    user = data[0];
+    user = data[0] as User;
     try {
       const { data: existingSale, error: salesError } = await supabaseAdmin
         .from("sales")
         .select("*")
         .eq("user_id", user.id);
       if (salesError) {
-        return createErrorResponse(salesError.status, salesError.message, {
+        // PostgrestError has no status: undefined here, kept as it was.
+        const status = (salesError as { status?: number }).status as number;
+        return createErrorResponse(status, salesError.message, {
           code: salesError.code,
         });
       }
@@ -253,11 +256,16 @@ async function inviteUser(req: Request, currentUserSale: any) {
   } else {
     if (userError) {
       console.error(`Error inviting user: user_error=${userError}`);
-      return createErrorResponse(userError.status, userError.message, {
-        code: userError.code,
-      });
+      // status may be undefined; kept as it was.
+      return createErrorResponse(
+        userError.status as number,
+        userError.message,
+        {
+          code: userError.code,
+        },
+      );
     }
-    if (!data?.user) {
+    if (!user) {
       console.error("Error inviting user: undefined user");
       return createErrorResponse(500, "Internal Server Error");
     }
@@ -544,7 +552,8 @@ Deno.serve(
     OptionsMiddleware(req, async (req) =>
       AuthMiddleware(req, async (req) =>
         UserMiddleware(req, async (req, user) => {
-          const currentUserSale = await getUserSale(user);
+          // user is only undefined for OPTIONS, answered by OptionsMiddleware.
+          const currentUserSale = await getUserSale(user!);
           // A disabled user may still hold a valid JWT: refuse it here.
           if (!isActiveSale(currentUserSale)) {
             return createErrorResponse(401, "Unauthorized");

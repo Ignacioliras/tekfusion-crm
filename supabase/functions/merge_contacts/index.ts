@@ -6,6 +6,10 @@ import { createErrorResponse } from "../_shared/utils.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 
 type Contact = Selectable<ContactsTable>;
+// Shapes of the JSONB columns as the merge reads them.
+type Email = { email: string };
+type Phone = { number: string };
+type Avatar = { src?: string };
 
 // Helper functions to merge arrays
 function mergeArraysUnique<T>(arr1: T[], arr2: T[]): T[] {
@@ -37,20 +41,21 @@ function mergeObjectArraysUnique<T>(
 function mergeContactData(winner: Contact, loser: Contact) {
   // Merge emails
   const mergedEmails = mergeObjectArraysUnique(
-    winner.email_jsonb || [],
-    loser.email_jsonb || [],
-    (email: any) => email.email,
+    (winner.email_jsonb as Email[] | null) || [],
+    (loser.email_jsonb as Email[] | null) || [],
+    (email) => email.email,
   );
 
   // Merge phones
   const mergedPhones = mergeObjectArraysUnique(
-    winner.phone_jsonb || [],
-    loser.phone_jsonb || [],
-    (phone: any) => phone.number,
+    (winner.phone_jsonb as Phone[] | null) || [],
+    (loser.phone_jsonb as Phone[] | null) || [],
+    (phone) => phone.number,
   );
 
+  const winnerAvatar = winner.avatar as Avatar | null;
   const selectedAvatar =
-    winner.avatar && winner.avatar.src ? winner.avatar : loser.avatar;
+    winnerAvatar && winnerAvatar.src ? winner.avatar : loser.avatar;
 
   return {
     avatar: selectedAvatar ? (JSON.stringify(selectedAvatar) as any) : null,
@@ -129,7 +134,9 @@ async function mergeContacts(
       for (const deal of deals) {
         const newContactIds = [
           ...new Set(
-            deal.contact_ids.filter((id) => id !== loserId).concat(winnerId),
+            deal.contact_ids
+              .filter((id: number) => id !== loserId)
+              .concat(winnerId),
           ),
         ];
         await trx
@@ -171,7 +178,8 @@ Deno.serve(async (req: Request) =>
               return createErrorResponse(400, "Missing loserId or winnerId");
             }
 
-            const result = await mergeContacts(loserId, winnerId, user.id);
+            // user is only undefined for OPTIONS, answered by OptionsMiddleware.
+            const result = await mergeContacts(loserId, winnerId, user!.id);
 
             return new Response(JSON.stringify(result), {
               headers: { "Content-Type": "application/json", ...corsHeaders },

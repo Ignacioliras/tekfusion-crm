@@ -1,0 +1,23 @@
+{
+  // Type-checks the Deno Edge Functions with Node's tsc (`npm run typecheck:functions`).
+  // jsr:/npm: specifiers that have an installed npm twin are mapped to it below;
+  // the rest (kysely, deno postgres, @sentry/deno, Deno globals) are declared in deno.d.ts.
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "types": [],
+    "paths": {
+      "jsr:@supabase/supabase-js@2": ["../../node_modules/@supabase/supabase-js"],
+      "jsr:@panva/jose@6": ["../../node_modules/jose"],
+      "npm:zod@^4.3.6": ["../../node_modules/zod"]
+    }
+  },
+  "include": ["**/*.ts"]
+}
