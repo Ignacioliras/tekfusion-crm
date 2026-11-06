@@ -272,13 +272,16 @@
         "T8"
       ],
       "necesita_supabase": true,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 17:19:25"
+      "commit": "3a42ac578505d63b3591fd8fa48c418bd90dfa7f",
+      "costo_usd": 1.9625158,
+      "session_id": "1d53f926-174b-4d67-aff1-b7c72d264ba1",
+      "inicio": "2026-11-06 17:19:25",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Agregué los e2e de alerta leída y firma en Perfil (Camila) y de importar deals_sample.csv desde el kanban (Andrea con TOTP); npm run test:e2e pasa 10/10.",
+      "fin": "2026-11-06 17:26:42"
     },
     {
       "id": "T11",
