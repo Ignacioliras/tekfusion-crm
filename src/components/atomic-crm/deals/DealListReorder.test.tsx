@@ -42,6 +42,52 @@ const dragOwnLeadToBottom = async (
   await userEvent.keyboard(" ");
 };
 
+const handleOf = (
+  screen: Awaited<ReturnType<typeof renderPipeline>>["screen"],
+  name: string,
+) =>
+  screen
+    .getByRole("region", { name: "Nuevo" })
+    .getByText(name)
+    .element()
+    .closest(DRAG_HANDLE);
+
+describe("Kanban: quién puede arrastrar cada tarjeta", () => {
+  beforeAll(() => {
+    page.viewport(1600, 1000);
+  });
+
+  it("lets a manager drag every card, including unassigned and others' leads", async () => {
+    const { screen } = await renderPipeline("admin");
+
+    await expect.poll(() => handleOf(screen, "Lead propio")).not.toBeNull();
+    await expect
+      .poll(() => handleOf(screen, "Lead sin asignar"))
+      .not.toBeNull();
+    await expect.poll(() => handleOf(screen, "Lead ajeno")).not.toBeNull();
+  });
+
+  it("lets an executive drag only their own card", async () => {
+    const { screen } = await renderPipeline("user");
+
+    // Once their own card is draggable, permissions and identity are loaded.
+    await expect.poll(() => handleOf(screen, "Lead propio")).not.toBeNull();
+    expect(handleOf(screen, "Lead sin asignar")).toBeNull();
+    expect(handleOf(screen, "Lead ajeno")).toBeNull();
+  });
+
+  it("lets the reader drag no card", async () => {
+    const { screen } = await renderPipeline("reader");
+
+    await expect
+      .element(screen.getByText("Lead ajeno", { exact: true }))
+      .toBeVisible();
+    expect(handleOf(screen, "Lead propio")).toBeNull();
+    expect(handleOf(screen, "Lead sin asignar")).toBeNull();
+    expect(handleOf(screen, "Lead ajeno")).toBeNull();
+  });
+});
+
 describe("Kanban: reordenar una columna respeta de quién es cada lead", () => {
   beforeAll(() => {
     page.viewport(1600, 1000);

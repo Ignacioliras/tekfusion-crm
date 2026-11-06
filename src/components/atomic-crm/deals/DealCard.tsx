@@ -1,24 +1,36 @@
 import { Draggable } from "@hello-pangea/dnd";
-import { useCanAccess, useRedirect, RecordContextProvider } from "ra-core";
+import {
+  useCanAccess,
+  useGetIdentity,
+  useRedirect,
+  RecordContextProvider,
+} from "ra-core";
 import { ReferenceField } from "@/components/admin/reference-field";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { CompanyAvatar } from "../companies/CompanyAvatar";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
+import { canEditDeal } from "./canEditDeal";
 import { formatDealCategories } from "./dealUtils";
 import { formatAmount } from "../tekfusion/money";
 
 export const DealCard = ({ deal, index }: { deal: Deal; index: number }) => {
-  // Moving a card changes its stage: not for the reader role.
+  // Moving a card changes its stage: not for the reader role, and an
+  // executive only moves their own leads (RLS refuses the rest).
   const { canAccess } = useCanAccess({ resource: "deals", action: "edit" });
+  const { canAccess: isManager = false } = useCanAccess({
+    resource: "sales",
+    action: "list",
+  });
+  const { identity } = useGetIdentity();
   if (!deal) return null;
 
   return (
     <Draggable
       draggableId={String(deal.id)}
       index={index}
-      isDragDisabled={!canAccess}
+      isDragDisabled={!canAccess || !canEditDeal(deal, identity?.id, isManager)}
     >
       {(provided, snapshot) => (
         <DealCardContent provided={provided} snapshot={snapshot} deal={deal} />

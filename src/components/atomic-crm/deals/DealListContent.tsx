@@ -15,6 +15,7 @@ import {
   type ClosingStage,
 } from "./CloseDealDialog";
 import { useCloseDeal } from "./useCloseDeal";
+import { canEditDeal } from "./canEditDeal";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
@@ -33,8 +34,7 @@ export const DealListContent = () => {
     resource: "sales",
     action: "list",
   });
-  const canReorder = (deal: Deal) =>
-    isManager || deal.sales_id === identity?.id;
+  const canReorder = (deal: Deal) => canEditDeal(deal, identity?.id, isManager);
 
   const [dealsByStage, setDealsByStage] = useState<DealsByStage>(
     getDealsByStage([], dealStages),

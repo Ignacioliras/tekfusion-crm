@@ -34,6 +34,7 @@ import { detectarLineaPorPalabras, LINEAS_NEGOCIO } from "../tekfusion/lineas";
 import type { Etapa } from "../tekfusion/estados";
 import { normalizeEmail, normalizePhone } from "../tekfusion/phone";
 import type { Deal, OriginChannel } from "../types";
+import { canEditDeal } from "./canEditDeal";
 
 const MANUAL: OriginChannel = "manual";
 const NEW_STAGE: Etapa = "nuevo";
@@ -64,7 +65,7 @@ export const DealCreate = ({ open }: { open: boolean }) => {
       (d) =>
         d.stage === deal.stage &&
         d.id !== deal.id &&
-        (canChooseOwner || d.sales_id === identity?.id),
+        canEditDeal(d, identity?.id, canChooseOwner),
     );
     await Promise.all(
       deals.map((oldDeal) =>
