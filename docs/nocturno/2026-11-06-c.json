@@ -106,13 +106,16 @@
         "T3"
       ],
       "necesita_supabase": false,
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 16:37:03"
+      "commit": "6da75dcc6771c8c727c4a0df24f7850ffd8381f6",
+      "costo_usd": 1.307987,
+      "session_id": "0dfe1ece-8f93-44b0-8919-ba599ebf6ee6",
+      "inicio": "2026-11-06 16:37:03",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: Edge Function whatsapp-webhook con handler testeable (createHandler) e index con Sentry y supabaseAdmin, config.toml y .env.example actualizados, y la verificación completa en verde.",
+      "fin": "2026-11-06 16:39:05"
     },
     {
       "id": "T5",
