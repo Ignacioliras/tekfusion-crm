@@ -1,7 +1,21 @@
 import { render } from "vitest-browser-react";
 import { page } from "vitest/browser";
 
-import { LeadFile, executiveAccess, readerAccess } from "./LeadFile.fixtures";
+import type { AuthProvider } from "ra-core";
+
+import { DEFAULT_USER } from "../providers/fakerest/authProvider";
+import { canAccess } from "../providers/commons/canAccess";
+import { LeadFile } from "./LeadFile.fixtures";
+
+// The StoryWrapper identity (Andrea Soto); the fixture lead belongs to Camila (id 1).
+const EXECUTIVE_ID = DEFAULT_USER.id;
+// The real rules of canAccess.ts, as the authProviders apply them.
+const executiveAccess: Partial<AuthProvider> = {
+  canAccess: async (params) => canAccess("user", params, EXECUTIVE_ID),
+};
+const readerAccess: Partial<AuthProvider> = {
+  canAccess: async (params) => canAccess("reader", params, EXECUTIVE_ID),
+};
 
 describe("Ficha del lead", () => {
   beforeAll(() => {
@@ -82,7 +96,7 @@ describe("Ficha del lead", () => {
       .not.toBeInTheDocument();
   });
 
-  it("lets anyone who can edit take an unassigned lead", async () => {
+  it("gives an executive only 'Tomar' on an unassigned lead, read-only otherwise", async () => {
     const screen = await render(
       <LeadFile
         deal={{ sales_id: null as never, stage: "nuevo" }}
@@ -91,6 +105,29 @@ describe("Ficha del lead", () => {
     );
     const data = screen.getByRole("region", { name: "Datos del lead" });
     await expect.element(data.getByText("Sin asignar")).toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Tomar" }))
+      .toBeVisible();
+
+    for (const name of [
+      "Marcar contactado",
+      "Archive",
+      "Editar Línea de negocio",
+    ]) {
+      await expect
+        .element(screen.getByRole("button", { name }))
+        .not.toBeInTheDocument();
+    }
+  });
+
+  it("assigns an unassigned lead to the executive who takes it", async () => {
+    const screen = await render(
+      <LeadFile
+        deal={{ sales_id: null as never, stage: "nuevo" }}
+        authProvider={executiveAccess}
+      />,
+    );
+    const data = screen.getByRole("region", { name: "Datos del lead" });
 
     await screen.getByRole("button", { name: "Tomar" }).click();
 
@@ -98,6 +135,48 @@ describe("Ficha del lead", () => {
     await expect
       .element(screen.getByRole("button", { name: "Tomar" }))
       .not.toBeInTheDocument();
+  });
+
+  it("lets an executive edit their own lead, without 'Tomar' or 'Reasignar'", async () => {
+    const screen = await render(
+      <LeadFile
+        deal={{ sales_id: EXECUTIVE_ID, stage: "nuevo" }}
+        authProvider={executiveAccess}
+      />,
+    );
+    await expect
+      .element(screen.getByRole("button", { name: "Editar Línea de negocio" }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Marcar contactado" }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Archive" }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { name: "Tomar" }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "Reasignar" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("shows an executive someone else's lead read-only", async () => {
+    const screen = await render(
+      <LeadFile deal={{ stage: "nuevo" }} authProvider={executiveAccess} />,
+    );
+    const data = screen.getByRole("region", { name: "Datos del lead" });
+    await expect.element(data.getByText("Camila Rojas")).toBeVisible();
+    for (const name of [
+      "Tomar",
+      "Marcar contactado",
+      "Archive",
+      "Editar Línea de negocio",
+    ]) {
+      await expect
+        .element(screen.getByRole("button", { name }))
+        .not.toBeInTheDocument();
+    }
   });
 
   it("marks a new lead as contacted", async () => {
@@ -129,19 +208,6 @@ describe("Ficha del lead", () => {
     await dialog.getByRole("button", { name: "Reasignar" }).click();
 
     await expect.element(data.getByText("Andrea Soto")).toBeVisible();
-  });
-
-  it("hides the reassign action from an executive", async () => {
-    const screen = await render(<LeadFile authProvider={executiveAccess} />);
-    await expect
-      .element(screen.getByRole("region", { name: "Datos del lead" }))
-      .toBeVisible();
-    await expect
-      .element(screen.getByRole("button", { name: "Editar Línea de negocio" }))
-      .toBeVisible();
-    await expect
-      .element(screen.getByRole("button", { name: "Reasignar" }))
-      .not.toBeInTheDocument();
   });
 
   it("shows a reader the file without any action or edit control", async () => {

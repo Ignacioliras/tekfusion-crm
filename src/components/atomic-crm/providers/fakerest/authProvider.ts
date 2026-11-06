@@ -71,7 +71,7 @@ export const authProvider: AuthProvider = {
     if (!localUser) return false;
 
     // Compute access rights from the sale role
-    return canAccess(getAccessRole(localUser), params);
+    return canAccess(getAccessRole(localUser), params, localUser.id);
   },
   getIdentity: () => {
     const userItem = localStorage.getItem(USER_STORAGE_KEY);

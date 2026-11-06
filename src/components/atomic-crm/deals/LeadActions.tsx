@@ -3,6 +3,7 @@ import { HandHelping, PhoneCall, UserRoundCog } from "lucide-react";
 import {
   CanAccess,
   Form,
+  RecordContextProvider,
   required,
   useCanAccess,
   useDataProvider,
@@ -29,10 +30,11 @@ import type { CrmDataProvider } from "../providers/types";
 import type { Deal, Sale } from "../types";
 
 /**
- * Action bar of the lead file (RF-05). Every action goes through the same
- * role check as editing (`CanAccess action="edit"`): a reader sees none.
- * "Reasignar" is for managers only. `children` receives the quote and
- * follow-up buttons.
+ * Action bar of the lead file (RF-05). The actions go through the same check
+ * as editing this lead (`CanAccess action="edit" record`): a reader sees none,
+ * an executive only on their own leads. On an unassigned lead, "Tomar" is the
+ * one thing an executive can do. "Reasignar" is for managers only.
+ * `children` receives the quote and follow-up buttons.
  */
 export const LeadActions = ({
   deal,
@@ -41,17 +43,28 @@ export const LeadActions = ({
   deal: Deal;
   children?: ReactNode;
 }) => (
-  <CanAccess resource="deals" action="edit" record={deal}>
-    <div className="flex flex-wrap gap-2">
-      {deal.sales_id == null ? <TakeButton deal={deal} /> : null}
+  <div className="flex flex-wrap gap-2">
+    {deal.sales_id == null ? (
+      // useCanAccess falls back to the record in context: clear it so that
+      // "Tomar" asks for the role's right (executive or manager), not this lead's.
+      <RecordContextProvider value={undefined}>
+        <TakeButton deal={deal} />
+      </RecordContextProvider>
+    ) : null}
+    <CanAccess resource="deals" action="edit" record={deal}>
       {deal.stage === "nuevo" ? <MarkContactedButton deal={deal} /> : null}
       {children}
       <ReassignButton deal={deal} />
-    </div>
-  </CanAccess>
+    </CanAccess>
+  </div>
 );
 
 const TakeButton = ({ deal }: { deal: Deal }) => {
+  // Without a record: executives and managers may edit leads, readers not.
+  const { canAccess: canTake = false } = useCanAccess({
+    resource: "deals",
+    action: "edit",
+  });
   const translate = useTranslate();
   const dataProvider = useDataProvider<CrmDataProvider>();
   const notify = useNotify();
@@ -65,6 +78,7 @@ const TakeButton = ({ deal }: { deal: Deal }) => {
     onError: () =>
       notify("tekfusion.lead.actions.take_error", { type: "error" }),
   });
+  if (!canTake) return null;
   return (
     <Button size="sm" onClick={() => mutate()} disabled={isPending}>
       <HandHelping className="size-4" />

@@ -160,7 +160,7 @@ export const getAuthProvider = (): AuthProvider => {
       if (sale == null) return false;
 
       // Compute access rights from the sale role
-      return canAccess(getAccessRole(sale), params);
+      return canAccess(getAccessRole(sale), params, sale.id);
     },
     // Two-step verification (TOTP, docs/08). The MFA screens talk to supabase-js
     // directly; MfaGate asks what the session still needs.

@@ -25,6 +25,37 @@ describe("canAccess", () => {
   });
 });
 
+it("lets an executive write only on their own lead when the record is given", () => {
+  const own = { id: 1, sales_id: 7 };
+  const other = { id: 2, sales_id: 8 };
+  const unassigned = { id: 3, sales_id: null };
+  for (const action of ["edit", "delete"]) {
+    expect(
+      canAccess("user", { resource: "deals", action, record: own }, 7),
+    ).toBe(true);
+    expect(
+      canAccess("user", { resource: "deals", action, record: other }, 7),
+    ).toBe(false);
+    expect(
+      canAccess("user", { resource: "deals", action, record: unassigned }, 7),
+    ).toBe(false);
+    expect(
+      canAccess("admin", { resource: "deals", action, record: unassigned }, 7),
+    ).toBe(true);
+  }
+  // Reading a lead, or the edit right without a record, does not change.
+  expect(
+    canAccess("user", { resource: "deals", action: "show", record: other }, 7),
+  ).toBe(true);
+  expect(canAccess("user", { resource: "deals", action: "edit" }, 7)).toBe(
+    true,
+  );
+  // Unknown identity: no write on a given lead.
+  expect(
+    canAccess("user", { resource: "deals", action: "edit", record: own }),
+  ).toBe(false);
+});
+
 it("lets only managers export, on every resource", () => {
   for (const resource of ["deals", "contacts", "companies"]) {
     expect(canAccess("admin", { resource, action: "export" })).toBe(true);

@@ -1,3 +1,7 @@
+import type { Identifier } from "ra-core";
+
+import { canEditDeal } from "../../deals/canEditDeal";
+
 // FIXME: This should be exported from the ra-core package
 type CanAccessParams<
   RecordType extends Record<string, any> = Record<string, any>,
@@ -11,6 +15,7 @@ type CanAccessParams<
 // gets these and nothing else. The database enforces the same rule (RLS);
 // this keeps the interface from offering what the database would refuse.
 const READ_ACTIONS = ["list", "show"];
+const DEAL_WRITE_ACTIONS = ["edit", "delete"];
 
 export type AccessRole = "admin" | "user" | "reader";
 
@@ -26,7 +31,8 @@ export const canAccess = <
 >(
   role: string,
   params: CanAccessParams<RecordType>,
-) => {
+  saleId?: Identifier | null,
+): boolean => {
   if (role === "admin") {
     return true;
   }
@@ -48,6 +54,16 @@ export const canAccess = <
   // Non admins can't access the configuration resource
   if (params.resource === "configuration") {
     return false;
+  }
+
+  // A given lead: an executive writes only on their own; on an unassigned or
+  // someone else's lead the file is read-only (they can only take it, RLS).
+  if (
+    params.resource === "deals" &&
+    params.record != null &&
+    DEAL_WRITE_ACTIONS.includes(params.action)
+  ) {
+    return canEditDeal(params.record, saleId, false);
   }
 
   return true;
