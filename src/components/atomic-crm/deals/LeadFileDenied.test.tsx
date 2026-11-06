@@ -51,9 +51,7 @@ describe("Ficha del lead: un cambio rechazado no es una sesión vencida", () => 
     await changeBusinessLine(screen);
 
     await expect
-      .element(
-        screen.getByText("No se pudo guardar el cambio. Intenta de nuevo."),
-      )
+      .element(screen.getByText("No tienes permiso para hacer esto."))
       .toBeVisible();
     await expect
       .element(screen.getByRole("region", { name: "Datos del lead" }))

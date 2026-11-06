@@ -218,12 +218,13 @@
       "criterio": "Typecheck y lint limpios; toda la suite app pasa, con tests nuevos para ejecutivo y gerencia en los cuatro puntos.",
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
-      "session_id": null
+      "session_id": null,
+      "inicio": "2026-11-06 16:54:55"
     },
     {
       "id": "T9",

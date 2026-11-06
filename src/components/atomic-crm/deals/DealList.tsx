@@ -15,13 +15,12 @@ import { List } from "@/components/admin/list";
 import { ReferenceInput } from "@/components/admin/reference-input";
 import { FilterButton } from "@/components/admin/filter-form";
 
-import { DataImportButton } from "../dataImport/DataImportButton";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { TopToolbar } from "../layout/TopToolbar";
 import { DealArchivedList } from "./DealArchivedList";
 import { DealCreate } from "./DealCreate";
 import { DealEdit } from "./DealEdit";
-import { DealEmpty } from "./DealEmpty";
+import { DealEmpty, ImportLeadsButton } from "./DealEmpty";
 import { leadFilters, leadSearchFilters } from "./DealFilters";
 import { DealListContent } from "./DealListContent";
 import { DealShow } from "./DealShow";
@@ -122,7 +121,7 @@ const DealLayout = () => {
 const DealActions = () => (
   <TopToolbar>
     <FilterButton />
-    <DataImportButton resource="deals" />
+    <ImportLeadsButton />
     <ExportButton />
     <CreateButton label="resources.deals.action.new" />
   </TopToolbar>

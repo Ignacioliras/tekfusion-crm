@@ -44,6 +44,15 @@ export const isPermissionDenied = (error: unknown): boolean => {
   );
 };
 
+/**
+ * Translation key for a screen that shows its own fixed text on failure: the
+ * "no permission" text when the base refused (42501 or a 403), else `fallback`.
+ */
+export const errorMessageKey = (error: unknown, fallback: string): string =>
+  isPermissionDenied(error) || asApiError(error).status === 403
+    ? PERMISSION_DENIED_MESSAGE
+    : fallback;
+
 /** The same error with a message in Spanish when the base refused the action. */
 export const toDisplayError = (error: unknown): unknown => {
   if (!isPermissionDenied(error)) return error;

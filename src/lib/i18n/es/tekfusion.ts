@@ -61,6 +61,11 @@ export const tekfusionMessages = {
         take_error: "El lead ya no está disponible",
         mark_contacted: "Marcar contactado",
         contacted: "Lead marcado como contactado",
+        mark_contacted_title: "Marcar como contactado",
+        mark_contacted_help:
+          "Cuenta cómo contactaste al cliente (por ejemplo, una llamada). La nota queda en la línea de tiempo.",
+        contacted_note: "Nota",
+        contacted_note_required: "Escribe una nota para marcarlo contactado.",
         reassign: "Reasignar",
         reassign_title: "Reasignar lead",
         reassign_help: "El lead y sus seguimientos pasan al ejecutivo que elijas.",

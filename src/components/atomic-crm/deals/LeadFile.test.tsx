@@ -179,7 +179,7 @@ describe("Ficha del lead", () => {
     }
   });
 
-  it("marks a new lead as contacted", async () => {
+  it("marks a new lead as contacted, with its note", async () => {
     const screen = await render(<LeadFile deal={{ stage: "nuevo" }} />);
     const data = screen.getByRole("region", { name: "Datos del lead" });
     await expect
@@ -187,6 +187,11 @@ describe("Ficha del lead", () => {
       .toBeVisible();
 
     await screen.getByRole("button", { name: "Marcar contactado" }).click();
+    const dialog = screen.getByRole("dialog", {
+      name: "Marcar como contactado",
+    });
+    await dialog.getByRole("textbox", { name: "Nota" }).fill("Llamé.");
+    await dialog.getByRole("button", { name: "Marcar contactado" }).click();
 
     await expect
       .element(data.getByText("Contactado", { exact: true }))

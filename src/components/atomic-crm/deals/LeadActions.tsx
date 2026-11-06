@@ -7,15 +7,18 @@ import {
   required,
   useCanAccess,
   useDataProvider,
+  useGetIdentity,
   useNotify,
   useRefresh,
   useTranslate,
   useUpdate,
 } from "ra-core";
 import { useState, type ReactNode } from "react";
+import type { FieldValues } from "react-hook-form";
 
 import { AutocompleteInput } from "@/components/admin/autocomplete-input";
 import { ReferenceInput } from "@/components/admin/reference-input";
+import { TextInput } from "@/components/admin/text-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { errorMessageKey } from "../providers/supabase/accessErrors";
 import type { CrmDataProvider } from "../providers/types";
 import type { Deal, Sale } from "../types";
 
@@ -75,8 +79,10 @@ const TakeButton = ({ deal }: { deal: Deal }) => {
       notify("tekfusion.lead.actions.taken", { type: "info" });
       refresh();
     },
-    onError: () =>
-      notify("tekfusion.lead.actions.take_error", { type: "error" }),
+    onError: (error) =>
+      notify(errorMessageKey(error, "tekfusion.lead.actions.take_error"), {
+        type: "error",
+      }),
   });
   if (!canTake) return null;
   return (
@@ -87,16 +93,31 @@ const TakeButton = ({ deal }: { deal: Deal }) => {
   );
 };
 
+const requiredNote = (value?: string) =>
+  value?.trim() ? undefined : "tekfusion.lead.actions.contacted_note_required";
+
+/** Marking by hand needs a note (docs/03): the note is saved, then the stage. */
 const MarkContactedButton = ({ deal }: { deal: Deal }) => {
   const translate = useTranslate();
-  const [update, { isPending }] = useUpdate();
+  const dataProvider = useDataProvider();
+  const { identity } = useGetIdentity();
   const notify = useNotify();
   const refresh = useRefresh();
-  const handleClick = () => {
-    const now = new Date().toISOString();
-    update(
-      "deals",
-      {
+  const [open, setOpen] = useState(false);
+  const { mutate, isPending } = useMutation({
+    // ponytail: two calls, not one transaction; if the update fails the note
+    // stays (harmless). Move to an RPC if it has to be atomic.
+    mutationFn: async (note: string) => {
+      const now = new Date().toISOString();
+      await dataProvider.create("deal_notes", {
+        data: {
+          deal_id: deal.id,
+          text: note,
+          date: now,
+          sales_id: identity?.id,
+        },
+      });
+      await dataProvider.update("deals", {
         id: deal.id,
         data: {
           stage: "contactado",
@@ -104,26 +125,64 @@ const MarkContactedButton = ({ deal }: { deal: Deal }) => {
           last_activity_at: now,
         },
         previousData: deal,
-      },
-      {
-        onSuccess: () => {
-          notify("tekfusion.lead.actions.contacted", { type: "info" });
-          refresh();
-        },
-        onError: () => notify("tekfusion.common.save_error", { type: "error" }),
-      },
-    );
-  };
+      });
+    },
+    onSuccess: () => {
+      setOpen(false);
+      notify("tekfusion.lead.actions.contacted", { type: "info" });
+      refresh();
+    },
+    onError: (error) =>
+      notify(errorMessageKey(error, "tekfusion.common.save_error"), {
+        type: "error",
+      }),
+  });
+
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={handleClick}
-      disabled={isPending}
-    >
-      <PhoneCall className="size-4" />
-      {translate("tekfusion.lead.actions.mark_contacted")}
-    </Button>
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <PhoneCall className="size-4" />
+        {translate("tekfusion.lead.actions.mark_contacted")}
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {translate("tekfusion.lead.actions.mark_contacted_title")}
+            </DialogTitle>
+            <DialogDescription>
+              {translate("tekfusion.lead.actions.mark_contacted_help")}
+            </DialogDescription>
+          </DialogHeader>
+          <Form
+            onSubmit={(values: FieldValues) =>
+              mutate(String(values.note).trim())
+            }
+          >
+            <TextInput
+              source="note"
+              label="tekfusion.lead.actions.contacted_note"
+              multiline
+              rows={3}
+              validate={requiredNote}
+              helperText={false}
+            />
+            <DialogFooter className="mt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setOpen(false)}
+              >
+                {translate("tekfusion.common.cancel")}
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {translate("tekfusion.lead.actions.mark_contacted")}
+              </Button>
+            </DialogFooter>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -152,7 +211,10 @@ const ReassignButton = ({ deal }: { deal: Deal }) => {
           notify("tekfusion.lead.actions.reassigned", { type: "info" });
           refresh();
         },
-        onError: () => notify("tekfusion.common.save_error", { type: "error" }),
+        onError: (error) =>
+          notify(errorMessageKey(error, "tekfusion.common.save_error"), {
+            type: "error",
+          }),
       },
     );
 

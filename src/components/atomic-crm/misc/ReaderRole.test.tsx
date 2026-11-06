@@ -59,10 +59,8 @@ const SCREENS: {
     screen: "pipeline",
     path: "/deals",
     loaded: "Válvulas para relave",
-    controls: [
-      { role: "link", name: "New Deal" },
-      { role: "button", name: /Import CSV/ },
-    ],
+    // Importing leads is for managers only (deals/LeadPermissions.test.tsx).
+    controls: [{ role: "link", name: "New Deal" }],
   },
   {
     screen: "lead",

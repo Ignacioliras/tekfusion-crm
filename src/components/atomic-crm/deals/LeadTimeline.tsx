@@ -1,4 +1,5 @@
 import {
+  CanAccess,
   ListBase,
   ResourceContextProvider,
   useGetList,
@@ -53,7 +54,10 @@ export const LeadTimeline = ({ deal }: { deal: Deal }) => (
     storeKey={false}
   >
     <ResourceContextProvider value="deal_notes">
-      <NoteCreate reference="deals" />
+      {/* The base only takes a note on a lead the user can edit (deal_notes_insert). */}
+      <CanAccess resource="deals" action="edit" record={deal}>
+        <NoteCreate reference="deals" />
+      </CanAccess>
       <TimelineFeed deal={deal} />
     </ResourceContextProvider>
   </ListBase>

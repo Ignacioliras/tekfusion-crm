@@ -344,6 +344,17 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **Descartado:** marcar leída al tomarla (son dos acciones distintas; la interfaz puede llamar a ambas).
 - **Consecuencias:** tomar no cambia el dueño del lead (`active_deal_id`) ni registra evento o alerta; marcar leído no mira si la conversación está archivada. Migración `20261106164603_wa_rpc.sql`, pgTAP `36_wa_rpc`.
 
+## 2026-11-06 · Un lead importado ya cerrado no cuenta en el reporte semanal (decisión de Ignacio)
+- **Decisión (Ignacio, 2026-11-06):** un lead que entra por la importación (RF-15) ya en `ganado` o `perdido` queda **sin fecha de cierre** (`closed_at` vacío) y **no cuenta en ningún reporte semanal**. Confirma lo que la entrada "Reporte semanal: cerrados por fecha de cierre…" dejó como decisión técnica.
+- **Motivo:** su fecha real de cierre no se conoce; inventarla (fecha de importación) inflaría la semana de la migración.
+- **Consecuencias:** el importador no envía `closed_at`; nada que cambiar en `weekly_report_data`.
+
+## 2026-11-06 · Permisos de ejecutivo en pantalla (cola nocturna 2026-11-06-c, T8)
+- **Importar CSV del kanban:** se muestra solo si `useCanAccess({ resource: "sales", action: "list" })`, el mismo recurso que lee el importador de leads (busca ejecutivos por correo) y que solo gerencia lista (`ImportLeadsButton` en `deals/DealEmpty.tsx`). `canAccess.ts` no cambió: un ejecutivo sigue teniendo `deals/create` y la ruta `/import` sigue abierta (pendiente de la decisión "Importar leads es solo gerencia").
+- **Ficha sin asignar:** el formulario "Agregar una nota" pide el mismo permiso que editar ese lead (`CanAccess deals/edit record`), como `deal_notes_insert`. Un ejecutivo, en un lead sin asignar o ajeno, ya no lo ve; gerencia sí.
+- **Marcar contactado:** abre un diálogo con nota obligatoria (vacía o solo espacios no confirma). Se guarda primero la nota y después la etapa: si falla la nota no cambia la etapa; si falla la etapa, la nota queda (no son una transacción; pasar a RPC si hace falta).
+- **"Sin permiso" en vez del texto fijo:** `errorMessageKey(error, fallback)` de `providers/supabase/accessErrors.ts` devuelve `tekfusion.common.forbidden` ante 42501 o 403 y el texto propio de la pantalla en cualquier otro error. Aplicado en la ficha: Tomar, Marcar contactado, Reasignar y la edición en línea. Siguen con texto fijo: Archivar/Desarchivar (`DealShow`), Ganado/Perdido (`useCloseDeal`) y las pantallas fuera de `deals/`.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

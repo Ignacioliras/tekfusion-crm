@@ -9,6 +9,7 @@ import {
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { errorMessageKey } from "../providers/supabase/accessErrors";
 import type { Deal } from "../types";
 
 interface InlineEditFieldProps {
@@ -54,7 +55,10 @@ export const InlineEditField = ({
           setEditing(false);
           notify("tekfusion.common.saved", { type: "info" });
         },
-        onError: () => notify("tekfusion.common.save_error", { type: "error" }),
+        onError: (error) =>
+          notify(errorMessageKey(error, "tekfusion.common.save_error"), {
+            type: "error",
+          }),
       },
     );
 

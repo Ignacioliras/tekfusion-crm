@@ -1,4 +1,4 @@
-import { useGetList, useTranslate } from "ra-core";
+import { useCanAccess, useGetList, useTranslate } from "ra-core";
 import { matchPath, useLocation, Link } from "react-router";
 import type { ReactNode } from "react";
 import { CreateButton } from "@/components/admin/create-button";
@@ -8,6 +8,15 @@ import { DataImportButton } from "../dataImport/DataImportButton";
 import useAppBarHeight from "../misc/useAppBarHeight";
 import type { Contact } from "../types";
 import { DealCreate } from "./DealCreate";
+
+/**
+ * Importing leads is for managers only (docs/10, 2026-11-06). The check is the
+ * one the importer itself needs: it reads `sales`, which only managers list.
+ */
+export const ImportLeadsButton = () => {
+  const { canAccess } = useCanAccess({ resource: "sales", action: "list" });
+  return canAccess ? <DataImportButton resource="deals" /> : null;
+};
 
 export const DealEmpty = ({ children }: { children?: ReactNode }) => {
   const translate = useTranslate();
@@ -48,7 +57,7 @@ export const DealEmpty = ({ children }: { children?: ReactNode }) => {
           </div>
           <div className="flex space-x-8">
             <CreateButton label="resources.deals.action.create" />
-            <DataImportButton resource="deals" />
+            <ImportLeadsButton />
           </div>
           <DealCreate open={!!matchCreate} />
           {children}
