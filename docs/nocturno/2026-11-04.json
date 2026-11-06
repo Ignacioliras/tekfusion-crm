@@ -153,9 +153,7 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npm run test:unit:app -- --run",
       "criterio": "Typecheck y lint limpios; suite de app en verde con los tests nuevos (plantilla válida con vista previa, variable desconocida rechazada, respuesta rápida, motivo reordenado, firma editada, ejecutivo sin acceso); con T4, el ítem 'Configuración completa (RF-14) salvo WhatsApp' de la Fase 3 en docs/09 queda [x], anotando que líneas y ejecutivos ya estaban en Usuarios (Fase 2).",
-      "depende_de": [
-        "T4"
-      ],
+      "depende_de": ["T4"],
       "necesita_supabase": false,
       "estado": "hecha",
       "intentos": 1,

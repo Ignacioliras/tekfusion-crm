@@ -92,8 +92,16 @@ const horaAFecha = (hhmm) => {
   if (d <= new Date()) d.setDate(d.getDate() + 1); // "07:00" dicho de noche = mañana a las 7
   return d;
 };
-const guardar = (ruta, obj) =>
+// Pasa por prettier al guardar: el JSON de la cola se commitea y el CI corre `prettier --check`.
+const PRETTIER = join(REPO, "node_modules", "prettier", "bin", "prettier.cjs");
+const guardar = (ruta, obj) => {
   writeFileSync(ruta, JSON.stringify(obj, null, 2) + "\n");
+  const r = spawnSync(process.execPath, [PRETTIER, "--write", ruta], {
+    encoding: "utf8",
+  });
+  if (r.status !== 0)
+    log(`aviso: prettier no formateó ${ruta}: ${r.stderr || r.error}`);
+};
 
 // ───────────────────────── worktree ─────────────────────────
 const RAMA = `nocturno/${FECHA}`;

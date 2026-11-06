@@ -1,5 +1,6 @@
 name: ✅ Check
 on:
+    workflow_dispatch:
     push:
         branches:
             - main
@@ -94,26 +95,39 @@ jobs:
             - name: 🔎 Unit Tests on Supabase functions
               run: CI=1 npm run test:unit:functions -- --run
 
+    # E2E de TekFusion (e2e/tekfusion, playwright.tekfusion.config.ts) contra el Supabase
+    # local con el seed ficticio. Los e2e de Atomic (e2e/*.spec.ts, `make test-e2e-ci`)
+    # ya no corren: esperan la UI en inglés y los usuarios del seed de Atomic.
     e2e-test:
-      timeout-minutes: 10
-      runs-on: ubuntu-latest
-      steps:
-      - name: 📥 Checkout repo
-        uses: actions/checkout@v7
+        name: 🎭 E2E TekFusion
+        timeout-minutes: 20
+        runs-on: ubuntu-latest
+        if: ${{ !github.event.pull_request.draft || github.event_name == 'push' }}
+        steps:
+            - name: 📥 Checkout repo
+              uses: actions/checkout@v7
 
-      - name: ⚙️ Setup node
-        uses: actions/setup-node@v7
-        with:
-            node-version: 24
-            cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium-headless-shell 1>/dev/null
-      - name: Install wait-on and serve
-        run: npm install -g wait-on serve
-      - name: Run Playwright tests
-        run: make test-e2e-ci
+            - name: ⚙️ Setup node
+              uses: actions/setup-node@v7
+              with:
+                  node-version: 24
+                  cache: npm
+
+            - name: 📥 Download deps
+              run: npm ci
+
+            - name: 🎭 Install Playwright browsers
+              run: npx playwright install --with-deps chromium-headless-shell 1>/dev/null
+
+            - name: 🗄️ Start Supabase
+              run: npx supabase start -x studio,imgproxy,logflare,vector
+
+            - name: 🎭 E2E
+              run: CI=1 npm run test:e2e
+
+            - name: 🛑 Stop Supabase
+              if: always()
+              run: npx supabase stop --no-backup
 
     build:
         name: 🔨 Build

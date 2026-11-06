@@ -14,7 +14,9 @@
     "moduleDetection": "force",
     "types": [],
     "paths": {
-      "jsr:@supabase/supabase-js@2": ["../../node_modules/@supabase/supabase-js"],
+      "jsr:@supabase/supabase-js@2": [
+        "../../node_modules/@supabase/supabase-js"
+      ],
       "jsr:@panva/jose@6": ["../../node_modules/jose"],
       "npm:zod@^4.3.6": ["../../node_modules/zod"]
     }

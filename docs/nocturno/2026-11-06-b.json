@@ -62,9 +62,7 @@
       ],
       "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/deals",
       "criterio": "Typecheck y lint limpios; tests de deals verdes, incluidos los de la ficha con ejecutivo (lead sin asignar y propio) y lector; Tomar fuera del CanAccess con record.",
-      "depende_de": [
-        "T1"
-      ],
+      "depende_de": ["T1"],
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
@@ -217,14 +215,10 @@
       "id": "T8",
       "titulo": "E2E como Camila: alerta leída, importar deals_sample.csv y firma en Mi perfil",
       "descripcion": "Agregar specs en e2e/tekfusion/ (mismo patrón y login que los existentes; HashRouter: page.goto('/#/...')) como Camila: 1) abrir la campana, marcar una alerta leída y ver que el contador baja; 2) importar src/components/atomic-crm/dataImport/deals_sample.csv desde el importador de leads y ver esos leads en el kanban en su etapa; 3) editar su firma en Mi perfil, guardar, recargar y ver la firma guardada. Esperas deterministas (expect(locator).toBeVisible, waitForResponse), nunca waitForTimeout. Si un e2e destapa un bug de la app, no se corrige aquí: terminar con BLOQUEADA y el detalle.",
-      "archivos": [
-        "e2e/tekfusion/*.spec.ts"
-      ],
+      "archivos": ["e2e/tekfusion/*.spec.ts"],
       "verificacion": "npm run test:e2e",
       "criterio": "npm run test:e2e verde con los tres specs nuevos y los existentes.",
-      "depende_de": [
-        "T4"
-      ],
+      "depende_de": ["T4"],
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
@@ -243,15 +237,10 @@
       "id": "T9",
       "titulo": "Seed de demo más rico: 12 meses de leads por línea y canal",
       "descripcion": "Ampliar supabase/seed.sql (datos ficticios, nombres inventados) para la demo del viernes: leads repartidos en los últimos 12 meses por las tres líneas y todos los canales, con cotizaciones, ganados con monto, perdidos con motivo, tareas y alertas, respetando las reglas de la base (guard_deal_closing, enums, restricciones). Todos los pgTAP existentes siguen pasando: ajustar solo los que cuentan filas del seed (planes y conteos esperados), sin cambiar lo que prueban. Agregar una aserción pgTAP de que dashboard_summary sobre los últimos 12 meses trae datos en cada uno de los 12 meses. Los e2e existentes siguen verdes (no tocar los usuarios ni los datos que usan).",
-      "archivos": [
-        "supabase/seed.sql",
-        "supabase/tests/*.test.sql"
-      ],
+      "archivos": ["supabase/seed.sql", "supabase/tests/*.test.sql"],
       "verificacion": "npx supabase db reset --local && npx supabase test db && npm run test:e2e",
       "criterio": "db reset sin error; todos los pgTAP verdes (los que cuentan filas ajustados sin cambiar lo que prueban), incluida la aserción de 12 meses; e2e verde.",
-      "depende_de": [
-        "T8"
-      ],
+      "depende_de": ["T8"],
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
@@ -274,9 +263,7 @@
       ],
       "verificacion": "npm run test:e2e",
       "criterio": "npm run test:e2e verde con los specs de Andrea y los existentes; sin dependencias nuevas; ningún secreto TOTP en el seed.",
-      "depende_de": [
-        "T4"
-      ],
+      "depende_de": ["T4"],
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
@@ -295,10 +282,7 @@
       "id": "T11",
       "titulo": "Respaldo local con prueba de restauración (scripts/tekfusion/respaldo.mjs)",
       "descripcion": "Crear scripts/tekfusion/respaldo.mjs (Node, sin dependencias). pg_dump y psql no están en el PATH de Windows: usarlos dentro del contenedor de la base de Supabase local (docker exec supabase_db_tekfusion-crm …, project_id de supabase/config.toml) con las credenciales locales por defecto. Hace pg_dump de la base local a backups/<fecha-hora>.dump (agregar backups/ a .gitignore); con --probar además crea una base temporal en el mismo servidor, restaura el dump, compara el conteo de filas de deals, contacts, companies y quotes contra la original, imprime cada conteo y el tiempo total (dump + restauración), borra la base temporal (también si falla) y sale con código 1 si algún conteo no cuadra o algún paso falla. La subida a Cloudflare R2 queda como bloque comentado con TODO hasta tener la cuenta. Nada de staging ni producción. Documentar el uso en un comentario al inicio del script. No cierra el 🔒 de la Fase 5 (respaldos a R2 y prueba de restauración con reloj en staging).",
-      "archivos": [
-        "scripts/tekfusion/respaldo.mjs",
-        ".gitignore"
-      ],
+      "archivos": ["scripts/tekfusion/respaldo.mjs", ".gitignore"],
       "verificacion": "node scripts/tekfusion/respaldo.mjs --probar",
       "criterio": "El script sale con 0, imprime los cuatro conteos iguales y el tiempo; no queda la base temporal; backups/ está ignorada por git.",
       "depende_de": [],
@@ -346,14 +330,10 @@
       "id": "T13",
       "titulo": "Borrador del manual del ejecutivo (docs/manual-ejecutivo.md)",
       "descripcion": "Escribir docs/manual-ejecutivo.md en español de Chile para el ejecutivo de TekFusion, a partir de docs/02, docs/03 y las pantallas que existen hoy: entrar (y verificación en dos pasos si la activa), pipeline kanban (mover, ganado con monto, perdido con motivo, qué leads puede mover), ficha del lead (datos, línea de tiempo, Tomar un lead sin asignar), nuevo lead manual, enviar cotización, seguimientos (programar, ajustar, cancelar, plantillas), alertas (campana, marcar leídas) y Mi perfil (firma). Leer los componentes para usar los textos reales de botones y menús. No inventar funciones que no existen. Lo de WhatsApp y correo entrante/seguimientos automáticos va marcado 'pendiente Fase 4/5'. Sin datos reales: ejemplos con los nombres ficticios del seed.",
-      "archivos": [
-        "docs/manual-ejecutivo.md"
-      ],
+      "archivos": ["docs/manual-ejecutivo.md"],
       "verificacion": "npx prettier --check docs/manual-ejecutivo.md",
       "criterio": "El archivo existe, pasa prettier, cubre las pantallas listadas con los textos reales de la interfaz y marca lo de WhatsApp/correo como pendiente Fase 4/5.",
-      "depende_de": [
-        "T7"
-      ],
+      "depende_de": ["T7"],
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
