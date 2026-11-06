@@ -121,13 +121,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-06 05:13:43"
+      "commit": "844680fe47fad238040e82a2fe0f535a86bf0fda",
+      "costo_usd": 1.5393652,
+      "session_id": "29388d15-f788-4d35-9815-96eb114f7b08",
+      "inicio": "2026-11-06 05:13:43",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: borré .eslintignore (un hook bloquea editar eslint.config.js y sus rutas no existen), saqué __dirname de vite.config.ts, dejé expected_closing_date de buildDeal como 'YYYY-MM-DD' y arreglé ReaderRole.test.tsx, roto desde T2, para que la suite pase entera.",
+      "fin": "2026-11-06 05:25:46"
     },
     {
       "id": "T5",
