@@ -96,8 +96,7 @@ jobs:
               run: CI=1 npm run test:unit:functions -- --run
 
     # E2E de TekFusion (e2e/tekfusion, playwright.tekfusion.config.ts) contra el Supabase
-    # local (puerto 54321) con el seed ficticio. Los e2e de Atomic (e2e/*.spec.ts,
-    # `make test-e2e-ci`) ya no corren: esperan la UI en inglés y el seed de Atomic.
+    # local (puerto 54321) con el seed ficticio. Los e2e de Atomic se borraron (docs/10).
     e2e-test:
         name: 🎭 E2E TekFusion
         timeout-minutes: 20

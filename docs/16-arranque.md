@@ -91,7 +91,7 @@ Para probar el mecanismo sin gastar nada: `node scripts\tekfusion\nocturno.mjs -
 3. El puerto 5180 debe estar libre (`--strictPort`: si está ocupado, falla en vez de usar otro).
 4. Los tests están en `e2e/tekfusion/` y entran como Camila (ejecutiva del seed). Si falla uno, el detalle queda en `test-results/` (`npx playwright show-trace <ruta>/trace.zip`).
 
-El harness e2e de Atomic (`playwright.config.ts`, `e2e/*.spec.ts`, `.env.e2e`) no se usa.
+El harness e2e de Atomic (`playwright.config.ts`, `e2e/*.spec.ts`, `.env.e2e`, `supabase/config.e2e.toml` y los targets `*-e2e*` del makefile) se borró el 2026-11-06 (ver `docs/10`).
 
 ## Si algo falla en Windows
 - **Un hook de Claude Code da error** (mensajes con `.claude/hooks/...`): copia el error y pégalo en Claude. Plan B: abrir el repo en el `.devcontainer/` de Atomic (VS Code → "Reopen in Container") o en WSL2.
