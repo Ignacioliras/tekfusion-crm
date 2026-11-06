@@ -44,8 +44,8 @@
     {
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
@@ -62,7 +62,8 @@
         "src/components/atomic-crm/providers/fakerest/dataProvider.ts"
       ],
       "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/management-dashboard/summary.test.ts",
-      "criterio": "Typecheck y lint limpios; summary.test.ts pasa; los dos data providers exponen los dos métodos con la misma firma."
+      "criterio": "Typecheck y lint limpios; summary.test.ts pasa; los dos data providers exponen los dos métodos con la misma firma.",
+      "inicio": "2026-11-06 01:30:33"
     },
     {
       "depende_de": [

@@ -1,12 +1,33 @@
 import type { DataProvider, Identifier, UserIdentity } from "ra-core";
 
-import type { Deal, Followup, Quote, SendChannel, Template } from "../../types";
+import type {
+  DashboardDailyRow,
+  DashboardSummaryRow,
+  Deal,
+  Followup,
+  Quote,
+  SalesRankingRow,
+  SalesRankingSummaryRow,
+  SendChannel,
+  Template,
+} from "../../types";
+import type { DayRange } from "../../management-dashboard/metrics";
+import {
+  summarizeDashboard,
+  summarizeSalesRanking,
+} from "../../management-dashboard/summary";
 import { ETAPAS_ABIERTAS, type Etapa } from "../../tekfusion/estados";
 import { quotePdfPath, validateQuoteFile } from "../commons/quoteFile";
 
 const ALL = {
   pagination: { page: 1, perPage: 1000 },
   sort: { field: "id", order: "ASC" as const },
+};
+// Every day row of a view: months x lines x channels can pass 1000.
+const EVERY_DAY = {
+  filter: {},
+  pagination: { page: 1, perPage: 100_000 },
+  sort: { field: "day", order: "ASC" as const },
 };
 const DEFAULT_CADENCE_DAYS = [2, 5, 10];
 
@@ -29,7 +50,31 @@ export const cadenceDates = (from: Date, days: number[]): Date[] =>
 export const createLeadMethods = (
   getDataProvider: () => DataProvider,
   getIdentity: () => Promise<UserIdentity | undefined>,
+  canAccess: (params: { resource: string; action: string }) => Promise<boolean>,
 ) => ({
+  /** dashboard_summary() over the in-memory dashboard_daily rows. */
+  getDashboardSummary: async (
+    range: DayRange,
+  ): Promise<DashboardSummaryRow[]> => {
+    const { data } = await getDataProvider().getList<DashboardDailyRow>(
+      "dashboard_daily",
+      EVERY_DAY,
+    );
+    return summarizeDashboard(data, range);
+  },
+
+  /** sales_ranking_summary(): managers only, like the sales_ranking view. */
+  getSalesRankingSummary: async (
+    range: DayRange,
+  ): Promise<SalesRankingSummaryRow[]> => {
+    if (!(await canAccess({ resource: "sales", action: "list" }))) return [];
+    const { data } = await getDataProvider().getList<SalesRankingRow>(
+      "sales_ranking",
+      EVERY_DAY,
+    );
+    return summarizeSalesRanking(data, range);
+  },
+
   /** log_export() has nothing to record in the demo: it only resolves. */
   logExport: async (
     _resource: string,

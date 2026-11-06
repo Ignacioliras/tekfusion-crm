@@ -8,9 +8,11 @@ import {
 } from "ra-core";
 import type {
   ContactNote,
+  DashboardSummaryRow,
   Deal,
   DealNote,
   Quote,
+  SalesRankingSummaryRow,
   SendChannel,
   RAFile,
   Sale,
@@ -19,6 +21,7 @@ import type {
   SearchResult,
   SignUpData,
 } from "../../types";
+import type { DayRange } from "../../management-dashboard/metrics";
 import type { ConfigurationContextValue } from "../../root/ConfigurationContext";
 import { ATTACHMENTS_BUCKET } from "../commons/attachments";
 import {
@@ -263,6 +266,28 @@ const getDataProviderWithCustomMethods = () => {
         .storage.from(ATTACHMENTS_BUCKET)
         .remove(paths);
       return { filesRemoved: !storageError };
+    },
+    /** Dashboard totals of a range, summed in the database (RPC dashboard_summary). */
+    async getDashboardSummary(range: DayRange): Promise<DashboardSummaryRow[]> {
+      const { data, error } = await getSupabaseClient().rpc(
+        "dashboard_summary",
+        { date_from: range.from, date_to: range.to },
+      );
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return (data ?? []) as DashboardSummaryRow[];
+    },
+    /** Ranking of a range, one row per executive (RPC sales_ranking_summary). */
+    async getSalesRankingSummary(
+      range: DayRange,
+    ): Promise<SalesRankingSummaryRow[]> {
+      const { data, error } = await getSupabaseClient().rpc(
+        "sales_ranking_summary",
+        { date_from: range.from, date_to: range.to },
+      );
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return (data ?? []) as SalesRankingSummaryRow[];
     },
     /** "Tomar": an executive takes an unassigned lead (RPC take_deal). */
     async takeDeal(dealId: Identifier): Promise<Deal> {

@@ -51,6 +51,16 @@ export type SalesRankingRow = {
   lost: number;
 };
 
+// One row of dashboard_summary(date_from, date_to): the dashboard_daily rows of
+// the range summed per (month, business_line, origin_channel). month is the
+// first day of the month, "YYYY-MM-DD".
+export type DashboardSummaryRow = Omit<DashboardDailyRow, "id" | "day"> & {
+  month: string;
+};
+
+// One row of sales_ranking_summary(date_from, date_to): one per executive.
+export type SalesRankingSummaryRow = Omit<SalesRankingRow, "id" | "day">;
+
 export type BusinessLineConfig = {
   code: Exclude<LineaNegocio, "indeterminada">;
   name: string;

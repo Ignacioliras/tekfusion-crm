@@ -123,7 +123,7 @@ async function fetchAndUpdateCompanyData(
 export interface CreateFakeRestDataProviderOptions {
   db?: Db;
   latency?: number;
-  authProvider?: Pick<typeof defaultAuthProvider, "getIdentity">;
+  authProvider?: Pick<typeof defaultAuthProvider, "getIdentity" | "canAccess">;
   silent?: boolean;
 }
 
@@ -159,6 +159,10 @@ export const createDataProvider = ({
     { increment?: Identifier; decrement?: Identifier } | undefined = undefined;
   const getIdentity = async () =>
     authProvider?.getIdentity?.() ?? defaultAuthProvider.getIdentity?.();
+  const canAccess = async (params: { resource: string; action: string }) =>
+    (await (authProvider?.canAccess ?? defaultAuthProvider.canAccess)?.(
+      params,
+    )) ?? false;
 
   const updateCompany = async (
     companyId: Identifier,
@@ -179,7 +183,7 @@ export const createDataProvider = ({
 
   const dataProviderWithCustomMethod: CrmDataProvider = {
     ...baseDataProvider,
-    ...createLeadMethods(() => dataProvider, getIdentity),
+    ...createLeadMethods(() => dataProvider, getIdentity, canAccess),
     async getMany(resource: string, params: any) {
       if (resource === "tags") {
         // like PostgREST, ignore unknown ids (a deleted tag may still be in cached contacts)
