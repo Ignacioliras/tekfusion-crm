@@ -653,16 +653,6 @@ export const frenchCrmMessages = {
       sections: {
         branding: "Image de marque",
       },
-      validation: {
-        duplicate: "%{display_name} en double : %{items}",
-        in_use:
-          "Impossible de supprimer %{display_name} encore utilisés par des affaires : %{items}",
-        validating: "Validation\u2026",
-        entities: {
-          categories: "catégories",
-          stages: "étapes",
-        },
-      },
     },
     theme: {
       dark: "Sombre",

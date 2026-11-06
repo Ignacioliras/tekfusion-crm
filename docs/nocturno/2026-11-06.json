@@ -188,8 +188,8 @@
     {
       "depende_de": [],
       "necesita_supabase": false,
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "error": null,
       "commit": null,
       "costo_usd": 0,
@@ -207,7 +207,8 @@
       "verificacion": "npm run typecheck && npm run lint && npx vitest --config vitest.config.ts --project app --run src/components/atomic-crm/settings",
       "criterio": "Typecheck y lint limpios; los tests de settings pasan; validateItemsInUse no existe y grep no encuentra usos de las claves borradas.",
       "modelo": "opus",
-      "esfuerzo": "high"
+      "esfuerzo": "high",
+      "inicio": "2026-11-06 01:58:01"
     },
     {
       "depende_de": [],

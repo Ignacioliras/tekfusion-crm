@@ -640,16 +640,6 @@ export const englishCrmMessages = {
       sections: {
         branding: "Branding",
       },
-      validation: {
-        duplicate: "Duplicate %{display_name}: %{items}",
-        in_use:
-          "Cannot remove %{display_name} that are still used by deals: %{items}",
-        validating: "Validating\u2026",
-        entities: {
-          categories: "categories",
-          stages: "stages",
-        },
-      },
     },
     theme: {
       dark: "Dark",

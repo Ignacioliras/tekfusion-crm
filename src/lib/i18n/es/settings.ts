@@ -96,16 +96,6 @@ export const settingsMessages: PartialCrmMessages = {
       sections: {
         branding: "Marca",
       },
-      validation: {
-        duplicate: "%{display_name} duplicadas: %{items}",
-        in_use:
-          "No se pueden quitar %{display_name} que todavía usan leads: %{items}",
-        validating: "Validando…",
-        entities: {
-          categories: "categorías",
-          stages: "etapas",
-        },
-      },
     },
     mfa: {
       title: "Verificación en dos pasos",
