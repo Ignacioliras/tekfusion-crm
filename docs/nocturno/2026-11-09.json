@@ -436,13 +436,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:45:01"
+      "commit": "95389112a88f7632789e69cce598ed97e821a697",
+      "costo_usd": 1.5924502000000003,
+      "session_id": "1ac672a6-12b9-4f83-95fa-81dd42faaa00",
+      "inicio": "2026-11-09 20:45:01",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: creé infra/vps/ (docker-compose con solo Caddy publicando 80/443, Caddyfile por ENV_NAME, .env.example de relleno y README paso a paso) y apunté infra/README.md ahí; la verificación con docker no corrió porque docker pide aprobación en esta sesión.",
+      "fin": "2026-11-09 20:48:09"
     },
     {
       "id": "T16",
