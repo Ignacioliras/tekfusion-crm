@@ -107,6 +107,13 @@ create policy wa_conversations_select on public.wa_conversations for select to a
 create policy wa_messages_select on public.wa_messages for select to authenticated
     using (exists (select 1 from public.wa_conversations c where c.id = conversation_id));
 
+-- Realtime (docs/07, Bandeja): the inbox listens to postgres_changes on these
+-- two tables. Realtime delivers a row only to subscribers whose role and JWT
+-- pass the select policies above, so the policies stay the single gate.
+-- wa_message_payloads and wa_instance_status are never published (docs/10).
+-- migra does not diff publications: the migration is written by hand.
+alter publication supabase_realtime add table public.wa_conversations, public.wa_messages;
+
 --
 -- Ingest (docs/07, Receptor). Only the service role (Edge Function) calls
 -- these. Ingesting a message is one atomic function so that a webhook retry

@@ -19,8 +19,8 @@ import type { Sale, WaConversation, WaMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { QuickReplyPicker } from "./QuickReplyPicker";
 
-// ponytail: one page of 500 messages, no Realtime; paging and the Realtime
-// subscription arrive with the rest of the inbox in Fase 4 (docs/07).
+// ponytail: one page of 500 messages (the oldest 500 once a chat has more);
+// add paging from the newest when a real conversation gets near the cap.
 const MESSAGES_PAGE = { page: 1, perPage: 500 };
 // Longest text WhatsApp accepts in one message (send_wa_message).
 const MAX_TEXT_LENGTH = 4096;

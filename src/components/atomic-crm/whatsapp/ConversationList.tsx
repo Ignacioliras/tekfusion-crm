@@ -36,8 +36,9 @@ export const ConversationList = ({
     { ids: contactIds },
     { enabled: contactIds.length > 0 },
   );
-  // ponytail: reads the listed chats' messages to find each last one; a
-  // last-message column or view replaces this when Fase 4 adds Realtime.
+  // ponytail: reads up to 1000 messages of the listed chats to find each last
+  // one (again on every Realtime change); a last-message column or view
+  // replaces this when the inbox outgrows the cap.
   const { data: messages = [] } = useGetList<WaMessage>(
     "wa_messages",
     {

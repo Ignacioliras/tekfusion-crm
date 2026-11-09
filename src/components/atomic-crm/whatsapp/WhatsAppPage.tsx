@@ -6,9 +6,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { WaConversation } from "../types";
 import { ConversationList } from "./ConversationList";
 import { ConversationPanel } from "./ConversationPanel";
+import { useWaRealtime } from "./useWaRealtime";
 
-// Inbox over the stored conversations (RF-08, docs/07): read, take and mark
-// read. Sending and Realtime come later in Fase 4.
+// Inbox over the stored conversations (RF-08, docs/07): read, take, mark read
+// and write, kept up to date by Realtime (useWaRealtime).
 const TABS = ["mine", "unassigned", "all"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -28,6 +29,11 @@ export const WhatsAppPage = () => {
     conversation: WaConversation;
     title: string;
   } | null>(null);
+  // Readers (no access) open no channel.
+  useWaRealtime({
+    enabled: canList === true,
+    conversationId: selected?.conversation.id,
+  });
 
   if (isPending || !identity) return null;
 

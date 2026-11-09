@@ -473,6 +473,28 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
   - La migración no rellena `closed_at` de los archivados que ya existan (no hay datos reales todavía).
 - **Archivos:** `schemas/15_tekfusion_weekly_report.sql`, migración `20261109191625_closed_at_archivado.sql` (generada con `db diff` y limpiada: `pg_cron`, `pgjwt` y las seis vistas recreadas), pgTAP `33_weekly_report` (21 casos: archivar fija `closed_at`, el informe de la semana no cambia, volver a `nuevo` lo borra), vitest `deals/DealListClosed.test.tsx`.
 
+## 2026-11-09 · 🔒 Tiempo real en la bandeja: Realtime avisa, la API entrega los datos (cola nocturna 2026-11-09, T6)
+**Sin revisar: revisar antes del merge.**
+- **Qué se publica:** `wa_conversations` y `wa_messages` entran a la publicación `supabase_realtime` (`alter publication … add table` en `schemas/14_tekfusion_whatsapp.sql`). `wa_message_payloads` (cuerpos crudos con el `apikey` de Evolution) y `wa_instance_status` **no** se publican. Sin lista de columnas ni filtro de filas en la publicación.
+- **RLS:** las policies no cambian. Realtime entrega cada fila solo a los suscriptores cuyo rol y JWT pasan el `select` de `wa_conversations_select` / `wa_messages_select`: gerencia todo, el ejecutivo lo suyo y lo sin asignar, el lector nada. `35_rls_whatsapp` sigue en verde sin tocarlo.
+- **El evento es solo un aviso.** `useWaRealtime` descarta el contenido del evento e invalida las queries de `wa_conversations` y `wa_messages`; lo que se muestra se vuelve a leer por la API, con su RLS. Nada de lo que llega por el canal se pinta.
+- **Dos canales:**
+  - **Bandeja** (`wa_conversations`, mientras la pantalla está abierta): invalida los dos recursos, porque el extracto de cada chat sale de `wa_messages`.
+  - **Conversación abierta** (`wa_messages` con `conversation_id=eq.<id>`): invalida `wa_messages`. Cubre los cambios de estado (✓, ✓✓), que no tocan la conversación. Se cierra al cambiar de chat o de pestaña.
+- **Elegido al implementar (sin confirmar):**
+  - **Al unirse el canal se vuelve a leer** (también al reconectar tras un corte): lo que pasó mientras el canal estaba caído no llega por Realtime. Cuesta una lectura de más al abrir la bandeja y cada chat.
+  - **Sin Supabase no hay canal:** el hook no hace nada si `VITE_IS_DEMO` es `"true"` (demo con FakeRest) o si falta `VITE_SUPABASE_URL` (tests). Se decide por variables de entorno, no por el proveedor de datos en uso.
+  - **El lector no abre canal** (no tiene acceso a la bandeja).
+  - **Nombre de canal único por suscripción** (contador): el cliente devuelve el canal anterior, ya suscrito, si se pide el mismo nombre mientras todavía se está cerrando (pasa con `StrictMode` en desarrollo y al cambiar rápido de chat).
+  - **Eventos `*`:** incluye `DELETE`, que Realtime no filtra por RLS y entrega solo con la clave primaria. De estas tablas no se borra nada (punto 3 de "Fase 2: modelo de datos y RLS", 2026-11-03), así que hoy no circula.
+- **Descartado:** pintar el mensaje desde el contenido del evento (sería confiar en un dato que no pasó por la API, y habría que repetir en el cliente el orden y los topes de las listas); un solo canal para todo (cambiar de chat cortaría también la escucha de la bandeja).
+- **Consecuencias:**
+  - **Topes vigentes:** 100 conversaciones por pestaña, 500 mensajes por conversación (los **más antiguos**: en un chat con más de 500 los nuevos no se ven, ni en vivo) y hasta 1000 mensajes para los extractos. Cada evento vuelve a leer esas listas completas, sin agrupar eventos seguidos.
+  - **La conversación abierta es una copia** que `WhatsAppPage` guarda al hacer clic: no sigue a la fila. Si llega un mensaje al chat abierto, el mensaje aparece pero el chat no se marca leído solo (el contador de la lista sube hasta volver a hacer clic); si otro la toma o la archiva, el panel sigue mostrando "Tomar" o el cuadro de escribir, y la RPC responde con su error. **Tarea nueva, sin hacer.**
+  - **Si el canal falla** (Realtime caído, migración sin aplicar), la bandeja funciona como antes, sin tiempo real y sin aviso en pantalla; el cliente reintenta solo.
+- **No verificado esta noche:** la suscripción contra el Realtime real con el JWT de un usuario. Lo probado es que las tablas están en la publicación (pgTAP) y que el hook reacciona a un canal falso (vitest). Para probarlo a mano: dos sesiones (Camila y Diego) en `/whatsapp`, insertar un mensaje con `wa_ingest_message` en la conversación de Camila y comprobar que aparece en la suya sin recargar y que en la de Diego no cambia nada.
+- **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261109200000_wa_realtime.sql` (a mano: `db diff` no ve publicaciones; el residual solo trae los fantasmas de siempre), pgTAP `32_whatsapp_tablas` (26 casos: las dos tablas publicadas y con RLS activa, las dos privadas fuera, ninguna otra `wa_*`), `whatsapp/useWaRealtime.ts`, vitest `whatsapp/useWaRealtime.test.tsx` (6 casos).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
