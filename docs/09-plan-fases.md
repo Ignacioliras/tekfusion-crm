@@ -84,7 +84,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Edge Function `whatsapp-send` (texto, adjunto, cotización, firma) con reglas anti-bloqueo. *🔒 por la revisión de T9 (`docs/10`): la RPC no pone tope, así que el tope diario, el espaciado y el horario hábil van aquí, y tiene que reemplazar el `wa_message_id` provisional (reconciliar por `job_id`) antes del eco del webhook.*
 - [ ] No se escribe en conversaciones archivadas: `send_wa_message` responde error si la conversación está archivada (decisión de Ignacio, 2026-11-06, `docs/10`).
 - [ ] El kanban oculta los leads ganados, perdidos y archivados de más de 30 días (decisión de Ignacio, 2026-11-06, `docs/10`).
-- [ ] Bandeja: lista (Mis chats / Sin asignar / Todos), conversación en tiempo real, estados, adjuntos, audio, respuestas rápidas, "Tomar" conversación.
+- [ ] Bandeja: lista (Mis chats / Sin asignar / Todos), conversación en tiempo real, estados, adjuntos, audio, respuestas rápidas, "Tomar" conversación. *Avance (2026-11-09, rama `fase-4/bandeja`): lista por pestaña, conversación, estados, adjuntos y audio sobre Supabase; "Tomar" (`take_wa_conversation`) y leído al abrir (`mark_wa_conversation_read`); el lector ve "Tu perfil no tiene acceso" y no tiene ítem en el menú. Faltan tiempo real, respuestas rápidas y el cuadro de escribir (deshabilitado).*
 - [ ] Indicador de conexión + pantalla de reconexión por QR (Configuración → WhatsApp).
 - [ ] Atribución de mensajes `fromMe` escritos desde el teléfono.
 - [ ] Pruebas de la lista de `07-whatsapp-evolution.md`.

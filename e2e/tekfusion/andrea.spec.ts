@@ -165,6 +165,27 @@ test.describe.serial("Andrea, gerencia con TOTP", () => {
     }
   });
 
+  test("ve todas las conversaciones de WhatsApp y abre la de otro ejecutivo", async () => {
+    await page.goto("/#/whatsapp");
+    await page.getByRole("tab", { name: "Todos" }).click();
+    // Las 3 del seed, la más reciente arriba: la de Diego es la más antigua.
+    // No abre la de Camila: gerencia la marcaría leída antes de su e2e.
+    const chats = page.getByRole("listitem").getByRole("button");
+    await expect(chats).toHaveCount(3);
+    await chats.last().click();
+
+    const panel = page.getByRole("region").filter({ hasText: "+56900000002" });
+    await expect(
+      panel.getByText("Gracias, necesitamos 300 m en 250 mm."),
+    ).toBeVisible();
+    await expect(
+      panel.getByRole("img", { name: "No se pudo enviar" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("No se pudieron cargar las conversaciones."),
+    ).toHaveCount(0);
+  });
+
   test("ve la lista de usuarios con los 4 del seed", async () => {
     await page.goto("/#/sales");
     for (const email of SEED_USERS) {

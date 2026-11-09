@@ -20,6 +20,7 @@ import type {
   SearchResourceName,
   SearchResult,
   SignUpData,
+  WaConversation,
 } from "../../types";
 import type { DayRange } from "../../management-dashboard/metrics";
 import type { ConfigurationContextValue } from "../../root/ConfigurationContext";
@@ -298,6 +299,28 @@ const getDataProviderWithCustomMethods = () => {
       if (error)
         throw Object.assign(new Error(error.message), { code: error.code });
       return data as Deal;
+    },
+    /** "Tomar" an unassigned WhatsApp chat (RPC take_wa_conversation). */
+    async takeWaConversation(
+      conversationId: Identifier,
+    ): Promise<WaConversation> {
+      const { data, error } = await getSupabaseClient().rpc(
+        "take_wa_conversation",
+        { conversation_id: conversationId },
+      );
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return data as WaConversation;
+    },
+    /** Marks a chat's incoming messages read; how many changed (0 if unassigned). */
+    async markWaConversationRead(conversationId: Identifier): Promise<number> {
+      const { data, error } = await getSupabaseClient().rpc(
+        "mark_wa_conversation_read",
+        { conversation_id: conversationId },
+      );
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return data as number;
     },
     /** "Enviar cotización" (RF-06): enqueue, move to cotizado, schedule follow-ups. */
     async sendQuote(

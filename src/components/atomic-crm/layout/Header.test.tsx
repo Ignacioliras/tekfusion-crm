@@ -1,5 +1,6 @@
 import { render } from "vitest-browser-react";
 import { StoryWrapper } from "@/test/StoryWrapper";
+import { canAccess } from "../providers/commons/canAccess";
 import Header from "./Header";
 
 describe("Header", () => {
@@ -28,6 +29,26 @@ describe("Header", () => {
       "Dashboard",
       "Settings",
     ]);
+  });
+
+  it("hides the WhatsApp tab from the reader", async () => {
+    const screen = await render(
+      <StoryWrapper
+        authProvider={{
+          canAccess: async (params) => canAccess("reader", params),
+        }}
+      >
+        <Header />
+      </StoryWrapper>,
+    );
+
+    const nav = screen.getByRole("navigation").getByRole("navigation");
+    await expect
+      .element(nav.getByRole("link", { name: "Dashboard" }))
+      .toBeVisible();
+    expect(nav.getByRole("link", { name: "WhatsApp" }).elements()).toHaveLength(
+      0,
+    );
   });
 
   it("hides the settings tab from users who cannot edit the configuration", async () => {

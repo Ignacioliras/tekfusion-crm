@@ -10,6 +10,8 @@ import type {
   SalesRankingSummaryRow,
   SendChannel,
   Template,
+  WaConversation,
+  WaMessage,
 } from "../../types";
 import type { DayRange } from "../../management-dashboard/metrics";
 import {
@@ -163,6 +165,63 @@ export const createLeadMethods = (
       previousData: deal,
     });
     return data;
+  },
+
+  /** In-memory mirror of take_wa_conversation(): unassigned, not archived. */
+  takeWaConversation: async (
+    conversationId: Identifier,
+  ): Promise<WaConversation> => {
+    const dataProvider = getDataProvider();
+    const me = await getIdentity();
+    const { data: conversation } = await dataProvider.getOne<WaConversation>(
+      "wa_conversations",
+      { id: conversationId },
+    );
+    if (conversation.sales_id != null || conversation.archived)
+      throw new Error("conversation is not available");
+    const { data } = await dataProvider.update<WaConversation>(
+      "wa_conversations",
+      {
+        id: conversationId,
+        data: { sales_id: me?.id },
+        previousData: conversation,
+      },
+    );
+    return data;
+  },
+
+  /** In-memory mirror of mark_wa_conversation_read(): unassigned stays new. */
+  markWaConversationRead: async (
+    conversationId: Identifier,
+  ): Promise<number> => {
+    const dataProvider = getDataProvider();
+    const { data: conversation } = await dataProvider.getOne<WaConversation>(
+      "wa_conversations",
+      { id: conversationId },
+    );
+    if (conversation.sales_id == null) return 0;
+    const { data: messages } = await dataProvider.getList<WaMessage>(
+      "wa_messages",
+      { ...ALL, filter: { conversation_id: conversationId } },
+    );
+    const unread = messages.filter(
+      (m) => m.direction === "entrante" && m.status !== "leido",
+    );
+    await Promise.all(
+      unread.map((m) =>
+        dataProvider.update("wa_messages", {
+          id: m.id,
+          data: { status: "leido" },
+          previousData: m,
+        }),
+      ),
+    );
+    await dataProvider.update("wa_conversations", {
+      id: conversationId,
+      data: { unread_count: 0 },
+      previousData: conversation,
+    });
+    return unread.length;
   },
 
   sendQuote: async (

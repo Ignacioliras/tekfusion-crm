@@ -49,6 +49,63 @@ test.describe("Camila, ejecutiva", () => {
     await expect(bell(page)).toHaveAccessibleName(after);
   });
 
+  test("abre su chat de WhatsApp y queda leído, sin salir de la sesión", async ({
+    page,
+  }) => {
+    await page.goto("/#/whatsapp");
+    await expect(page.getByRole("tab", { name: "Todos" })).toHaveCount(0);
+    // En "Mis chats" solo está la suya (la del lead cotizado), con no leídos.
+    const chat = page.getByRole("listitem").getByRole("button");
+    await expect(chat).toHaveCount(1);
+    await expect(chat.getByLabel(/sin leer$/)).toBeVisible();
+
+    const read = page.waitForResponse((response) =>
+      response.url().includes("/rest/v1/rpc/mark_wa_conversation_read"),
+    );
+    await chat.click();
+    expect((await read).ok()).toBe(true);
+
+    const panel = page.getByRole("region").filter({ hasText: "+56900000001" });
+    await expect(
+      panel.getByText("Quedo atento a la cotización actualizada."),
+    ).toBeVisible();
+    await expect(chat.getByLabel(/sin leer$/)).toHaveCount(0);
+    await expect(
+      panel.getByRole("textbox", { name: "Escribe un mensaje" }),
+    ).toBeDisabled();
+
+    // Quedó leído en la base y la sesión sigue abierta.
+    await page.reload();
+    await expect(chat).toHaveCount(1);
+    await expect(chat.getByLabel(/sin leer$/)).toHaveCount(0);
+  });
+
+  test("toma la conversación sin asignar y pasa a sus chats", async ({
+    page,
+  }) => {
+    await page.goto("/#/whatsapp");
+    await page.getByRole("tab", { name: "Sin asignar" }).click();
+    const chats = page.getByRole("listitem").getByRole("button");
+    await expect(chats).toHaveCount(1);
+    await chats.click();
+
+    const taken = page.waitForResponse((response) =>
+      response.url().includes("/rest/v1/rpc/take_wa_conversation"),
+    );
+    await page.getByRole("button", { name: "Tomar", exact: true }).click();
+    expect((await taken).ok()).toBe(true);
+    await expect(page.getByText("Tomaste la conversación")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Tomar", exact: true }),
+    ).toHaveCount(0);
+
+    // Tomada y leída al abrirla: ahora tiene dos chats y ninguno con no leídos.
+    await page.getByRole("tab", { name: "Mis chats" }).click();
+    const mine = page.getByRole("listitem").getByRole("button");
+    await expect(mine).toHaveCount(2);
+    await expect(mine.getByLabel(/sin leer$/)).toHaveCount(0);
+  });
+
   test("edita su firma en Perfil y sigue guardada al recargar", async ({
     page,
   }) => {

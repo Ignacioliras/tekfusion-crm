@@ -90,11 +90,13 @@ const Header = () => {
                     to="/companies"
                     isActive={currentPath === "/companies"}
                   />
-                  <NavigationTab
-                    label={translate("crm.navigation.whatsapp")}
-                    to={WhatsAppPage.path}
-                    isActive={currentPath === WhatsAppPage.path}
-                  />
+                  <CanAccess resource="wa_conversations" action="list">
+                    <NavigationTab
+                      label={translate("crm.navigation.whatsapp")}
+                      to={WhatsAppPage.path}
+                      isActive={currentPath === WhatsAppPage.path}
+                    />
+                  </CanAccess>
                   <NavigationTab
                     label={translate("crm.navigation.dashboard")}
                     to="/"

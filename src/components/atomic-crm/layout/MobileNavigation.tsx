@@ -69,15 +69,25 @@ export const MobileNavigation = () => {
     >
       {/* Scrolls horizontally on narrow screens instead of hiding items. */}
       <div className="flex items-start overflow-x-auto px-1">
-        {NAV_ITEMS.map(({ href, Icon, labelKey }) => (
-          <NavigationButton
-            key={href}
-            href={href}
-            Icon={Icon}
-            label={translate(labelKey, { smart_count: 2 })}
-            isActive={currentPath === href}
-          />
-        ))}
+        {NAV_ITEMS.map(({ href, Icon, labelKey }) => {
+          const button = (
+            <NavigationButton
+              key={href}
+              href={href}
+              Icon={Icon}
+              label={translate(labelKey, { smart_count: 2 })}
+              isActive={currentPath === href}
+            />
+          );
+          // The reader has no WhatsApp inbox (docs/08).
+          return href === WhatsAppPage.path ? (
+            <CanAccess key={href} resource="wa_conversations" action="list">
+              {button}
+            </CanAccess>
+          ) : (
+            button
+          );
+        })}
         <CanAccess resource="contacts" action="create">
           <CreateButton />
         </CanAccess>
