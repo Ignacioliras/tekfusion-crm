@@ -58,13 +58,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:10:17"
+      "commit": "355ecb67e8058e4183b23824546d502bc3d319ae",
+      "costo_usd": 1.4095676000000004,
+      "session_id": "eda26fae-8dc5-4488-baf2-fb9a96ae8f67",
+      "inicio": "2026-11-09 19:10:17",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: la burbuja de WhatsApp muestra \"Desde el teléfono\" (con el ejecutivo si lo hay) y el autor de los enviados desde el CRM, con una sola consulta a `sales` en el panel, y tiene fixtures y tests.",
+      "fin": "2026-11-09 19:13:01"
     },
     {
       "id": "T3",
