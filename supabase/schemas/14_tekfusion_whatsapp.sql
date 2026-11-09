@@ -6,9 +6,10 @@
 -- (managers all; executives theirs and the unassigned ones; readers none) and
 -- written only by the service role and its RPCs. wa_instance_status and
 -- wa_message_payloads (raw webhook bodies) stay closed to every API role but
--- the service role.
+-- the service role; of the instance, users only get wa_connection_status().
 -- Tests: supabase/tests/32_whatsapp_tablas, 34_wa_ingest, 35_rls_whatsapp,
--- 36_wa_rpc, 37_wa_cliente_respondio, 38_send_wa_message.
+-- 36_wa_rpc, 37_wa_cliente_respondio, 38_send_wa_message,
+-- 39_wa_connection_status.
 --
 
 create type public.wa_direction as enum ('entrante', 'saliente');
@@ -338,6 +339,25 @@ begin
 end;
 $$;
 
+-- Connection indicator (docs/07): the one thing a logged-in user (any role)
+-- learns about the instance. wa_instance_status stays closed because
+-- last_event keeps raw Evolution bodies (instance apikey): this function
+-- returns connected and updated_at only, never last_event. There is a single
+-- corporate number; with several rows the most recently updated one counts.
+-- No row yet: connected false, updated_at null.
+CREATE OR REPLACE FUNCTION "public"."wa_connection_status"() RETURNS TABLE("connected" boolean, "updated_at" timestamp with time zone)
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  select coalesce(s.connected, false), s.updated_at
+    from (values (1)) one (n)
+    left join lateral (
+      select i.connected, i.updated_at
+        from public.wa_instance_status i
+       order by i.updated_at desc, i.id desc
+       limit 1) s on true;
+$$;
+
 -- tg_mensaje_entrante (docs/05, CLAUDE.md §1.4): a client message on a lead
 -- cancels its pending followups and alerts the lead owner (no owner, no
 -- alert). A webhook retry inserts nothing, so it fires nothing. An already
@@ -390,5 +410,9 @@ revoke execute on function public.mark_wa_conversation_read(bigint) from public,
 grant execute on function public.mark_wa_conversation_read(bigint) to authenticated;
 revoke execute on function public.send_wa_message(bigint, text) from public, anon, service_role;
 grant execute on function public.send_wa_message(bigint, text) to authenticated;
+-- Connection indicator: every logged-in role, nobody else (the service role
+-- reads the table itself).
+revoke execute on function public.wa_connection_status() from public, anon, service_role;
+grant execute on function public.wa_connection_status() to authenticated;
 -- Trigger function: no API role calls it.
 revoke execute on function public.wa_cliente_respondio() from public, anon, authenticated, service_role;

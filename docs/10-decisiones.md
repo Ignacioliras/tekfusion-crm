@@ -495,6 +495,28 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 - **No verificado esta noche:** la suscripción contra el Realtime real con el JWT de un usuario. Lo probado es que las tablas están en la publicación (pgTAP) y que el hook reacciona a un canal falso (vitest). Para probarlo a mano: dos sesiones (Camila y Diego) en `/whatsapp`, insertar un mensaje con `wa_ingest_message` en la conversación de Camila y comprobar que aparece en la suya sin recargar y que en la de Diego no cambia nada.
 - **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261109200000_wa_realtime.sql` (a mano: `db diff` no ve publicaciones; el residual solo trae los fantasmas de siempre), pgTAP `32_whatsapp_tablas` (26 casos: las dos tablas publicadas y con RLS activa, las dos privadas fuera, ninguna otra `wa_*`), `whatsapp/useWaRealtime.ts`, vitest `whatsapp/useWaRealtime.test.tsx` (6 casos).
 
+## 2026-11-09 · 🔒 Indicador de conexión de WhatsApp: una RPC con dos columnas, la tabla sigue cerrada (cola nocturna 2026-11-09, T7)
+**Sin revisar: revisar antes del merge.**
+- **Motivo:** `docs/07` pide un indicador global verde/rojo leído del estado de la instancia, pero `wa_instance_status` guarda en `last_event` cuerpos crudos de Evolution (con el `apikey` de la instancia) y está cerrada a todo usuario.
+- **Qué se abre:** la función `public.wa_connection_status()` → una fila `(connected boolean, updated_at timestamptz)`. `security definer`, `search_path` vacío, `stable`, sin parámetros. La ejecuta `authenticated` (gerencia, ejecutivo y lector); `public`, `anon` y `service_role` no (el service role lee la tabla). **Nunca devuelve `last_event` ni el nombre de la instancia.** `wa_instance_status` no cambia: sin grants ni policies para usuarios, y fuera de Realtime.
+- **Pantalla:**
+  - **Menú:** punto dentro del ítem WhatsApp del encabezado: verde conectado, rojo desconectado, gris si no se pudo consultar. Lleva texto accesible (`aria-label` y `title`). Solo lo ve quien ve el ítem (el lector no).
+  - **Bandeja:** banner rojo "WhatsApp desconectado" cuando `connected` es `false`. Gerencia ve además el enlace "Ir a Configuración" (`/settings`); el ejecutivo no.
+  - **Refresco:** cada 60 s, una sola consulta compartida entre el punto y el banner. Con la pestaña en segundo plano no consulta.
+- **Elegido al implementar (sin confirmar):**
+  - **Sin fila** (la instancia nunca reportó): `connected = false`, `updated_at = null`. En una base nueva el punto sale rojo y el banner aparece hasta el primer `connection.update`.
+  - **Varias filas:** manda la de `updated_at` más reciente. Hay un solo número corporativo; si la instancia cambia de nombre, la fila antigua no tapa a la actual.
+  - **El lector puede ejecutar la función** (lo pide la tarea: todos los roles), aunque no ve el ítem ni la bandeja. Tampoco se exige `aal2` ni fila en `sales`: basta estar logueado.
+  - **Si la consulta falla** (red, migración sin aplicar): punto gris "No se pudo consultar el estado de WhatsApp" y **sin** banner; no se reintenta hasta el siguiente ciclo de 60 s. Si ya había un estado leído, se sigue mostrando ese.
+  - **El enlace va a `/settings`**, no a una sección de WhatsApp: la pantalla de reconexión por QR todavía no existe (`docs/09`, Fase 4).
+  - **FakeRest (demo y tests):** siempre conectado.
+- **Descartado:** dar `select` por columnas sobre la tabla (un grant por columna se pierde fácil al agregar otra, y expone el nombre de la instancia); una vista (habría que cuidar `security_invoker` y los fantasmas de `db diff`); avisar por Realtime (obligaría a publicar la tabla).
+- **Consecuencias:**
+  - El indicador muestra lo último que guardó el receptor. Si Evolution o el webhook se caen sin mandar `connection.update`, sigue verde: la detección por sondeo cada 5 min es del flujo 08 de n8n (`docs/06`), que no está hecho. `updated_at` viaja en la respuesta pero la pantalla no lo muestra.
+  - `MobileNavigation` no lleva el punto (pantalla chica); el banner de la bandeja sí se ve ahí.
+- **No verificado esta noche:** la llamada desde el navegador contra el Supabase real (lo probado es la función en pgTAP y la pantalla con FakeRest), y el refresco de 60 s, que no tiene test.
+- **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261109210000_wa_connection_status.sql` (a mano; el `db diff` residual solo trae los fantasmas de siempre), pgTAP `39_wa_connection_status` (19 casos), `whatsapp/WaConnectionIndicator.tsx`, `getWaConnectionStatus` en los dos dataProviders, vitest `whatsapp/WhatsApp.test.tsx` (9 casos nuevos).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título

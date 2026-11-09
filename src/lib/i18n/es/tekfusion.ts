@@ -232,6 +232,13 @@ export const tekfusionMessages = {
           "Enviaste demasiados mensajes seguidos. Espera un minuto y vuelve a intentarlo.",
         generic: "No se pudo enviar el mensaje.",
       },
+      connection: {
+        connected: "WhatsApp conectado",
+        disconnected: "WhatsApp desconectado",
+        unknown: "No se pudo consultar el estado de WhatsApp",
+        hint: "Los mensajes no salen ni llegan hasta que se reconecte el número.",
+        settings_link: "Ir a Configuración",
+      },
       from_phone: "Desde el teléfono",
       error: "No se pudieron cargar las conversaciones.",
       types: {

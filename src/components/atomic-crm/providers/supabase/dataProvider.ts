@@ -41,6 +41,13 @@ import {
 } from "./signedUrls";
 import { getSupabaseClient } from "./supabase";
 
+/** What wa_connection_status() tells a user about the WhatsApp instance. */
+export interface WaConnectionStatus {
+  connected: boolean;
+  /** Last connection event stored; null when the instance never reported. */
+  updated_at: string | null;
+}
+
 // The app's signer: remembers the signed URLs for an hour, reset on logout.
 const getSigner = () => getSignerFor(getSupabaseClient());
 
@@ -335,6 +342,23 @@ const getDataProviderWithCustomMethods = () => {
       if (error)
         throw Object.assign(new Error(error.message), { code: error.code });
       return data as WaMessage;
+    },
+    /**
+     * Whether the corporate WhatsApp number is connected (RPC
+     * wa_connection_status; the instance table itself is closed to users).
+     */
+    async getWaConnectionStatus(): Promise<WaConnectionStatus> {
+      const { data, error } = await getSupabaseClient().rpc(
+        "wa_connection_status",
+      );
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      // The function returns one row; anything else reads as "not connected".
+      const [row] = (data ?? []) as Partial<WaConnectionStatus>[];
+      return {
+        connected: row?.connected === true,
+        updated_at: row?.updated_at ?? null,
+      };
     },
     /** "Enviar cotización" (RF-06): enqueue, move to cotizado, schedule follow-ups. */
     async sendQuote(

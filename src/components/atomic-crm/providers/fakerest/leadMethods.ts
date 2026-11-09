@@ -20,6 +20,7 @@ import {
 } from "../../management-dashboard/summary";
 import { ETAPAS_ABIERTAS, type Etapa } from "../../tekfusion/estados";
 import { quotePdfPath, validateQuoteFile } from "../commons/quoteFile";
+import type { WaConnectionStatus } from "../supabase/dataProvider";
 
 const ALL = {
   pagination: { page: 1, perPage: 1000 },
@@ -281,6 +282,12 @@ export const createLeadMethods = (
     });
     return data;
   },
+
+  /** wa_connection_status() in the demo: there is no instance, always connected. */
+  getWaConnectionStatus: async (): Promise<WaConnectionStatus> => ({
+    connected: true,
+    updated_at: new Date().toISOString(),
+  }),
 
   sendQuote: async (
     quoteId: Identifier,

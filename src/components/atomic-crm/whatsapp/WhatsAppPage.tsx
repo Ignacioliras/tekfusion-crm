@@ -7,6 +7,7 @@ import type { WaConversation } from "../types";
 import { ConversationList } from "./ConversationList";
 import { ConversationPanel } from "./ConversationPanel";
 import { useWaRealtime } from "./useWaRealtime";
+import { WaDisconnectedBanner } from "./WaConnectionIndicator";
 
 // Inbox over the stored conversations (RF-08, docs/07): read, take, mark read
 // and write, kept up to date by Realtime (useWaRealtime).
@@ -62,6 +63,7 @@ export const WhatsAppPage = () => {
       <h1 className="text-xl font-semibold">
         {translate("tekfusion.whatsapp.title")}
       </h1>
+      <WaDisconnectedBanner />
       <div className="grid gap-4 md:grid-cols-[minmax(260px,340px)_1fr]">
         <div className="flex flex-col gap-2 border rounded-lg">
           <Tabs

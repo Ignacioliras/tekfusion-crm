@@ -1,6 +1,10 @@
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
+import { StoryWrapper } from "@/test/StoryWrapper";
+import Header from "../layout/Header";
+import { canAccess, type AccessRole } from "../providers/commons/canAccess";
+import type { CrmDataProvider } from "../providers/types";
 import { ArchivedChatPanel, WhatsAppInbox } from "./WhatsApp.fixtures";
 
 const openConversation = async (
@@ -18,6 +22,30 @@ const openConversation = async (
   await expect.element(panel).toBeVisible();
   return { screen, panel };
 };
+
+// What wa_connection_status() answers while the number is disconnected.
+const DISCONNECTED = {
+  getWaConnectionStatus: async () => ({
+    connected: false,
+    updated_at: "2026-11-09T12:00:00Z",
+  }),
+};
+
+// The main menu (the test layout has no header), with the real access rules.
+const MainMenu = ({
+  role,
+  dataProvider,
+}: {
+  role: AccessRole;
+  dataProvider?: Partial<CrmDataProvider>;
+}) => (
+  <StoryWrapper
+    authProvider={{ canAccess: async (params) => canAccess(role, params) }}
+    dataProvider={dataProvider}
+  >
+    <Header />
+  </StoryWrapper>
+);
 
 describe("Bandeja de WhatsApp", () => {
   it("shows the executive their chats and the unassigned ones, never another executive's", async () => {
@@ -282,6 +310,120 @@ describe("Bandeja de WhatsApp", () => {
     await expect
       .element(panel.getByRole("button", { name: "Respuestas rápidas" }))
       .toBeDisabled();
+  });
+
+  it("shows a green dot inside the WhatsApp menu item while connected", async () => {
+    const screen = await render(<MainMenu role="user" />);
+
+    await expect
+      .element(
+        screen
+          .getByRole("link", { name: /^WhatsApp/ })
+          .getByRole("img", { name: "WhatsApp conectado" }),
+      )
+      .toBeVisible();
+  });
+
+  it("turns the menu dot red when the number is disconnected", async () => {
+    const screen = await render(
+      <MainMenu role="user" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(
+        screen
+          .getByRole("link", { name: /^WhatsApp/ })
+          .getByRole("img", { name: "WhatsApp desconectado" }),
+      )
+      .toBeVisible();
+  });
+
+  it("turns the menu dot grey when the state can't be read", async () => {
+    const getWaConnectionStatus = async () => {
+      throw new Error("network");
+    };
+    const screen = await render(
+      <MainMenu role="user" dataProvider={{ getWaConnectionStatus }} />,
+    );
+
+    await expect
+      .element(
+        screen.getByRole("img", {
+          name: "No se pudo consultar el estado de WhatsApp",
+        }),
+      )
+      .toBeVisible();
+  });
+
+  it("shows the reader no dot: they have no WhatsApp menu item", async () => {
+    const screen = await render(
+      <MainMenu role="reader" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(screen.getByRole("link", { name: "Dashboard" }))
+      .toBeVisible();
+    expect(
+      screen.getByRole("img", { name: /^WhatsApp/ }).elements(),
+    ).toHaveLength(0);
+  });
+
+  it("shows no banner in the inbox while connected", async () => {
+    const screen = await render(<WhatsAppInbox role="user" />);
+
+    await expect.element(screen.getByText("Rosa Pizarro")).toBeVisible();
+    expect(screen.getByRole("alert").elements()).toHaveLength(0);
+  });
+
+  it("shows the red 'WhatsApp desconectado' banner in the inbox when the number is disconnected", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(screen.getByRole("alert").getByText("WhatsApp desconectado"))
+      .toBeVisible();
+    // The inbox still works: only the notice is added.
+    await expect.element(screen.getByText("Rosa Pizarro")).toBeVisible();
+  });
+
+  it("links the banner to Configuración for managers", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="admin" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(
+        screen
+          .getByRole("alert")
+          .getByRole("link", { name: "Ir a Configuración" }),
+      )
+      .toHaveAttribute("href", "/settings");
+  });
+
+  it("gives the executive the banner without the link to Configuración", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={DISCONNECTED} />,
+    );
+
+    const banner = screen.getByRole("alert");
+    await expect.element(banner).toBeVisible();
+    expect(banner.getByRole("link").elements()).toHaveLength(0);
+  });
+
+  it("shows the reader no banner, only the no-access notice", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="reader" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(
+        screen.getByText(
+          "Tu perfil no tiene acceso a las conversaciones de WhatsApp.",
+        ),
+      )
+      .toBeVisible();
+    expect(screen.getByRole("alert").elements()).toHaveLength(0);
   });
 
   it("explains in Spanish when the base refuses the message, and keeps the text", async () => {
