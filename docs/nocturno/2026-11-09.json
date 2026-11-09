@@ -299,13 +299,16 @@
       "necesita_supabase": false,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:16:31"
+      "commit": "683268bcc66a12fa47ff071b7ea04b375ff03b8d",
+      "costo_usd": 4.304162750000001,
+      "session_id": "67f8fd88-f534-4f53-9eb3-76f62517f2c2",
+      "inicio": "2026-11-09 20:16:31",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: reportError y scrubEvent (beforeSend puro, testeado) en _shared/sentry.ts con @sentry/deno@11.10.0 fijo, usados en los catch 5xx de users, delete_note_attachments y whatsapp-webhook (report inyectable).",
+      "fin": "2026-11-09 20:21:54"
     },
     {
       "id": "T11",
