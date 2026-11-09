@@ -329,13 +329,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:21:55"
+      "commit": "c009c6b18a14fa31ebf139a4f36f204c99149412",
+      "costo_usd": 4.832341749999999,
+      "session_id": "d13fc113-8cf0-4207-bc0e-0490a1c56da4",
+      "inicio": "2026-11-09 20:21:55",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: Edge Function purge-orphan-attachments con handler inyectable, lista única de referencias en _shared/attachmentRefs.ts compartida con delete_note_attachments, 8 tests, migración condicional de pg_cron y entrada en config.toml.",
+      "fin": "2026-11-09 20:29:49"
     },
     {
       "id": "T12",
