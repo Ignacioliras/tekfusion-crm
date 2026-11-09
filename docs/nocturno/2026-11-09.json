@@ -458,13 +458,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:48:09"
+      "commit": "7390a59ac1919030959226947639bf626276b486",
+      "costo_usd": 3.1165284000000004,
+      "session_id": "9b56775f-47a4-4d33-bca1-fd3415e6baa9",
+      "inicio": "2026-11-09 20:48:09",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: 11 borradores importables de n8n (01–11) en n8n/flows con notas de lo que falta y scripts/tekfusion/n8n-check.mjs que los valida (parseo, trigger, sin secretos, credenciales de la lista, conexiones) y termina con código 0.",
+      "fin": "2026-11-09 20:54:46"
     },
     {
       "id": "T17",
