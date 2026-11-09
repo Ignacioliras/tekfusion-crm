@@ -150,11 +150,17 @@ $$;
 -- through the API. Replaces the personal data of a contact and stamps
 -- anonymized_at (how an anonymized contact is recognized); empties its notes
 -- and tasks and, for the leads that only have this contact, their notes,
--- raw_source, follow-up texts and alert messages. Returns the Storage paths
--- (bucket attachments) of the files those notes held. A contact already
--- anonymized is left as it is ('{}'). A lead shared with another contact is
--- not touched (Ignacio, 2026-11-05). Amounts, stages and dates stay: the
--- metrics survive.
+-- raw_source, follow-up texts and alert messages; the pending follow-ups of
+-- those leads are cancelled ('anonimizado'), so nothing more is sent. Returns
+-- the Storage paths (bucket attachments) of the files those notes held. A
+-- contact already anonymized is left as it is ('{}'). A lead shared with
+-- another contact is not touched (Ignacio, 2026-11-05). Amounts, stages and
+-- dates stay: the metrics survive.
+-- WhatsApp (14_): the conversations linked to the contact lose the number
+-- (phone = 'anon-<conversation id>', allowed by wa_conversations_phone_e164),
+-- their messages lose the text and the raw webhook bodies are deleted; rows,
+-- dates and statuses stay. A new message from the real number opens another
+-- conversation, not linked to the contact (docs/10, 2026-11-09).
 -- Left untouched on purpose: deals.name, deals.description and quotes with
 -- their PDF. Pending decision of TekFusion (docs/10, 2026-11-05).
 CREATE OR REPLACE FUNCTION "public"."anonymize_contact_data"("target_id" bigint, "actor_id" bigint) RETURNS "text"[]
@@ -209,8 +215,18 @@ begin
                 || case when m.key = 'correo' then jsonb_build_object('subject', placeholder) else '{}'::jsonb end)
          from jsonb_each(f.messages) m)
    where f.deal_id = any (sole_deals) and f.messages <> '{}'::jsonb;
+  update public.followups set status = 'cancelado', cancel_reason = 'anonimizado'
+   where deal_id = any (sole_deals) and status = 'pendiente';
   -- alerts only point to a lead (they have no contact column).
   update public.alerts set message = placeholder where deal_id = any (sole_deals);
+
+  delete from public.wa_message_payloads p
+   using public.wa_messages m, public.wa_conversations w
+   where m.id = p.message_id and w.id = m.conversation_id and w.contact_id = target_id;
+  update public.wa_messages m set text = null
+    from public.wa_conversations w
+   where w.id = m.conversation_id and w.contact_id = target_id and m.text is not null;
+  update public.wa_conversations set phone = 'anon-' || id where contact_id = target_id;
 
   insert into public.audit_log (actor_sales_id, action, details)
   values (actor_id, 'contact.anonymized',
@@ -237,10 +253,12 @@ $$;
 -- and that shows no activity for configuration.config.dataRetentionMonths
 -- months (24 by default, 0 = off). Any activity since the cutoff keeps the
 -- contact out (Ignacio, 2026-11-05): last_activity_at of one of its leads, a
--- note of the contact or of one of its leads (notes only have "date"), or a
--- task of the contact (tasks only have created_at).
--- TODO Fases 4 and 5: wa_messages and emails count as activity too; add them
--- here when those tables exist.
+-- note of the contact or of one of its leads (notes only have "date"), a
+-- task of the contact created or completed (created_at, done_date), or a
+-- WhatsApp message (sent_at) in a conversation of the contact or on one of its
+-- leads.
+-- TODO Fase 5: emails count as activity too; add them here when that table
+-- exists.
 -- Contacts without leads are left alone. Run daily by pg_cron; never by an API
 -- session (same auth.role() rule as offboard_sale).
 CREATE OR REPLACE FUNCTION "public"."anonymize_expired_contacts"() RETURNS integer
@@ -278,7 +296,16 @@ begin
            join public.deals d on d.id = n.deal_id
           where d.contact_ids @> array[c.id] and n.date >= cutoff)
        and not exists (
-         select 1 from public.tasks t where t.contact_id = c.id and t.created_at >= cutoff)
+         select 1 from public.tasks t
+          where t.contact_id = c.id and (t.created_at >= cutoff or t.done_date >= cutoff))
+       and not exists (
+         select 1 from public.wa_messages m
+           join public.wa_conversations w on w.id = m.conversation_id
+          where w.contact_id = c.id and m.sent_at >= cutoff)
+       and not exists (
+         select 1 from public.wa_messages m
+           join public.deals d on d.id = m.deal_id
+          where d.contact_ids @> array[c.id] and m.sent_at >= cutoff)
   loop
     perform public.anonymize_contact_data(expired.id, null);
     total := total + 1;

@@ -18,7 +18,8 @@ import type { Contact } from "../types";
 /**
  * "Anonimizar contacto" (RF-17, Ley 21.719): managers only, like the other
  * management actions (canAccess configuration/edit; the RPC checks it again).
- * Cannot be undone, hence the confirmation.
+ * Cannot be undone, hence the confirmation. Hidden once the contact is
+ * anonymized (anonymized_at): the RPC would do nothing anyway.
  */
 export const AnonymizeContactButton = () => {
   const record = useRecordContext<Contact>();
@@ -51,7 +52,7 @@ export const AnonymizeContactButton = () => {
     },
   });
 
-  if (!record || !canAccess) return null;
+  if (!record || !canAccess || record.anonymized_at) return null;
 
   return (
     <>

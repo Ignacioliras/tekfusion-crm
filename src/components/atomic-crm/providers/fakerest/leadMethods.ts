@@ -87,7 +87,11 @@ export const createLeadMethods = (
     _filters: Record<string, unknown>,
   ): Promise<void> => undefined,
 
-  /** In-memory mirror of anonymize_contact() (RF-17); no files to remove here. */
+  /**
+   * In-memory mirror of anonymize_contact() (RF-17); no files to remove here.
+   * Also cancels the pending follow-ups of the leads that only have this
+   * contact and strips its WhatsApp conversations (phone anon-<id>, texts).
+   */
   anonymizeContact: async (
     contactId: Identifier,
   ): Promise<{ filesRemoved: boolean }> => {
@@ -100,6 +104,7 @@ export const createLeadMethods = (
     const { data: contact } = await dataProvider.getOne("contacts", {
       id: contactId,
     });
+    if (contact.anonymized_at) return { filesRemoved: true };
     await dataProvider.update("contacts", {
       id: contactId,
       data: {
@@ -111,6 +116,7 @@ export const createLeadMethods = (
         title: null,
         background: null,
         linkedin_url: null,
+        anonymized_at: new Date().toISOString(),
       },
       previousData: contact,
     });
@@ -134,6 +140,27 @@ export const createLeadMethods = (
       ...everything,
       filter: {},
     });
+    const { data: followups } = await dataProvider.getList<Followup>(
+      "followups",
+      { ...everything, filter: {} },
+    );
+    const { data: conversations } = await dataProvider.getList<WaConversation>(
+      "wa_conversations",
+      {
+        ...everything,
+        filter: { contact_id: contactId },
+      },
+    );
+    const messages = (
+      await Promise.all(
+        conversations.map((c) =>
+          dataProvider.getList<WaMessage>("wa_messages", {
+            ...everything,
+            filter: { conversation_id: c.id },
+          }),
+        ),
+      )
+    ).flatMap((r) => r.data);
     await Promise.all([
       ...contactNotes.map((note) =>
         dataProvider.update("contact_notes", {
@@ -151,6 +178,31 @@ export const createLeadMethods = (
             previousData: note,
           }),
         ),
+      ...followups
+        .filter(
+          (f) => soleDealIds.includes(f.deal_id) && f.status === "pendiente",
+        )
+        .map((f) =>
+          dataProvider.update("followups", {
+            id: f.id,
+            data: { status: "cancelado", cancel_reason: "anonimizado" },
+            previousData: f,
+          }),
+        ),
+      ...conversations.map((c) =>
+        dataProvider.update("wa_conversations", {
+          id: c.id,
+          data: { phone: `anon-${c.id}` },
+          previousData: c,
+        }),
+      ),
+      ...messages.map((m) =>
+        dataProvider.update("wa_messages", {
+          id: m.id,
+          data: { text: null },
+          previousData: m,
+        }),
+      ),
     ]);
     return { filesRemoved: true };
   },
