@@ -30,13 +30,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:03:45"
+      "commit": "d1905ff3a108064b406eb7f7f05db422f122ddc6",
+      "costo_usd": 4.4541145,
+      "session_id": "d8ead6fd-5c04-4fa3-bdac-a4a85c9dc04f",
+      "inicio": "2026-11-09 19:03:45",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: send_wa_message rechaza conversaciones archivadas (P0002) y el mensaje 31 del minuto por usuario (PT429), con índice, migración limpia, pgTAP 38 ampliado a 45 casos y la decisión anotada en docs/10.",
+      "fin": "2026-11-09 19:10:16"
     },
     {
       "id": "T2",
