@@ -243,6 +243,47 @@ describe("Bandeja de WhatsApp", () => {
       .toBeEnabled();
   });
 
+  it("lists only the active quick replies, by title", async () => {
+    const { screen, panel } = await openConversation("user", "Rosa Pizarro");
+
+    await panel.getByRole("button", { name: "Respuestas rápidas" }).click();
+
+    const picker = screen.getByRole("dialog", { name: "Respuestas rápidas" });
+    await expect.element(picker.getByText("Saludo")).toBeVisible();
+    const titles = picker
+      .getByRole("listitem")
+      .elements()
+      .map((item) => item.querySelector("span")?.textContent);
+    expect(titles).toEqual(["Ficha técnica", "Saludo"]);
+    expect(picker.getByText("Despedida antigua").elements()).toHaveLength(0);
+  });
+
+  it("appends a picked quick reply on a new line and returns focus to the composer", async () => {
+    const { screen, panel } = await openConversation("user", "Rosa Pizarro");
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+    await composer.fill("Buenos días.");
+
+    await panel.getByRole("button", { name: "Respuestas rápidas" }).click();
+    await screen.getByRole("button", { name: /^Ficha técnica/ }).click();
+
+    await expect
+      .element(composer)
+      .toHaveValue("Buenos días.\nLe adjunto la ficha técnica del producto.");
+    await expect.element(composer).toHaveFocus();
+    await expect
+      .element(screen.getByRole("dialog", { name: "Respuestas rápidas" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("keeps quick replies disabled where the composer is", async () => {
+    const screen = await render(<ArchivedChatPanel />);
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+
+    await expect
+      .element(panel.getByRole("button", { name: "Respuestas rápidas" }))
+      .toBeDisabled();
+  });
+
   it("explains in Spanish when the base refuses the message, and keeps the text", async () => {
     const sendWaMessage = async () => {
       throw Object.assign(new Error("rate limit"), { code: "PT429" });

@@ -51,6 +51,27 @@ const whatsappData = () => {
       buildContact({ id: 1, first_name: "Rosa", last_name: "Pizarro" }),
       buildContact({ id: 2, first_name: "Andrés", last_name: "Vega" }),
     ],
+    // Two active quick replies (out of title order) and an inactive one.
+    quick_replies: [
+      {
+        id: 1,
+        title: "Saludo",
+        body: "Hola, le saluda TekFusion.",
+        active: true,
+      },
+      {
+        id: 2,
+        title: "Despedida antigua",
+        body: "Quedo atento, saludos cordiales.",
+        active: false,
+      },
+      {
+        id: 3,
+        title: "Ficha técnica",
+        body: "Le adjunto la ficha técnica del producto.",
+        active: true,
+      },
+    ],
     wa_messages: [...messages, hostile],
     wa_conversations: seed.wa_conversations.map((conversation) =>
       conversation.id === hostile.conversation_id

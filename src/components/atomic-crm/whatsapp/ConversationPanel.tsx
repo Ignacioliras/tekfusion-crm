@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   useCanAccess,
@@ -17,6 +17,7 @@ import type { CrmDataProvider } from "../providers/types";
 import { errorMessageKey } from "../providers/supabase/accessErrors";
 import type { Sale, WaConversation, WaMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
+import { QuickReplyPicker } from "./QuickReplyPicker";
 
 // ponytail: one page of 500 messages, no Realtime; paging and the Realtime
 // subscription arrive with the rest of the inbox in Fase 4 (docs/07).
@@ -126,6 +127,10 @@ export const ConversationPanel = ({
   });
   const isMine = isAssigned && conversation.sales_id === identity?.id;
   const [draft, setDraft] = useState("");
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  // A quick reply goes after what is already written, on its own line.
+  const appendReply = (body: string) =>
+    setDraft((current) => (current === "" ? body : `${current}\n${body}`));
   const send = useMutation({
     mutationFn: (text: string) =>
       dataProvider.sendWaMessage(conversation.id, text),
@@ -194,6 +199,7 @@ export const ConversationPanel = ({
           }}
         >
           <Textarea
+            ref={composerRef}
             disabled={!canWrite}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -212,11 +218,18 @@ export const ConversationPanel = ({
             {translate("tekfusion.whatsapp.send")}
           </Button>
         </form>
-        {canWrite ? (
-          <p className="text-xs text-muted-foreground">
-            {translate("tekfusion.whatsapp.send_hint")}
-          </p>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <QuickReplyPicker
+            disabled={!canWrite}
+            returnFocusTo={composerRef}
+            onPick={appendReply}
+          />
+          {canWrite ? (
+            <p className="text-xs text-muted-foreground">
+              {translate("tekfusion.whatsapp.send_hint")}
+            </p>
+          ) : null}
+        </div>
       </footer>
     </section>
   );

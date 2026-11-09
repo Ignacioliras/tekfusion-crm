@@ -220,6 +220,10 @@ export const tekfusionMessages = {
       compose: "Escribe un mensaje",
       send: "Enviar",
       send_hint: "Ctrl+Enter para enviar.",
+      quick_replies: {
+        button: "Respuestas rápidas",
+        empty: "No hay respuestas rápidas activas.",
+      },
       send_errors: {
         forbidden: "Esta conversación no es tuya: no puedes escribir en ella.",
         unavailable: "La conversación no existe o está archivada.",
