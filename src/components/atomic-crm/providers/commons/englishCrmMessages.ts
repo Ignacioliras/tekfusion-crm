@@ -444,9 +444,6 @@ export const englishCrmMessages = {
     changelog: {
       title: "Changelog",
     },
-    whatsapp: {
-      coming_soon: "Available in Phase 4",
-    },
     a11y: {
       pagination: "pagination",
       more_pages: "More pages",

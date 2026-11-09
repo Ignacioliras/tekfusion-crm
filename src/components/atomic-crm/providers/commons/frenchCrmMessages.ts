@@ -451,9 +451,6 @@ export const frenchCrmMessages = {
     changelog: {
       title: "Notes de version",
     },
-    whatsapp: {
-      coming_soon: "Disponible en phase 4",
-    },
     a11y: {
       pagination: "pagination",
       more_pages: "Plus de pages",

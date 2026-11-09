@@ -200,6 +200,43 @@ export const tekfusionMessages = {
         sin_asignar: "Sin asignar",
       },
     },
+    whatsapp: {
+      title: "WhatsApp",
+      no_access: "Tu perfil no tiene acceso a las conversaciones de WhatsApp.",
+      tabs: {
+        mine: "Mis chats",
+        unassigned: "Sin asignar",
+        all: "Todos",
+      },
+      empty: "No hay conversaciones en esta pestaña.",
+      pick: "Elige una conversación para ver sus mensajes.",
+      unread: "%{count} sin leer",
+      no_messages: "Esta conversación no tiene mensajes.",
+      take: "Tomar",
+      taken: "Tomaste la conversación",
+      take_error:
+        "La conversación ya no está disponible: la tomó alguien más o fue archivada.",
+      read_error: "No se pudo marcar la conversación como leída.",
+      compose: "Escribe un mensaje",
+      send: "Enviar",
+      coming_soon: "El envío de mensajes todavía no está habilitado.",
+      error: "No se pudieron cargar las conversaciones.",
+      types: {
+        texto: "Texto",
+        imagen: "Imagen",
+        documento: "Documento",
+        audio: "Audio",
+        video: "Video",
+        otro: "Archivo",
+      },
+      status: {
+        pendiente: "Pendiente",
+        enviado: "Enviado",
+        entregado: "Entregado",
+        leido: "Leído",
+        fallido: "No se pudo enviar",
+      },
+    },
     settings: {
       crm_configuration: "Configuración del CRM",
       followups: {

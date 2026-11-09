@@ -40,9 +40,6 @@ export const commonMessages: PartialCrmMessages = {
       dashboard: "Dashboard",
       whatsapp: "WhatsApp",
     },
-    whatsapp: {
-      coming_soon: "Disponible en la Fase 4",
-    },
     a11y: {
       pagination: "paginación",
       more_pages: "Más páginas",

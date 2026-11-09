@@ -8,6 +8,7 @@ import { generateSales } from "./sales";
 import { generateTags } from "./tags";
 import { generateTasks } from "./tasks";
 import type { Db } from "./types";
+import { generateWhatsApp } from "./whatsapp";
 import { DEFAULT_LOST_REASONS, DEFAULT_TEMPLATES } from "./leadDefaults";
 import { LINEAS_NEGOCIO, LINEA_INDETERMINADA } from "../../../tekfusion/lineas";
 
@@ -65,6 +66,7 @@ export default (): Db => {
   db.send_queue = [];
   db.dashboard_daily = [];
   db.sales_ranking = [];
+  Object.assign(db, generateWhatsApp(db));
   db.configuration = [
     {
       id: 1,
