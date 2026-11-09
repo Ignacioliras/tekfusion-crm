@@ -424,7 +424,7 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 1. **Un mensaje en un lead cerrado no lo reabre.** Si el lead activo de la conversación ya está ganado, perdido o archivado, el mensaje entrante queda en ese lead, que sigue cerrado. Es lo que el trigger `wa_cliente_respondio` ya hace (cancela los seguimientos pendientes que quedaran y avisa al ejecutivo con la alerta "cliente respondió"). Nada que cambiar.
 2. **`send_queue` queda por `message_id`.** Confirmado el cambio que T9 hizo sin que la tarea lo pidiera: una fila de la cola es de una cotización (con su lead) o de un mensaje de WhatsApp (`message_id`, sin cotización). Quien consuma la cola distingue por esa columna. Queda pendiente poner al día `docs/05`, que todavía la describe como solo de cotizaciones.
 3. **No se escribe en conversaciones archivadas.** Hecho el 2026-11-09 (ver "`send_wa_message`: no escribe en archivadas y tope de 30 mensajes por minuto"); falta la revisión 🔒.
-4. **El kanban oculta los leads cerrados de más de 30 días.** Hoy muestra hasta 100 tarjetas sin filtro de antigüedad. **Tarea nueva, sin hacer.**
+4. **El kanban oculta los leads cerrados de más de 30 días.** Hecho el 2026-11-09 (ver "`closed_at` también al archivar y el kanban oculta los cerrados de más de 30 días").
 5. **El correo semanal lleva desglose por línea de negocio.** Hoy `weekly_report_data` y `renderWeeklyReport` solo traen totales. **Tarea nueva, sin hacer.**
 
 ## 2026-11-06 · El cuerpo crudo del webhook sale de `wa_messages` (rama `nocturno/2026-11-06-c`)
@@ -461,6 +461,17 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
   - Un mensaje ya encolado sigue en `send_queue` si la conversación se archiva después: quien envíe decide qué hacer con él.
   - La interfaz todavía no llama a `send_wa_message`; cuando lo haga, el 429 y la archivada necesitan su propio texto (hoy caerían en el error genérico) y FakeRest tendría que imitarlos.
 - **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261109190600_send_wa_message_tope.sql` (generada con `db diff` y limpiada de los fantasmas de siempre: `pg_cron`, `pgjwt` y las seis vistas recreadas sin `security_invoker`; el `db diff` residual solo muestra esos), pgTAP `38_send_wa_message` (45 casos: archivada, mensaje 30 y 31, otro usuario, seguimiento, salida de la ventana).
+
+## 2026-11-09 · `closed_at` también al archivar y el kanban oculta los cerrados de más de 30 días (cola nocturna 2026-11-09, T3)
+**Sin revisar: revisar antes del merge.**
+- **Decisión (Ignacio, 2026-11-06, punto 4 de "Decisiones de Ignacio tras la revisión de la cola 2026-11-06-c"):** cerrado = `ganado`, `perdido` o `archivado`. El trigger `set_deal_closed_at` llena `closed_at` también al pasar a `archivado` y lo borra al volver a una etapa abierta. Reemplaza "se borra si el lead se archiva" de la entrada "Fecha de cierre". `weekly_report_data` no cambia: ya filtra por `ganado`/`perdido`.
+- **Kanban (`deals/DealList.tsx`):** al filtro permanente se agrega `@or`: etapa abierta (`ETAPAS_ABIERTAS` de `tekfusion/estados.ts`) **o** `closed_at` desde hace `KANBAN_CLOSED_DAYS = 30` días. La fecha de corte se calcula al montar la lista. Un lead cerrado sin `closed_at` (importado ya cerrado, RF-15) no sale en el kanban. La tabla `/leads` no cambia.
+- **FakeRest:** su adaptador convertía todo `@or` en búsqueda `q` (tomaba el primer valor), así que el kanban del demo habría quedado vacío. Ahora un `@or` con operadores distintos de `ilike` se resuelve como unión: una consulta por rama con el resto del filtro y luego la lista por `id_eq_any` (`fakerest/internal/supabaseAdapter.ts`). El generador pone `closed_at = updated_at` a los cerrados y el `beforeUpdate` de `deals` imita al trigger (un cambio de etapa fija o borra `closed_at`).
+- **Seed:** los archivados recientes quedan con `closed_at = archived_at`, y los históricos también.
+- **Consecuencias:**
+  - **Búsqueda en el kanban:** con texto en el buscador, el proveedor de Supabase reemplaza el `@or` por el de la búsqueda (`applyFullTextSearch`), así que mientras se busca salen también los cerrados de más de 30 días (hasta el tope de 100). En FakeRest no pasa. Elegido por la noche dejarlo así: buscar un lead viejo desde el kanban sigue funcionando.
+  - La migración no rellena `closed_at` de los archivados que ya existan (no hay datos reales todavía).
+- **Archivos:** `schemas/15_tekfusion_weekly_report.sql`, migración `20261109191625_closed_at_archivado.sql` (generada con `db diff` y limpiada: `pg_cron`, `pgjwt` y las seis vistas recreadas), pgTAP `33_weekly_report` (21 casos: archivar fija `closed_at`, el informe de la semana no cambia, volver a `nuevo` lo borra), vitest `deals/DealListClosed.test.tsx`.
 
 ## Plantilla para nuevas decisiones
 ```

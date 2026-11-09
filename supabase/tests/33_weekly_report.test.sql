@@ -7,9 +7,9 @@
 --   a la fecha   sin atender y vencidos = todos los que están así hoy, de
 --                cualquier semana
 -- La ejecutan gerencia con aal2 y service_role (n8n); el resto recibe 42501.
--- closed_at lo mantiene el trigger set_deal_closed_at.
+-- closed_at lo mantiene el trigger set_deal_closed_at (ganado, perdido o archivado).
 begin;
-select plan(18);
+select plan(21);
 
 create function pg_temp.login_as(p_email text, p_aal text default 'aal2') returns void language plpgsql as $$
 declare uid uuid;
@@ -150,6 +150,19 @@ select is((select closed_at::date from public.deals where id = (select won_a fro
 update public.deals set stage = 'cotizado' where id = (select won_a from fx);
 select is((select closed_at from public.deals where id = (select won_a from fx)), null,
   'reabrir un lead borra closed_at');
+
+-- (e) archivar también cierra (Ignacio, 2026-11-06), pero el informe no cuenta archivados
+insert into public.deals (name, stage) values ('Por archivar', 'contactado');
+select set_config('request.jwt.claims', '{"role": "service_role"}', true);
+create temp table report_before_archive as select r.* from wk, public.weekly_report_data(wk.b) r;
+update public.deals set stage = 'archivado' where name = 'Por archivar';
+select is((select closed_at from public.deals where name = 'Por archivar'), now(),
+  'archivar un lead fija closed_at en ese momento');
+select results_eq('select r.* from wk, public.weekly_report_data(wk.b) r', 'select * from report_before_archive',
+  'archivar un lead dentro de la semana no cambia el informe semanal');
+update public.deals set stage = 'nuevo' where name = 'Por archivar';
+select is((select closed_at from public.deals where name = 'Por archivar'), null,
+  'devolver un archivado a una etapa abierta borra closed_at');
 
 select * from finish();
 rollback;

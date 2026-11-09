@@ -326,6 +326,8 @@ export type Deal = {
   last_activity_at: string;
   lost_reason_id?: Identifier | null;
   won_amount?: number | null;
+  /** Set by the set_deal_closed_at trigger when the lead reaches ganado, perdido or archivado. */
+  closed_at?: string | null;
   previous_deal_id?: Identifier | null;
   followups_enabled: boolean;
 } & Pick<RaRecord, "id">;

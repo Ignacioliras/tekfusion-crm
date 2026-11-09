@@ -2,6 +2,7 @@ import { add } from "date-fns";
 import { datatype, lorem, random } from "faker/locale/en_US";
 
 import { defaultDealStages } from "../../../root/defaultConfiguration";
+import { ETAPAS_CERRADAS } from "../../../tekfusion/estados";
 import { LINEAS_NEGOCIO } from "../../../tekfusion/lineas";
 import type { Deal, OriginChannel } from "../../../types";
 import type { Db } from "./types";
@@ -26,6 +27,9 @@ export const generateDeals = (db: Db): Deal[] => {
     const lowercaseName = lorem.words();
     const created_at = randomDate(new Date(company.created_at)).toISOString();
 
+    const stage = random.arrayElement(defaultDealStages).value;
+    const updated_at = randomDate(new Date(created_at)).toISOString();
+
     const expected_closing_date = randomDate(
       new Date(created_at),
       add(new Date(created_at), { months: 6 }),
@@ -39,11 +43,13 @@ export const generateDeals = (db: Db): Deal[] => {
       company_id: company.id,
       contact_ids: contacts.map((contact) => contact.id),
       categories: [],
-      stage: random.arrayElement(defaultDealStages).value,
+      stage,
       description: lorem.paragraphs(datatype.number({ min: 1, max: 4 })),
       amount: datatype.number(1000) * 100,
       created_at,
-      updated_at: randomDate(new Date(created_at)).toISOString(),
+      updated_at,
+      // like set_deal_closed_at: closed leads were closed on their last update
+      closed_at: ETAPAS_CERRADAS.includes(stage) ? updated_at : null,
       expected_closing_date,
       sales_id: company.sales_id!,
       index: 0,

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { subDays } from "date-fns";
 import type { InputProps } from "ra-core";
 import {
   useCanAccess,
@@ -24,8 +25,15 @@ import { DealEmpty, ImportLeadsButton } from "./DealEmpty";
 import { leadFilters, leadSearchFilters } from "./DealFilters";
 import { DealListContent } from "./DealListContent";
 import { DealShow } from "./DealShow";
+import { ETAPAS_ABIERTAS } from "../tekfusion/estados";
+
+/** The kanban hides leads closed (won, lost, archived) longer ago than this (docs/10). */
+const KANBAN_CLOSED_DAYS = 30;
 
 const DealList = () => {
+  const [closedSince] = useState(() =>
+    subDays(new Date(), KANBAN_CLOSED_DAYS).toISOString(),
+  );
   const { identity } = useGetIdentity();
   const { dealCategories } = useConfigurationContext();
   const translate = useTranslate();
@@ -75,7 +83,13 @@ const DealList = () => {
   return (
     <List
       perPage={100}
-      filter={{ "archived_at@is": null }}
+      filter={{
+        "archived_at@is": null,
+        "@or": {
+          "stage@in": `(${ETAPAS_ABIERTAS.join(",")})`,
+          "closed_at@gte": closedSince,
+        },
+      }}
       title={false}
       sort={{ field: "index", order: "DESC" }}
       filters={dealFilters}

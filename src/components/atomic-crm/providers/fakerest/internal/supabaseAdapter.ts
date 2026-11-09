@@ -7,6 +7,18 @@ function removeSummarySuffix(resource: string) {
     : resource;
 }
 
+// A '@or' with operators other than ilike (e.g. the kanban's "stage@in" or
+// "closed_at@gte") is a real OR, not a full-text search (which becomes `q`).
+const isConditionOr = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.keys(value).some(
+    (key) => key.includes("@") && !key.endsWith("@ilike"),
+  );
+
+const ALL_ROWS = { page: 1, perPage: Number.MAX_SAFE_INTEGER };
+
 export function withSupabaseFilterAdapter<T extends DataProvider>(
   dataProvider: T,
 ): T {
@@ -15,10 +27,32 @@ export function withSupabaseFilterAdapter<T extends DataProvider>(
     getOne(resource, params) {
       return dataProvider.getOne(removeSummarySuffix(resource), params);
     },
-    getList(resource, params) {
-      return dataProvider.getList(removeSummarySuffix(resource), {
+    async getList(resource, params) {
+      const target = removeSummarySuffix(resource);
+      const { "@or": or, ...rest } = params.filter ?? {};
+      if (!isConditionOr(or)) {
+        return dataProvider.getList(target, {
+          ...params,
+          filter: transformFilter(params.filter),
+        });
+      }
+      // FakeRest has no OR: query each branch with the rest of the filter,
+      // then list the union (sorted and paginated by FakeRest).
+      const branches = await Promise.all(
+        Object.entries(or).map(([key, value]) =>
+          dataProvider.getList(target, {
+            pagination: ALL_ROWS,
+            sort: { field: "id", order: "ASC" },
+            filter: transformFilter({ ...rest, [key]: value }),
+          }),
+        ),
+      );
+      const ids = [
+        ...new Set(branches.flatMap(({ data }) => data.map(({ id }) => id))),
+      ];
+      return dataProvider.getList(target, {
         ...params,
-        filter: transformFilter(params.filter),
+        filter: { id_eq_any: ids },
       });
     },
     getMany(resource, params) {
