@@ -1,6 +1,7 @@
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
-import { WhatsAppInbox } from "./WhatsApp.fixtures";
+import { ArchivedChatPanel, WhatsAppInbox } from "./WhatsApp.fixtures";
 
 const openConversation = async (
   role: "admin" | "user",
@@ -150,8 +151,68 @@ describe("Bandeja de WhatsApp", () => {
       .not.toBeInTheDocument();
   });
 
-  it("keeps the composer disabled until sending is enabled", async () => {
-    const { panel } = await openConversation("admin", "Rosa Pizarro");
+  it("lets the executive send a message to their chat and shows it pending", async () => {
+    const { panel } = await openConversation("user", "Rosa Pizarro");
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("  Le envío la ficha técnica hoy.  ");
+    await panel.getByRole("button", { name: "Enviar" }).click();
+
+    await expect
+      .element(panel.getByText("Le envío la ficha técnica hoy."))
+      .toBeVisible();
+    await expect
+      .element(panel.getByRole("img", { name: "Pendiente" }))
+      .toBeVisible();
+    await expect.element(composer).toHaveValue("");
+  });
+
+  it("sends with Ctrl+Enter", async () => {
+    const { panel } = await openConversation("user", "Rosa Pizarro");
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("¿Le acomoda una visita el jueves?");
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+
+    await expect
+      .element(panel.getByText("¿Le acomoda una visita el jueves?"))
+      .toBeVisible();
+    await expect.element(composer).toHaveValue("");
+  });
+
+  it("disables everything while sending, so a second click sends nothing", async () => {
+    let release = () => {};
+    const sendWaMessage = vi.fn(
+      () =>
+        new Promise<never>((_, reject) => {
+          release = () => reject(new Error("network"));
+        }),
+    );
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={{ sendWaMessage }} />,
+    );
+    await screen.getByRole("button", { name: /^Rosa Pizarro/ }).click();
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("Hola");
+    await panel.getByRole("button", { name: "Enviar" }).click();
+
+    await expect.element(composer).toBeDisabled();
+    await expect
+      .element(panel.getByRole("button", { name: "Enviar" }))
+      .toBeDisabled();
+    release();
+    await expect.element(composer).toBeEnabled();
+    expect(sendWaMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps an unassigned chat read-only until someone takes it", async () => {
+    const { panel } = await openConversation(
+      "admin",
+      "+56900000003",
+      "Sin asignar",
+    );
 
     await expect
       .element(panel.getByRole("textbox", { name: "Escribe un mensaje" }))
@@ -159,5 +220,50 @@ describe("Bandeja de WhatsApp", () => {
     await expect
       .element(panel.getByRole("button", { name: "Enviar" }))
       .toBeDisabled();
+  });
+
+  it("keeps an archived chat read-only, even for its executive", async () => {
+    const screen = await render(<ArchivedChatPanel />);
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+
+    await expect.element(panel.getByText("<b>hola</b><script>")).toBeVisible();
+    await expect
+      .element(panel.getByRole("textbox", { name: "Escribe un mensaje" }))
+      .toBeDisabled();
+    await expect
+      .element(panel.getByRole("button", { name: "Enviar" }))
+      .toBeDisabled();
+  });
+
+  it("lets a manager write in another executive's chat", async () => {
+    const { panel } = await openConversation("admin", "Andrés Vega", "Todos");
+
+    await expect
+      .element(panel.getByRole("textbox", { name: "Escribe un mensaje" }))
+      .toBeEnabled();
+  });
+
+  it("explains in Spanish when the base refuses the message, and keeps the text", async () => {
+    const sendWaMessage = async () => {
+      throw Object.assign(new Error("rate limit"), { code: "PT429" });
+    };
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={{ sendWaMessage }} />,
+    );
+    await screen.getByRole("button", { name: /^Rosa Pizarro/ }).click();
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("Hola de nuevo");
+    await panel.getByRole("button", { name: "Enviar" }).click();
+
+    await expect
+      .element(
+        screen.getByText(
+          "Enviaste demasiados mensajes seguidos. Espera un minuto y vuelve a intentarlo.",
+        ),
+      )
+      .toBeVisible();
+    await expect.element(composer).toHaveValue("Hola de nuevo");
   });
 });

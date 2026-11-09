@@ -2,7 +2,9 @@ import { buildContact, buildSale, StoryWrapper } from "@/test/StoryWrapper";
 import { DEFAULT_USER } from "../providers/fakerest/authProvider";
 import { canAccess, type AccessRole } from "../providers/commons/canAccess";
 import { buildWhatsAppData } from "../providers/fakerest/dataGenerator/whatsapp";
+import type { CrmDataProvider } from "../providers/types";
 import type { WaMessage } from "../types";
+import { ConversationPanel } from "./ConversationPanel";
 import { WhatsAppPage } from "./WhatsAppPage";
 
 const HOSTILE_TEXT = "<b>hola</b><script>";
@@ -63,11 +65,36 @@ const whatsappData = () => {
 };
 
 // The access rules of the real app (canAccess.ts) for each role.
-export const WhatsAppInbox = ({ role }: { role: AccessRole }) => (
+export const WhatsAppInbox = ({
+  role,
+  dataProvider,
+}: {
+  role: AccessRole;
+  dataProvider?: Partial<CrmDataProvider>;
+}) => (
   <StoryWrapper
     authProvider={{ canAccess: async (params) => canAccess(role, params) }}
     data={whatsappData()}
+    dataProvider={dataProvider}
   >
     <WhatsAppPage />
   </StoryWrapper>
 );
+
+// The inbox lists no archived chat: one archived while it was open still
+// shows in the panel, as this one (Rosa Pizarro's, the executive's own).
+export const ArchivedChatPanel = () => {
+  const data = whatsappData();
+  return (
+    <StoryWrapper
+      authProvider={{ canAccess: async (params) => canAccess("user", params) }}
+      data={data}
+    >
+      <ConversationPanel
+        conversation={{ ...data.wa_conversations[0], archived: true }}
+        title="Rosa Pizarro"
+        onChange={() => undefined}
+      />
+    </StoryWrapper>
+  );
+};

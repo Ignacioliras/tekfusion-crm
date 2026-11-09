@@ -219,7 +219,15 @@ export const tekfusionMessages = {
       read_error: "No se pudo marcar la conversación como leída.",
       compose: "Escribe un mensaje",
       send: "Enviar",
-      coming_soon: "El envío de mensajes todavía no está habilitado.",
+      send_hint: "Ctrl+Enter para enviar.",
+      send_errors: {
+        forbidden: "Esta conversación no es tuya: no puedes escribir en ella.",
+        unavailable: "La conversación no existe o está archivada.",
+        invalid: "El mensaje está vacío o supera los 4096 caracteres.",
+        rate_limit:
+          "Enviaste demasiados mensajes seguidos. Espera un minuto y vuelve a intentarlo.",
+        generic: "No se pudo enviar el mensaje.",
+      },
       from_phone: "Desde el teléfono",
       error: "No se pudieron cargar las conversaciones.",
       types: {

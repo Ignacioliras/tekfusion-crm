@@ -21,6 +21,7 @@ import type {
   SearchResult,
   SignUpData,
   WaConversation,
+  WaMessage,
 } from "../../types";
 import type { DayRange } from "../../management-dashboard/metrics";
 import type { ConfigurationContextValue } from "../../root/ConfigurationContext";
@@ -321,6 +322,19 @@ const getDataProviderWithCustomMethods = () => {
       if (error)
         throw Object.assign(new Error(error.message), { code: error.code });
       return data as number;
+    },
+    /** Queues a text for a chat (RPC send_wa_message); the row comes back 'pendiente'. */
+    async sendWaMessage(
+      conversationId: Identifier,
+      text: string,
+    ): Promise<WaMessage> {
+      const { data, error } = await getSupabaseClient().rpc("send_wa_message", {
+        conversation_id: conversationId,
+        text,
+      });
+      if (error)
+        throw Object.assign(new Error(error.message), { code: error.code });
+      return data as WaMessage;
     },
     /** "Enviar cotización" (RF-06): enqueue, move to cotizado, schedule follow-ups. */
     async sendQuote(
