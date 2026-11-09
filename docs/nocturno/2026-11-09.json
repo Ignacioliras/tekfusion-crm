@@ -146,13 +146,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:28:49"
+      "commit": "60e78a487c281c5e851321a3c82f5f893b241731",
+      "costo_usd": 1.4413386,
+      "session_id": "b794cd93-ce07-4c67-a481-df43e4b8e529",
+      "inicio": "2026-11-09 19:28:49",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: botón \"Respuestas rápidas\" en el cuadro de escribir de la bandeja (QuickReplyPicker con Popover de las activas por título, agrega el texto al final y devuelve el foco), con textos i18n y 3 tests nuevos.",
+      "fin": "2026-11-09 19:32:01"
     },
     {
       "id": "T6",
