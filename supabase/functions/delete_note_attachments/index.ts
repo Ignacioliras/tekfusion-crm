@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { sql } from "https://esm.sh/kysely@0.27.2";
+import { getUnreferencedNames } from "../_shared/attachmentRefs.ts";
 import { AuthMiddleware } from "../_shared/authentication.ts";
-import { db } from "../_shared/db.ts";
 import { reportError, withSentry } from "../_shared/sentry.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { getCandidateNames, type WebhookPayload } from "./candidateNames.ts";
@@ -68,42 +67,9 @@ Deno.serve(
   ),
 );
 
-// Returns the files that no row uses anymore, among the given ones.
-//
-// A file counts as used when its number (`0.8262106278726917` for
-// `deals/12/0.8262106278726917.pdf`) appears anywhere in one of the columns
-// listed in `refs`. We search for the number only, because the extension may
-// be URL-encoded in a stored URL.
-//
-// This runs after the note change is saved, so the edited note is checked with
-// its new attachments: a file the note still has is kept.
-//
-// Every column that can hold uploaded files MUST be listed in `refs`. Otherwise,
-// a file used both by a note and by that column gets deleted when the note
-// drops it.
-const getUnreferencedNames = async (names: string[]): Promise<string[]> => {
-  const { rows } = await sql<{ name: string }>`
-    with candidates as (
-      select name, substring(name from '(0\\.[0-9]+)[^/]*$') as stem
-      from jsonb_array_elements_text(${JSON.stringify(names)}::jsonb) as name
-    ),
-    refs as (
-      select attachments::text as text from public.contact_notes
-      union all select attachments::text from public.deal_notes
-      union all select logo::text from public.companies
-      union all select avatar::text from public.contacts
-      union all select avatar::text from public.sales
-      union all select config::text from public.configuration
-    )
-    select c.name
-    from candidates c
-    where not exists (
-      select 1 from refs where strpos(refs.text, c.stem) > 0
-    )
-  `.execute(db);
-
-  return rows.map((row) => row.name);
-};
+// The reference check (getUnreferencedNames, _shared/attachmentRefs.ts) runs
+// after the note change is saved, so the edited note is checked with its new
+// attachments: a file the note still has is kept.
 
 const jsonResponse = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
