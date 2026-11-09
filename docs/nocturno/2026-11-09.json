@@ -408,13 +408,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:42:58"
+      "commit": "199199123f4bb350392ea3856a800b784106d1fb",
+      "costo_usd": 1.2973972,
+      "session_id": "9ad000d6-4dbe-43e6-8b60-1436a2f48ba5",
+      "inicio": "2026-11-09 20:42:58",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: el correo semanal arma la tabla por línea de negocio (HTML y texto, escapada, con tests) cuando recibe `by_business_line`; queda anotado en docs/10 que falta ampliar la RPC `weekly_report_data`.",
+      "fin": "2026-11-09 20:45:00"
     },
     {
       "id": "T15",
