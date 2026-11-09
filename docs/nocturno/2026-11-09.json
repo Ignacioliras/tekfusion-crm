@@ -243,13 +243,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:57:57"
+      "commit": "f41972364969aa90b7721e483653f03480018ef4",
+      "costo_usd": 10.267443250000001,
+      "session_id": "6175991c-c5bc-4401-873d-a3d5e463382e",
+      "inicio": "2026-11-09 19:57:57",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: anonimizar cancela seguimientos pendientes y limpia WhatsApp (número anon-<id>, textos, payloads), la retención cuenta tareas completadas y mensajes de WhatsApp, botón oculto si ya está anonimizado; pgTAP 31 (43), FakeRest y tests de app en verde.",
+      "fin": "2026-11-09 20:10:45"
     },
     {
       "id": "T9",
