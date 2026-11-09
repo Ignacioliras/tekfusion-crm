@@ -220,6 +220,7 @@ export const tekfusionMessages = {
       compose: "Escribe un mensaje",
       send: "Enviar",
       coming_soon: "El envío de mensajes todavía no está habilitado.",
+      from_phone: "Desde el teléfono",
       error: "No se pudieron cargar las conversaciones.",
       types: {
         texto: "Texto",

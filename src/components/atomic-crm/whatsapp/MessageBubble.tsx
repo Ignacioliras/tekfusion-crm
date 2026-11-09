@@ -56,10 +56,24 @@ const Attachment = ({ message }: { message: WaMessage }) => {
   );
 };
 
-export const MessageBubble = ({ message }: { message: WaMessage }) => {
+interface MessageBubbleProps {
+  message: WaMessage;
+  /** Full name of `message.author_sales_id`, looked up once by the panel. */
+  authorName?: string;
+}
+
+export const MessageBubble = ({ message, authorName }: MessageBubbleProps) => {
   const translate = useTranslate();
   const isOutgoing = message.direction === "saliente";
   const status = STATUS_MARK[message.status];
+  // Who wrote it: typed on the corporate phone, or sent from the CRM by someone.
+  const author = message.from_me_phone
+    ? [translate("tekfusion.whatsapp.from_phone"), authorName]
+        .filter(Boolean)
+        .join(" · ")
+    : isOutgoing && message.origin === "crm"
+      ? authorName
+      : undefined;
   return (
     <li
       className={cn(
@@ -71,6 +85,9 @@ export const MessageBubble = ({ message }: { message: WaMessage }) => {
       {/* Plain text only (CLAUDE.md rule 11): React escapes it. */}
       {message.text ? (
         <p className="whitespace-pre-wrap break-words">{message.text}</p>
+      ) : null}
+      {author ? (
+        <span className="text-xs italic text-muted-foreground">{author}</span>
       ) : null}
       <span className="self-end flex items-center gap-1 text-xs text-muted-foreground">
         {formatSantiago(message.sent_at)}

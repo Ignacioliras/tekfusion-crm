@@ -1,4 +1,4 @@
-import { buildContact, StoryWrapper } from "@/test/StoryWrapper";
+import { buildContact, buildSale, StoryWrapper } from "@/test/StoryWrapper";
 import { DEFAULT_USER } from "../providers/fakerest/authProvider";
 import { canAccess, type AccessRole } from "../providers/commons/canAccess";
 import { buildWhatsAppData } from "../providers/fakerest/dataGenerator/whatsapp";
@@ -27,12 +27,29 @@ const whatsappData = () => {
     status: "entregado",
     sent_at: new Date(now.getTime() - 10 * 60_000).toISOString(),
   };
+  // The ingest RPC attributes a message typed on the phone to the chat's
+  // executive (docs/10); the generator leaves it without author.
+  const messages = seed.wa_messages.map((message) =>
+    message.from_me_phone
+      ? { ...message, author_sales_id: OTHER_EXECUTIVE }
+      : message,
+  );
   return {
+    sales: [
+      buildSale(),
+      buildSale({
+        id: OTHER_EXECUTIVE,
+        first_name: "Matías",
+        last_name: "Soto",
+        administrator: false,
+        role: "executive",
+      }),
+    ],
     contacts: [
       buildContact({ id: 1, first_name: "Rosa", last_name: "Pizarro" }),
       buildContact({ id: 2, first_name: "Andrés", last_name: "Vega" }),
     ],
-    wa_messages: [...seed.wa_messages, hostile],
+    wa_messages: [...messages, hostile],
     wa_conversations: seed.wa_conversations.map((conversation) =>
       conversation.id === hostile.conversation_id
         ? {

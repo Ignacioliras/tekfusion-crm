@@ -95,6 +95,29 @@ describe("Bandeja de WhatsApp", () => {
       .toBeVisible();
   });
 
+  it("labels messages typed on the phone and names the executive behind each CRM send", async () => {
+    const { panel } = await openConversation("admin", "Andrés Vega", "Todos");
+
+    await expect
+      .element(panel.getByText("Desde el teléfono · Matías Soto"))
+      .toBeVisible();
+    // The failed photo went out from the CRM: only its author, no phone label.
+    await expect
+      .element(panel.getByText("Matías Soto", { exact: true }))
+      .toBeVisible();
+    expect(panel.getByText(/Desde el teléfono/).elements()).toHaveLength(1);
+  });
+
+  it("names the author of CRM sends but not of incoming messages", async () => {
+    const { panel } = await openConversation("user", "Rosa Pizarro");
+
+    // Two outgoing CRM messages in Rosa's chat, three incoming ones.
+    await expect
+      .poll(() => panel.getByText("Jane Doe", { exact: true }).elements())
+      .toHaveLength(2);
+    expect(panel.getByText(/Desde el teléfono/).elements()).toHaveLength(0);
+  });
+
   it("lets the executive take an unassigned chat, which then shows in 'Mis chats'", async () => {
     const { screen, panel } = await openConversation(
       "user",

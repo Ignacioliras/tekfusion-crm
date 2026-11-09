@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import {
   useDataProvider,
   useGetList,
+  useGetMany,
   useNotify,
   useRefresh,
   useTranslate,
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { CrmDataProvider } from "../providers/types";
 import { errorMessageKey } from "../providers/supabase/accessErrors";
-import type { WaConversation, WaMessage } from "../types";
+import type { Sale, WaConversation, WaMessage } from "../types";
 import { MessageBubble } from "./MessageBubble";
 
 // ponytail: one page of 500 messages, no Realtime; paging and the Realtime
@@ -43,6 +44,23 @@ export const ConversationPanel = ({
     sort: { field: "sent_at", order: "ASC" },
     pagination: MESSAGES_PAGE,
   });
+
+  // Authors of the whole conversation in one query, not one per bubble.
+  const authorIds = [
+    ...new Set(
+      messages.flatMap((message) =>
+        message.author_sales_id == null ? [] : [message.author_sales_id],
+      ),
+    ),
+  ];
+  const { data: authors = [] } = useGetMany<Sale>(
+    "sales",
+    { ids: authorIds },
+    { enabled: authorIds.length > 0 },
+  );
+  const authorNames = new Map(
+    authors.map((sale) => [sale.id, `${sale.first_name} ${sale.last_name}`]),
+  );
 
   const take = useMutation({
     mutationFn: () => dataProvider.takeWaConversation(conversation.id),
@@ -103,7 +121,15 @@ export const ConversationPanel = ({
         ) : (
           <ol className="flex flex-col gap-2">
             {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble
+                key={message.id}
+                message={message}
+                authorName={
+                  message.author_sales_id == null
+                    ? undefined
+                    : authorNames.get(message.author_sales_id)
+                }
+              />
             ))}
           </ol>
         )}
