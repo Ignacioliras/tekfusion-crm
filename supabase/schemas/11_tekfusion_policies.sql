@@ -321,9 +321,10 @@ $$;
 -- the manager doing it as actor_id. Disables the user, hands each open lead and
 -- each business line to the substitute of its line (docs/10, 2026-11-03), the
 -- contacts and pending tasks along with their leads (or leaves them unassigned),
--- closes every session and writes the audit trail. Reactivation: Atomic's
--- "disabled" switch, also through the Edge Function.
--- Not here yet: SMTP/IMAP keys (Fase 5) and WhatsApp conversations (Fase 4).
+-- the open WhatsApp conversations to the substitute of their active lead's line
+-- (docs/10, 2026-11-09), closes every session and writes the audit trail.
+-- Reactivation: Atomic's "disabled" switch, also through the Edge Function.
+-- Not here yet: SMTP/IMAP keys (Fase 5).
 CREATE OR REPLACE FUNCTION "public"."offboard_sale"("sale_id" bigint, "actor_id" bigint) RETURNS "public"."audit_log"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -334,6 +335,7 @@ declare
   moved_deals jsonb;
   moved_contacts bigint[];
   moved_tasks bigint[];
+  moved_conversations jsonb;
   entry public.audit_log;
 begin
   -- auth.role(), not current_user: inside a security definer function
@@ -423,6 +425,29 @@ begin
   )
   select coalesce(array_agg(id order by id), '{}') into moved_tasks from moved;
 
+  -- (d) Open WhatsApp conversations go to the substitute of their active
+  -- lead's line (same rule as the lead, whatever its stage), or to the default
+  -- one when they have no lead; archived ones keep their owner (history).
+  with targets as (
+    select w.id,
+           coalesce((select l.substitute_sales_id
+                       from public.deals d
+                       join public.business_lines l on l.code = d.business_line
+                       join public.sales s on s.id = l.substitute_sales_id
+                      where d.id = w.active_deal_id and not s.disabled
+                        and s.role <> 'reader' and s.id <> target.id),
+                    default_substitute) as new_owner
+      from public.wa_conversations w
+     where w.sales_id = target.id and not w.archived
+  ), moved as (
+    update public.wa_conversations w set sales_id = t.new_owner
+      from targets t
+     where w.id = t.id
+    returning w.id, w.sales_id
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'to', sales_id) order by id), '[]')
+    into moved_conversations from moved;
+
   -- Each line the user owned goes to its own substitute, or the default one.
   update public.business_lines l
      set owner_sales_id = coalesce(
@@ -450,7 +475,8 @@ begin
             'reassigned_deal_ids', (select coalesce(jsonb_agg(m.id order by m.id), '[]')
                                       from jsonb_to_recordset(moved_deals) as m(id bigint)),
             'reassigned_contact_ids', to_jsonb(moved_contacts),
-            'reassigned_task_ids', to_jsonb(moved_tasks)))
+            'reassigned_task_ids', to_jsonb(moved_tasks),
+            'reassigned_wa_conversations', moved_conversations))
   returning * into entry;
   return entry;
 end;

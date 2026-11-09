@@ -1,10 +1,13 @@
 -- "Dar de baja" con suplente por línea (docs/10, 2026-11-03): cada lead abierto
 -- va al suplente de su línea; uno 'indeterminada' o sin suplente válido, al de
 -- la primera línea del usuario; cada contacto, al que recibió la mayoría de
--- sus leads; las tareas pendientes siguen a su contacto. Escenario: Camila
--- (válvulas, suplente Diego; geoceldas, suplente Andrea para esta prueba).
+-- sus leads; las tareas pendientes siguen a su contacto; las conversaciones
+-- de WhatsApp no archivadas, al suplente de la línea de su lead activo o al de
+-- la primera línea (docs/10, 2026-11-09). Escenario: Camila (válvulas,
+-- suplente Diego; geoceldas, suplente Andrea para esta prueba). Al final,
+-- Diego sin suplentes: sus conversaciones quedan sin asignar.
 begin;
-select plan(13);
+select plan(21);
 
 create temp table fx as
 select
@@ -36,6 +39,19 @@ grant select on d to service_role;
 insert into public.tasks (contact_id, type, text, due_date, sales_id, done_date) values
   ((select x from c), 'call', 'Tarea pendiente de prueba', now() + interval '1 day', (select camila from fx), null),
   ((select x from c), 'call', 'Tarea cerrada de prueba',   now() - interval '1 day', (select camila from fx), now());
+
+-- Conversaciones de Camila: con lead de geoceldas, sin lead, y una archivada.
+insert into public.wa_conversations (phone, contact_id, active_deal_id, sales_id, archived) values
+  ('+56911110001', (select x from c), (select id from d where name = 'Prueba G1'), (select camila from fx), false),
+  ('+56911110002', (select y from c), null,                                        (select camila from fx), false),
+  ('+56911110003', (select y from c), null,                                        (select camila from fx), true);
+create temp table w as
+select (select id from public.wa_conversations where phone = '+56911110001') as con_lead,
+       (select id from public.wa_conversations where phone = '+56911110002') as sin_lead,
+       (select id from public.wa_conversations where phone = '+56911110003') as archivada,
+       -- las dos de arriba más la del seed de Camila
+       (select count(*)::int from public.wa_conversations where sales_id = (select camila from fx) and not archived) as abiertas;
+grant select on w to service_role;
 
 select set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
 set local role service_role;
@@ -71,6 +87,40 @@ select ok((select details -> 'reassigned_task_ids' @> (select to_jsonb(array_agg
               and not details -> 'reassigned_task_ids' @> (select to_jsonb(array_agg(id)) from public.tasks where text = 'Tarea cerrada de prueba')
              from public.audit_log where action = 'sale.offboarded' and target_sales_id = (select camila from fx)),
   'registra las tareas pendientes reasignadas, no las cerradas');
+
+-- WhatsApp
+select is((select sales_id from public.wa_conversations where id = (select con_lead from w)), (select andrea from fx),
+  'la conversación con lead de geoceldas va al suplente de geoceldas');
+select is((select sales_id from public.wa_conversations where id = (select sin_lead from w)), (select diego from fx),
+  'la conversación sin lead va al suplente de la primera línea');
+select is((select sales_id from public.wa_conversations where id = (select archivada from w)), (select camila from fx),
+  'la conversación archivada conserva su dueña');
+select is((select jsonb_array_length(details -> 'reassigned_wa_conversations')
+             from public.audit_log where action = 'sale.offboarded' and target_sales_id = (select camila from fx)),
+  (select abiertas from w), 'la baja registra cuántas conversaciones reasignó (todas las no archivadas)');
+select ok((select details -> 'reassigned_wa_conversations'
+             @> jsonb_build_array(jsonb_build_object('id', (select con_lead from w), 'to', (select andrea from fx)),
+                                  jsonb_build_object('id', (select sin_lead from w), 'to', (select diego from fx)))
+             from public.audit_log where action = 'sale.offboarded' and target_sales_id = (select camila from fx)),
+  'la baja registra a quién fue cada conversación');
+
+-- Diego sin suplente en ninguna de sus líneas: sus conversaciones quedan sin asignar.
+update public.business_lines set substitute_sales_id = null where owner_sales_id = (select diego from fx);
+insert into public.wa_conversations (phone, contact_id, active_deal_id, sales_id) values
+  ('+56911110004', (select y from c), null, (select diego from fx));
+
+select set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+set local role service_role;
+select lives_ok(format('select public.offboard_sale(%s, %s)', (select diego from fx), (select andrea from fx)),
+  'gerencia da de baja a Diego sin suplente');
+reset role;
+
+select is((select sales_id from public.wa_conversations where phone = '+56911110004'), null,
+  'sin suplente, la conversación queda sin asignar');
+select ok((select details -> 'reassigned_wa_conversations'
+             @> jsonb_build_array(jsonb_build_object('id', (select id from public.wa_conversations where phone = '+56911110004'), 'to', null))
+             from public.audit_log where action = 'sale.offboarded' and target_sales_id = (select diego from fx)),
+  'la baja registra la conversación que quedó sin asignar');
 
 select * from finish();
 rollback;

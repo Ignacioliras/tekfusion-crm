@@ -529,6 +529,15 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 - **Pendiente:** la conversación `anon-<id>` sigue en la bandeja con ese texto como título y se puede escribir en ella (`send_wa_message` encola algo que el emisor no podrá entregar): decidir si anonimizar también la archiva. Las filas de `send_queue` pendientes de esos mensajes no se tocan. `wa_messages.attachment_path` no se vacía (los adjuntos de WhatsApp todavía no se guardan: TODO del receptor); cuando existan, anonimizar debe devolver también esas rutas para borrarlas del bucket.
 - **Archivos:** `schemas/11_tekfusion_policies.sql`, `schemas/14_tekfusion_whatsapp.sql`, migración `20261109220000_anonimizar_remate.sql` (a mano; `db diff` residual solo con los fantasmas de siempre), pgTAP `31_anonimizar` (43 casos, 11 nuevos), `fakerest/leadMethods.ts`, `contacts/AnonymizeContactButton.tsx`, vitest `AnonymizeContact.test.tsx` (5 casos).
 
+## 2026-11-09 · 🔒 Dar de baja reasigna las conversaciones de WhatsApp (cola nocturna 2026-11-09, T9)
+**Sin revisar: revisar antes del merge.**
+- **Motivo:** `offboard_sale` (2026-11-05) movía leads, contactos y tareas pero dejaba las `wa_conversations` del usuario dado de baja a su nombre: nadie las veía en "Mis chats" y el ejecutivo desactivado seguía como dueño.
+- **Regla (paso (d), después de las tareas):** cada conversación **no archivada** con `sales_id` = el usuario va al suplente de la línea de su lead activo (`active_deal_id` → `deals.business_line` → `business_lines.substitute_sales_id`, mismo filtro que los leads: activo, no lector, no el propio usuario) o, si no tiene lead o esa línea no tiene suplente válido, al suplente por defecto (el de la primera línea que tenía a cargo, el mismo `default_substitute` de los leads). Sin ninguno, `sales_id = null` (queda en "Sin asignar" y gerencia la toma desde la bandeja). Las archivadas conservan su dueño (historial, como los leads cerrados).
+- **Implícito, decidido aquí:** la conversación sigue la **línea** de su lead, no al nuevo dueño del lead: si el lead activo ya estaba cerrado (no se reasigna), la conversación igual se mueve. Es el criterio del enunciado ("suplente de la línea del lead activo") y evita dejar chats abiertos a nombre de un usuario desactivado.
+- **Audit:** `sale.offboarded.details.reassigned_wa_conversations` = `[{id, to}]` (cuántas = largo del arreglo; `to` null si quedó sin asignar). No hay fila por conversación como `deal.reassigned`: `audit_log` no tiene columna para conversaciones y la línea de tiempo del lead no las muestra.
+- **Pendiente:** la pantalla de usuarios no avisa cuántas conversaciones se movieron (solo lee el resultado de la Edge Function); `unread_count` no se toca, así que el suplente hereda los no leídos.
+- **Archivos:** `schemas/11_tekfusion_policies.sql`, migración `20261109230000_offboard_whatsapp.sql` (a mano, copia de la función + grants), pgTAP `28_baja_por_linea` (21 casos, 8 nuevos: con lead, sin lead, archivada, sin suplente, audit).
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
