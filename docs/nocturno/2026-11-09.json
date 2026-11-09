@@ -270,13 +270,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:10:46"
+      "commit": "28facb7a704638f944ef4d735e9dcefa481521db",
+      "costo_usd": 4.352860249999999,
+      "session_id": "ebca13dd-3fe9-4780-8cfa-2b2047b05b1e",
+      "inicio": "2026-11-09 20:10:46",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: offboard_sale reasigna las conversaciones de WhatsApp no archivadas al suplente por línea (o las deja sin asignar), lo registra en audit_log, con migración a mano y pgTAP 28 ampliado a 21 casos en verde.",
+      "fin": "2026-11-09 20:16:31"
     },
     {
       "id": "T10",
