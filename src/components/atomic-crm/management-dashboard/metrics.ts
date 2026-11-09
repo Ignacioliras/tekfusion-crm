@@ -107,6 +107,7 @@ export const PRESETS = [
   "last_month",
   "last_30_days",
   "last_90_days",
+  "last_12_months",
   "this_year",
 ] as const;
 export type Preset = (typeof PRESETS)[number];
@@ -132,6 +133,20 @@ export const presetRange = (
       return { from: addDays(today, -29), to: today };
     case "last_90_days":
       return { from: addDays(today, -89), to: today };
+    case "last_12_months":
+      // The day after this same day a year ago (from Feb 29: Mar 2).
+      return {
+        from: new Date(
+          Date.UTC(
+            +today.slice(0, 4) - 1,
+            +today.slice(5, 7) - 1,
+            +today.slice(8, 10) + 1,
+          ),
+        )
+          .toISOString()
+          .slice(0, 10),
+        to: today,
+      };
     case "this_year":
       return { from: `${today.slice(0, 4)}-01-01`, to: today };
   }

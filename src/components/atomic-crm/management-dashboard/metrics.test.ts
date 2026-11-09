@@ -146,6 +146,16 @@ describe("metrics del dashboard de gerencia", () => {
     });
   });
 
+  it("the last 12 months shortcut covers a year up to today in Santiago", () => {
+    // 2026-11-06 02:00 UTC is still November 5 in Santiago.
+    expect(
+      presetRange("last_12_months", new Date("2026-11-06T02:00:00Z")),
+    ).toEqual({ from: "2025-11-06", to: "2026-11-05" });
+    expect(
+      presetRange("last_12_months", new Date("2027-01-01T12:00:00Z")),
+    ).toEqual({ from: "2026-01-02", to: "2027-01-01" });
+  });
+
   it("filters rows by day range and groups them by month", () => {
     expect(inRange(rows[0], { from: "2026-10-01", to: "2026-10-31" })).toBe(
       true,

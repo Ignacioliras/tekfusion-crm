@@ -392,6 +392,7 @@ export const tekfusionMessages = {
         last_month: "Mes pasado",
         last_30_days: "Últimos 30 días",
         last_90_days: "Últimos 90 días",
+        last_12_months: "Últimos 12 meses",
         this_year: "Este año",
       },
       current_period: "Período",
