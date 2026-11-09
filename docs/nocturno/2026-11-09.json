@@ -354,13 +354,16 @@
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:29:50"
+      "commit": "c481dd9e3d173748dedc4ae38ea5bf30d09ceca9",
+      "costo_usd": 2.0266764,
+      "session_id": "2d176d08-83c3-4728-bbbc-a11aa6705682",
+      "inicio": "2026-11-09 20:29:50",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: e2e `whatsapp-enviar.spec.ts` (Camila escribe, usa respuesta rápida, envía y ve el mensaje pendiente; cuadro deshabilitado en sin asignar y archivada) y ajuste de `camila.spec.ts:75` (de antes de T4); los 17 e2e pasan.",
+      "fin": "2026-11-09 20:39:42"
     },
     {
       "id": "T13",
