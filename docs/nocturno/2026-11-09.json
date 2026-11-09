@@ -495,7 +495,9 @@
     {
       "inicio": "2026-11-09 19:03:42",
       "modelo": "opus",
-      "simulado": false
+      "simulado": false,
+      "fin": "2026-11-09 20:55:00",
+      "motivo": "cola terminada"
     }
   ]
 }
