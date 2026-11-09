@@ -70,9 +70,10 @@ test.describe("Camila, ejecutiva", () => {
       panel.getByText("Quedo atento a la cotización actualizada."),
     ).toBeVisible();
     await expect(chat.getByLabel(/sin leer$/)).toHaveCount(0);
+    // Es su chat: puede escribir (whatsapp-enviar.spec.ts prueba el envío).
     await expect(
       panel.getByRole("textbox", { name: "Escribe un mensaje" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
 
     // Quedó leído en la base y la sesión sigue abierta.
     await page.reload();
