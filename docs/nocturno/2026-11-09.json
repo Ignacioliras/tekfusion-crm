@@ -382,13 +382,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 20:39:42"
+      "commit": "7ec2d5add00e059996801ef97f0bc7a46fa4b42e",
+      "costo_usd": 1.6592618000000003,
+      "session_id": "e0a5df03-8b0e-419b-a0f1-72f6b936beb4",
+      "inicio": "2026-11-09 20:39:42",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: montos compactos en CLP con el valor exacto en tooltip y aria-label en las tarjetas del dashboard, más el atajo \"Últimos 12 meses\", con tests.",
+      "fin": "2026-11-09 20:42:58"
     },
     {
       "id": "T14",
