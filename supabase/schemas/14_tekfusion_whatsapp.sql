@@ -86,6 +86,8 @@ alter table public.wa_message_payloads enable row level security;
 
 create index wa_messages_conversation_sent_idx on public.wa_messages using btree (conversation_id, sent_at);
 create index wa_messages_deal_id_idx on public.wa_messages using btree (deal_id);
+-- send_wa_message counts the caller's recent texts on every call (rate limit).
+create index wa_messages_author_created_idx on public.wa_messages using btree (author_sales_id, created_at);
 -- sales_id: the executive's RLS filter and "Mis chats"; last_message_at: inbox order.
 create index wa_conversations_sales_id_idx on public.wa_conversations using btree (sales_id);
 create index wa_conversations_last_message_at_idx on public.wa_conversations using btree (last_message_at desc);
@@ -258,7 +260,10 @@ $$;
 -- 'pendiente' and enqueued in send_queue (channel whatsapp, like send_quote in
 -- 11_); the sender (whatsapp-send) takes it from there. Executives only in
 -- their own conversations, managers (aal2, through current_user_role()) in
--- any; readers and everyone else get 42501. Empty or too long text: 22023.
+-- any; readers and everyone else get 42501. Archived conversation: P0002 (as
+-- take_wa_conversation). Empty or too long text: 22023. More than
+-- max_messages_per_window texts by the same user within rate_window: PT429
+-- (PostgREST answers HTTP 429).
 -- wa_message_id is provisional ('pending:' || job_id): the sender replaces it
 -- with the id Evolution returns (docs/10).
 CREATE OR REPLACE FUNCTION "public"."send_wa_message"("conversation_id" bigint, "text" "text") RETURNS "public"."wa_messages"
@@ -268,12 +273,17 @@ CREATE OR REPLACE FUNCTION "public"."send_wa_message"("conversation_id" bigint, 
 declare
   -- Longest text body WhatsApp accepts in one message.
   max_text_length constant integer := 4096;
+  -- Cap of texts one user writes from the CRM (a runaway client, not the
+  -- anti-block pacing, which belongs to the sender: docs/07).
+  max_messages_per_window constant integer := 30;
+  rate_window constant interval := interval '1 minute';
   me bigint := public.current_sales_id();
   my_role text := public.current_user_role();
   body text := btrim(send_wa_message.text, E' \t\n\r');
   job text := 'crm-' || gen_random_uuid()::text;
   conv public.wa_conversations;
   msg public.wa_messages;
+  recent integer;
 begin
   if me is null or my_role not in ('manager', 'executive') then
     raise exception 'only executives and managers can send messages' using errcode = '42501';
@@ -288,11 +298,23 @@ begin
   if my_role <> 'manager' and conv.sales_id is distinct from me then
     raise exception 'conversation % is not assigned to you', conv.id using errcode = '42501';
   end if;
+  if conv.archived then
+    raise exception 'conversation % is archived', conv.id using errcode = 'P0002';
+  end if;
   if body is null or body = '' then
     raise exception 'the message text is empty' using errcode = '22023';
   end if;
   if char_length(body) > max_text_length then
     raise exception 'the message text is longer than % characters', max_text_length using errcode = '22023';
+  end if;
+  -- One sender at a time per user: without it, parallel calls on different
+  -- conversations would each count before the others commit and go over the cap.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('send_wa_message:' || me, 0));
+  select count(*) into recent
+    from public.wa_messages m
+   where m.author_sales_id = me and m.origin = 'crm' and m.created_at > now() - rate_window;
+  if recent >= max_messages_per_window then
+    raise exception 'rate limit: at most % messages per minute', max_messages_per_window using errcode = 'PT429';
   end if;
 
   insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, status, origin, author_sales_id, job_id, sent_at)

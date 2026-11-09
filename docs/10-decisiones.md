@@ -366,7 +366,7 @@ Ninguna está confirmada por Ignacio. Nada de la rama `nocturno/2026-11-06-b` es
 - **Consecuencias:**
   - Quien consuma `send_queue` (n8n en la Fase 5, `whatsapp-send`) tiene que distinguir filas con `quote_id` de filas con `message_id`. `docs/05` todavía describe la cola como solo de cotizaciones.
   - Una fila de la cola sin lead no la ve ningún usuario por la API (`send_queue_select` mira el lead); el mensaje sí se ve en `wa_messages`.
-  - No se revisa si la conversación está archivada, no hay tope ni espaciado de envíos (corresponde a `whatsapp-send`, `docs/07`) y un doble clic crea dos mensajes (no hay clave de idempotencia del cliente).
+  - No se revisa si la conversación está archivada, no hay tope ni espaciado de envíos (corresponde a `whatsapp-send`, `docs/07`) y un doble clic crea dos mensajes (no hay clave de idempotencia del cliente). *(Desde el 2026-11-09 la archivada se rechaza y hay un tope de 30 por minuto: ver la entrada de esa fecha. El espaciado y la idempotencia siguen igual.)*
   - No toca el lead: ni `last_activity_at` ni `first_response_at`, ni pasa la etapa a `contactado`.
   - `revoke` también a `service_role`, como las otras RPC de la bandeja (la tarea pedía solo `public`/`anon`): sin sale no podría usarla igual.
 - **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración escrita a mano `20261106170000_send_wa_message.sql` (el `db diff` residual solo muestra los fantasmas de siempre), pgTAP `38_send_wa_message` (34 casos). La interfaz se conecta de día.
@@ -423,7 +423,7 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 ## 2026-11-06 · Decisiones de Ignacio tras la revisión de la cola 2026-11-06-c
 1. **Un mensaje en un lead cerrado no lo reabre.** Si el lead activo de la conversación ya está ganado, perdido o archivado, el mensaje entrante queda en ese lead, que sigue cerrado. Es lo que el trigger `wa_cliente_respondio` ya hace (cancela los seguimientos pendientes que quedaran y avisa al ejecutivo con la alerta "cliente respondió"). Nada que cambiar.
 2. **`send_queue` queda por `message_id`.** Confirmado el cambio que T9 hizo sin que la tarea lo pidiera: una fila de la cola es de una cotización (con su lead) o de un mensaje de WhatsApp (`message_id`, sin cotización). Quien consuma la cola distingue por esa columna. Queda pendiente poner al día `docs/05`, que todavía la describe como solo de cotizaciones.
-3. **No se escribe en conversaciones archivadas.** Hoy `send_wa_message` lo permite. **Tarea nueva, sin hacer.**
+3. **No se escribe en conversaciones archivadas.** Hecho el 2026-11-09 (ver "`send_wa_message`: no escribe en archivadas y tope de 30 mensajes por minuto"); falta la revisión 🔒.
 4. **El kanban oculta los leads cerrados de más de 30 días.** Hoy muestra hasta 100 tarjetas sin filtro de antigüedad. **Tarea nueva, sin hacer.**
 5. **El correo semanal lleva desglose por línea de negocio.** Hoy `weekly_report_data` y `renderWeeklyReport` solo traen totales. **Tarea nueva, sin hacer.**
 
@@ -446,6 +446,21 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 - **Motivo:** los specs de Atomic (`e2e/*.spec.ts`, `make test-e2e-ci`) esperan la UI en inglés ("Sign in", "Save") y los usuarios del seed de Atomic (`john@doe.com`); el CRM arranca en español con el seed de TekFusion. Además el target `start-supabase-e2e` lee `supabase/functions/.env`, que no existe en CI. El job `e2e-test` de `check.yml` ahora levanta el Supabase local por defecto (54321), genera `supabase/functions/.env` con los valores no secretos de su `.env.example` (issuer de 54321, clave publicable de `supabase status`, `CRM_BASE_URL` del Vite de los e2e) y corre `npm run test:e2e` (`e2e/tekfusion/`). El `.env` hace falta: guardar el Perfil pasa por la función `users`.
 - **Descartado:** mantener el target de Atomic con su stack aparte (54341): los specs fallarían igual por los textos.
 - **Consecuencias:** el stack se levanta dos veces en el job (el edge runtime lee el `.env` al crearse y la clave solo existe con el stack arriba). Los specs de Atomic, `playwright.config.ts`, `.env.e2e`, `supabase/config.e2e.toml` y los targets `*-e2e*` del makefile quedaron sin uso y se borraron en `fase-1/limpieza-atomic` (2026-11-06), junto con el script `build:e2e`. Queda sin tocar el harness desactivado de Atomic (`.claude/scripts/e2e-smoke.sh`, `.claude/_atomic-harness/`), que todavía nombra esos archivos.
+
+## 2026-11-09 · 🔒 `send_wa_message`: no escribe en archivadas y tope de 30 mensajes por minuto (cola nocturna 2026-11-09, T1)
+**Sin revisar: revisar antes del merge.**
+- **Archivada (decisión de Ignacio 2026-11-06, punto 3 de "Decisiones de Ignacio tras la revisión de la cola 2026-11-06-c"):** escribir en una conversación con `archived = true` da P0002 `conversation N is archived`, el mismo código con que `take_wa_conversation` rechaza una archivada. Vale para el ejecutivo dueño y para gerencia. No se guarda nada en `wa_messages` ni en `send_queue`.
+- **Tope (pedido en la tarea de la cola):** un usuario escribe a lo más **30 mensajes por minuto** desde el CRM, sumando todas sus conversaciones. Se cuentan las filas de `wa_messages` con `author_sales_id` = quien escribe, `origin = 'crm'` y `created_at` dentro del último minuto (ventana móvil, no minuto de reloj). Con 30 ya escritos, el siguiente da `PT429` con `rate limit: at most 30 messages per minute`; PostgREST lo devuelve como HTTP 429. Constantes `max_messages_per_window` y `rate_window` en la función. No cuentan los mensajes de otro usuario, los seguimientos automáticos a nombre del ejecutivo (`origin = 'seguimiento'`) ni los intentos rechazados. Gerencia tiene el mismo tope.
+- **Elegido al implementar (sin confirmar):**
+  - **Orden de los chequeos:** permiso → archivada → texto → tope. En la archivada de otro ejecutivo sigue respondiendo 42501 (no revela que está archivada); un texto vacío o largo da 22023 aunque el usuario ya esté en el tope.
+  - **Candado por usuario** (`pg_advisory_xact_lock` con una clave derivada del `sales.id`) antes de contar: sin él, varias llamadas simultáneas del mismo usuario en conversaciones distintas contarían cada una antes de que las otras confirmen y pasarían el tope. Los envíos de un mismo usuario quedan en fila mientras dura cada transacción; los de usuarios distintos no se esperan entre sí.
+  - **Índice** `wa_messages_author_created_idx (author_sales_id, created_at)`: el conteo corre en cada envío.
+- **Descartado:** una tabla de contadores por usuario (otra tabla que mantener y limpiar para algo que un conteo con índice resuelve); tope por conversación (un cliente desbocado repartiría entre varias).
+- **Consecuencias:**
+  - El tope frena un cliente desbocado o un script; **no** reemplaza las reglas anti-bloqueo de `docs/07` (horario, espaciado, tope diario), que siguen siendo de `whatsapp-send`.
+  - Un mensaje ya encolado sigue en `send_queue` si la conversación se archiva después: quien envíe decide qué hacer con él.
+  - La interfaz todavía no llama a `send_wa_message`; cuando lo haga, el 429 y la archivada necesitan su propio texto (hoy caerían en el error genérico) y FakeRest tendría que imitarlos.
+- **Archivos:** `schemas/14_tekfusion_whatsapp.sql`, migración `20261109190600_send_wa_message_tope.sql` (generada con `db diff` y limpiada de los fantasmas de siempre: `pg_cron`, `pgjwt` y las seis vistas recreadas sin `security_invoker`; el `db diff` residual solo muestra esos), pgTAP `38_send_wa_message` (45 casos: archivada, mensaje 30 y 31, otro usuario, seguimiento, salida de la ventana).
 
 ## Plantilla para nuevas decisiones
 ```
