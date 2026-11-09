@@ -33,7 +33,7 @@ Cada corrida de `claude -p` guarda su sesión: en el reporte, cada tarea fallida
 
 Opciones: `--hasta 06:30` (hora de corte), `--modelo opus --esfuerzo high` (también van en el JSON: `"modelo"`, `"esfuerzo"`), `--max-tareas 3`, `--solo T4` (una sola tarea), `--simular` (recorre la cola sin llamar a Claude, para probar), `--sin-dormir` (no bloquea la suspensión).
 
-**En la mañana:** en Claude Code, en el repo principal, `/manana` → resumen, qué mergear, qué arreglar y en qué orden, y el `--resume` de cada tarea fallida.
+**En la mañana:** en Claude Code, en el repo principal, `/manana` → resumen, qué mergear, qué arreglar y en qué orden, y el `--resume` de cada tarea fallida. La rama nocturna entra a `main` solo por PR (ruleset): `git push -u origin nocturno/<fecha>` → `gh pr create` con el resumen → `gh pr checks --watch` → `gh pr merge --squash --delete-branch` cuando Ignacio lo pide.
 
 ## Qué va en la cola y qué no
 **Sí:** tareas con criterio en tests o comandos (typecheck, vitest, pgTAP, `db reset`, build); scaffolding de pantallas y formularios a partir de una spec; seed; tipos; traducciones; tests para código ya hecho; documentación.
