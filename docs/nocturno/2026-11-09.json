@@ -118,13 +118,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:22:16"
+      "commit": "296fe8c80ac05b97027959a2f2a4c6920c6c4d65",
+      "costo_usd": 2.5960422000000003,
+      "session_id": "d5f9ac38-48a1-47dd-8a9a-46ec457eac23",
+      "inicio": "2026-11-09 19:22:16",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: la bandeja envía con send_wa_message (Supabase y FakeRest), con el cuadro habilitado solo para gerencia o el ejecutivo asignado en chats no archivados, sin doble envío, errores en español y tests de envío, deshabilitado y error.",
+      "fin": "2026-11-09 19:28:48"
     },
     {
       "id": "T5",
