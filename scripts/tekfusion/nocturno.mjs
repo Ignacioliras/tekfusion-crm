@@ -107,6 +107,7 @@ const guardar = (ruta, obj) => {
 const RAMA = `nocturno/${FECHA}`;
 const WT = join(dirname(REPO), `${basename(REPO)}-noche-${FECHA}`);
 const LOG = join(REPO, "docs", "nocturno", `${FECHA}.log`);
+const nmWt = join(WT, "node_modules");
 
 log(`Loop nocturno ${FECHA} · repo ${REPO}`);
 if (git('status --porcelain -- . ":!docs/nocturno/*.log"', REPO)) {
@@ -124,10 +125,22 @@ if (!existsSync(WT)) {
     REPO,
   );
   log(`Worktree creado: ${WT} (rama ${RAMA})`);
+} else if (!existsSync(join(WT, ".git"))) {
+  // Restos de una limpieza a medias (p. ej. `worktree remove` que dejó el enlace de node_modules):
+  // retomar ahí hace que todas las tareas terminen bloqueadas sin repo.
+  console.error(
+    [
+      `La carpeta ${WT} existe pero no es un worktree de git (no tiene .git). No se retoma.`,
+      "Límpiala y vuelve a lanzar la noche:",
+      `  1. cmd /c rmdir "${nmWt}"   (solo quita el enlace de node_modules; nunca borres recursivo a través de él)`,
+      `  2. borra el resto de ${WT}`,
+      "  3. git worktree prune",
+    ].join("\n"),
+  );
+  process.exit(2);
 } else {
   log(`Worktree existente: ${WT} (se retoma)`);
 }
-const nmWt = join(WT, "node_modules");
 if (!existsSync(nmWt) && existsSync(join(REPO, "node_modules"))) {
   symlinkSync(join(REPO, "node_modules"), nmWt, ES_WIN ? "junction" : "dir");
   log("node_modules enlazado al del repo principal");
