@@ -178,13 +178,16 @@
       "necesita_supabase": true,
       "modelo": "fable",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:32:01"
+      "commit": "ad19016b1770b1387648e024172489d57a56e7c9",
+      "costo_usd": 8.308564249999998,
+      "session_id": "b400a406-37fe-4d19-88f3-c278f4906105",
+      "inicio": "2026-11-09 19:32:01",
+      "modelo_usado": "fable/high",
+      "resumen_claude": "HECHA: wa_conversations y wa_messages publicadas en supabase_realtime (migración a mano y pgTAP ampliado) y hook useWaRealtime conectado a la bandeja con su test de canal falso; verificación completa en verde, falta probar contra el Realtime real.",
+      "fin": "2026-11-09 19:45:55"
     },
     {
       "id": "T7",
