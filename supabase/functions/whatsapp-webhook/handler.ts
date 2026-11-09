@@ -13,10 +13,17 @@ export type Rpc = (
 
 export type Log = (message: string, detail?: unknown) => void;
 
+/** Sends a caught error to Sentry (reportError in _shared/sentry.ts). */
+export type Report = (
+  error: unknown,
+  context?: Record<string, unknown>,
+) => Promise<void>;
+
 export interface HandlerDeps {
   secret: string;
   rpc: Rpc;
   log: Log;
+  report?: Report;
 }
 
 const WA_MESSAGE_TYPE: Record<EvolutionMessageType, string> = {
@@ -104,7 +111,7 @@ const toRpcCall = (
  * wa_message_id is unique and the ingest changes nothing the second time.
  */
 export const createHandler =
-  ({ secret, rpc, log }: HandlerDeps) =>
+  ({ secret, rpc, log, report = async () => {} }: HandlerDeps) =>
   async (req: Request): Promise<Response> => {
     if (req.method !== "POST")
       return json({ error: "method_not_allowed" }, 405);
@@ -120,10 +127,12 @@ export const createHandler =
       const { error } = await rpc(call.name, call.args);
       if (error) {
         log(`whatsapp-webhook: ${call.name} failed`, error);
+        await report(error, { rpc: call.name });
         return json({ ok: false }, 503);
       }
     } catch (error) {
       log(`whatsapp-webhook: ${call.name} threw`, error);
+      await report(error, { rpc: call.name });
       return json({ ok: false }, 503);
     }
     return json({ ok: true });

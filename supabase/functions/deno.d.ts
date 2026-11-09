@@ -84,8 +84,11 @@ declare module "https://deno.land/x/postgres@v0.17.0/mod.ts" {
   }
 }
 
-declare module "npm:@sentry/deno" {
+declare module "npm:@sentry/deno@11.10.0" {
   export function init(options: Record<string, unknown>): void;
-  export function captureException(error: unknown): string;
+  export function captureException(
+    error: unknown,
+    hint?: { extra?: Record<string, unknown> },
+  ): string;
   export function flush(timeout?: number): Promise<boolean>;
 }

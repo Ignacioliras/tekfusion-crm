@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { sql } from "https://esm.sh/kysely@0.27.2";
 import { AuthMiddleware } from "../_shared/authentication.ts";
 import { db } from "../_shared/db.ts";
-import { withSentry } from "../_shared/sentry.ts";
+import { reportError, withSentry } from "../_shared/sentry.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { getCandidateNames, type WebhookPayload } from "./candidateNames.ts";
 
@@ -38,6 +38,7 @@ const deleteNoteAttachments = async (req: Request) => {
     paths = await getUnreferencedNames(candidates);
   } catch (error) {
     console.error("Failed to check note attachment references", { error });
+    await reportError(error, { function: "delete_note_attachments" });
     return jsonResponse(
       { error: "Failed to check note attachment references" },
       500,
@@ -54,6 +55,7 @@ const deleteNoteAttachments = async (req: Request) => {
 
   if (error) {
     console.error("Failed to delete note attachments", { paths, error });
+    await reportError(error, { function: "delete_note_attachments" });
     return jsonResponse({ error: "Failed to delete note attachments" }, 500);
   }
 
