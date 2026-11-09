@@ -89,13 +89,16 @@
       "necesita_supabase": true,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
       "error": null,
-      "commit": null,
-      "costo_usd": 0,
-      "session_id": null,
-      "inicio": "2026-11-09 19:13:01"
+      "commit": "e67e9af687209071e847ba03ba319565042195df",
+      "costo_usd": 3.7206752000000014,
+      "session_id": "d77b0a6c-3f5d-4c98-bd1e-73da97ccd96b",
+      "inicio": "2026-11-09 19:13:01",
+      "modelo_usado": "opus/high",
+      "resumen_claude": "HECHA: closed_at se llena también al archivar (trigger, migración, seed y pgTAP) y el kanban oculta los leads cerrados hace más de 30 días, con el `@or` resuelto en FakeRest y un test vitest.",
+      "fin": "2026-11-09 19:22:15"
     },
     {
       "id": "T4",
