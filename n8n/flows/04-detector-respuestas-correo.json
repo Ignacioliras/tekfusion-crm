@@ -1,0 +1,85 @@
+{
+  "name": "04 · Detector de respuestas por correo",
+  "nodes": [
+    {
+      "id": "f04-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -320],
+      "parameters": {
+        "width": 620,
+        "height": 300,
+        "content": "## 04 · Detector de respuestas por correo (borrador)\nEspec: docs/06 fila 04. Lee la casilla IMAP de un ejecutivo, empareja la respuesta con su lead y detiene los seguimientos.\n\n**Falta:**\n- Un trigger IMAP por ejecutivo (duplicar este flujo o pasar a `sales_mail_accounts` en Vault, Fase 5). Aquí hay una sola credencial de ejemplo.\n- RPC `email_reply_received(message_id, in_reply_to, references, sender, subject, body)`: empareja por `In-Reply-To`/`References` o remitente = contacto de un lead activo del ejecutivo, inserta en `emails` + `audit_log`, cancela los `followups` pendientes (`cancel_reason`) y crea la alerta `cliente_respondio`. Para WhatsApp ya existe `wa_cliente_respondio`; falta su gemela de correo.\n- `SUPABASE_URL` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f04-trigger",
+      "name": "Correo entrante (IMAP ejecutivo)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [-260, 0],
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "format": "simple",
+        "options": {}
+      },
+      "credentials": {
+        "imap": { "name": "IMAP ejecutivo" }
+      }
+    },
+    {
+      "id": "f04-extract",
+      "name": "Extraer cabeceras y texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 0],
+      "parameters": {
+        "jsCode": "// Plain text only: external mail is hostile (CLAUDE.md rule 11).\nconst MAX_TEXT = 8000;\nreturn $input.all().map(({ json }) => {\n  const headers = json.headers ?? {};\n  return { json: {\n    message_id: json.messageId ?? headers['message-id'] ?? null,\n    in_reply_to: headers['in-reply-to'] ?? null,\n    references: headers['references'] ?? null,\n    sender: String(json.from ?? '').toLowerCase(),\n    subject: String(json.subject ?? ''),\n    body: String(json.textPlain ?? '').slice(0, MAX_TEXT),\n  } };\n});"
+      }
+    },
+    {
+      "id": "f04-rpc",
+      "name": "Registrar respuesta (RPC pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/email_reply_received",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Correo entrante (IMAP ejecutivo)": {
+      "main": [
+        [{ "node": "Extraer cabeceras y texto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extraer cabeceras y texto": {
+      "main": [
+        [
+          {
+            "node": "Registrar respuesta (RPC pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

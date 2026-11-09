@@ -1,0 +1,117 @@
+{
+  "name": "11 · Avisos al ejecutivo",
+  "nodes": [
+    {
+      "id": "f11-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -320],
+      "parameters": {
+        "width": 640,
+        "height": 300,
+        "content": "## 11 · Avisos al ejecutivo (borrador)\nEspec: docs/06 fila 11 y docs/07 (Envío). Un Database Webhook (insert en `alerts`) llama aquí; si el destinatario tiene `sales.whatsapp_phone`, se le avisa desde el número corporativo y se marca `alerts.whatsapp_sent_at`.\n\n**Falta:**\n- Crear el Database Webhook con el header de la credencial \"Webhook Supabase → n8n\".\n- Anti-bloqueo (regla dura 4): horario hábil, 45–90 s entre envíos y tope diario compartido con el flujo 03. El borrador manda al tiro: fuera de horario debería encolar.\n- Agrupar avisos si llegan muchos juntos (nunca masivo).\n- `SUPABASE_URL`, `EVOLUTION_URL`, `EVOLUTION_INSTANCE` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f11-trigger",
+      "name": "Alerta nueva (webhook Supabase)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-260, 0],
+      "webhookId": "7c1d2a10-0011-4a6e-9b1f-11a1b2c3d411",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tekfusion-11-alerta",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Webhook Supabase → n8n" }
+      }
+    },
+    {
+      "id": "f11-sale",
+      "name": "Teléfono del destinatario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/sales?select=id,whatsapp_phone&id=eq.{{ $json.body.record.recipient_sales_id }}&disabled=eq.false&whatsapp_phone=not.is.null",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f11-wa",
+      "name": "Avisar por WhatsApp (Evolution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.whatsapp_phone, text: 'CRM TekFusion: ' + $('Alerta nueva (webhook Supabase)').item.json.body.record.message }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Evolution API key" }
+      }
+    },
+    {
+      "id": "f11-mark",
+      "name": "Marcar aviso enviado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/alerts?id=eq.{{ $('Alerta nueva (webhook Supabase)').item.json.body.record.id }}&whatsapp_sent_at=is.null",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ whatsapp_sent_at: $now.toUTC().toISO() }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Alerta nueva (webhook Supabase)": {
+      "main": [
+        [{ "node": "Teléfono del destinatario", "type": "main", "index": 0 }]
+      ]
+    },
+    "Teléfono del destinatario": {
+      "main": [
+        [
+          {
+            "node": "Avisar por WhatsApp (Evolution)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar por WhatsApp (Evolution)": {
+      "main": [[{ "node": "Marcar aviso enviado", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

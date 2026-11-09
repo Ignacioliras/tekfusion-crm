@@ -1,0 +1,64 @@
+{
+  "name": "05 · Alertas de primer contacto",
+  "nodes": [
+    {
+      "id": "f05-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -300],
+      "parameters": {
+        "width": 620,
+        "height": 280,
+        "content": "## 05 · Alertas de primer contacto (borrador)\nEspec: docs/06 fila 05 y docs/03. Leads `nuevo` sin `first_response_at` con más de 24 h → alerta al ejecutivo y a gerencia; a 48 h, alerta crítica a gerencia.\n\n**Falta:**\n- RPC `raise_first_contact_alerts()`: hace la consulta e inserta las `alerts` sin repetir las ya creadas para el mismo lead y umbral (24 h / 48 h). Hacerlo en SQL evita duplicados si el cron se solapa. No existe.\n- Tipos ya existentes en `alert_type`: `sin_contacto_24h` y `sin_contacto_48h`.\n- El aviso por WhatsApp sale solo: el flujo 11 escucha los insert en `alerts`.\n- `SUPABASE_URL` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f05-trigger",
+      "name": "Cada 30 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 30 }] }
+      }
+    },
+    {
+      "id": "f05-rpc",
+      "name": "Crear alertas de 24 h y 48 h (RPC pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/raise_first_contact_alerts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Cada 30 min": {
+      "main": [
+        [
+          {
+            "node": "Crear alertas de 24 h y 48 h (RPC pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

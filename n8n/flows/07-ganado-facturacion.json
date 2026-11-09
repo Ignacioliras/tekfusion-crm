@@ -1,0 +1,116 @@
+{
+  "name": "07 · Ganado → facturación",
+  "nodes": [
+    {
+      "id": "f07-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -320],
+      "parameters": {
+        "width": 620,
+        "height": 300,
+        "content": "## 07 · Ganado → facturación (borrador)\nEspec: docs/06 fila 07. Un Database Webhook (update en `deals`) llama aquí; si `stage` pasó a `ganado`, se manda un correo a `configuration.correo_facturacion` con el lead, el monto y el PDF vigente.\n\n**Falta:**\n- Crear el Database Webhook con el header de la credencial \"Webhook Supabase → n8n\".\n- Leer `correo_facturacion` de `configuration` (aquí va un placeholder).\n- Descargar el PDF de `quotes` con `is_current` desde el bucket privado `quotes` (URL firmada con el service role) y adjuntarlo.\n- Marcar el envío (columna o `audit_log`) para no repetir si el webhook se reintenta.\n- `SUPABASE_URL` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f07-trigger",
+      "name": "Lead actualizado (webhook Supabase)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-260, 0],
+      "webhookId": "7c1d2a10-0007-4a6e-9b1f-07a1b2c3d407",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tekfusion-07-lead-ganado",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Webhook Supabase → n8n" }
+      }
+    },
+    {
+      "id": "f07-if",
+      "name": "¿Pasó a ganado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-40, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f07-if-new",
+              "leftValue": "={{ $json.body.record.stage }}",
+              "rightValue": "ganado",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "f07-if-old",
+              "leftValue": "={{ $json.body.old_record.stage }}",
+              "rightValue": "ganado",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f07-quote",
+      "name": "Cotización vigente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/quotes?select=id,version,amount,pdf_path&deal_id=eq.{{ $json.body.record.id }}&is_current=eq.true&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f07-mail",
+      "name": "Correo a facturación",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [400, 0],
+      "parameters": {
+        "fromEmail": "crm@tekfusion.cl",
+        "toEmail": "facturacion@ejemplo.cl",
+        "subject": "={{ 'Lead ganado: ' + $('Lead actualizado (webhook Supabase)').item.json.body.record.name }}",
+        "emailFormat": "text",
+        "text": "={{ 'Lead: ' + $('Lead actualizado (webhook Supabase)').item.json.body.record.name + '\\nMonto ganado (CLP): ' + $('Lead actualizado (webhook Supabase)').item.json.body.record.won_amount + '\\nCotización vigente: v' + $json.version + ' (' + $json.pdf_path + ')' }}",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": { "name": "SMTP TekFusion" }
+      }
+    }
+  ],
+  "connections": {
+    "Lead actualizado (webhook Supabase)": {
+      "main": [[{ "node": "¿Pasó a ganado?", "type": "main", "index": 0 }]]
+    },
+    "¿Pasó a ganado?": {
+      "main": [
+        [{ "node": "Cotización vigente", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Cotización vigente": {
+      "main": [[{ "node": "Correo a facturación", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

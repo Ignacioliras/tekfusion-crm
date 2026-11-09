@@ -1,0 +1,66 @@
+{
+  "name": "06 · Archivado",
+  "nodes": [
+    {
+      "id": "f06-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -300],
+      "parameters": {
+        "width": 620,
+        "height": 280,
+        "content": "## 06 · Archivado (borrador)\nEspec: docs/06 fila 06 y docs/03. Leads `nuevo` con `last_activity_at` de más de 14 días → alerta `por_archivar` a gerencia con la lista; 48 h después, si siguen sin actividad, pasan a `archivado` (+ `archived_at`) con registro en `audit_log`.\n\n**Falta:**\n- RPC `archive_stale_deals()`: (1) archiva los que ya tenían alerta `por_archivar` de hace más de 48 h y siguen sin actividad; (2) crea la alerta para los nuevos candidatos sin repetir. Devuelve `{ alerted, archived }`. No existe.\n- `SUPABASE_URL` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f06-trigger",
+      "name": "Diario 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }]
+        }
+      }
+    },
+    {
+      "id": "f06-rpc",
+      "name": "Avisar y archivar (RPC pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/archive_stale_deals",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Diario 08:00": {
+      "main": [
+        [
+          {
+            "node": "Avisar y archivar (RPC pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

@@ -1,0 +1,99 @@
+{
+  "name": "10 · Reconciliación de mensajes",
+  "nodes": [
+    {
+      "id": "f10-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -340],
+      "parameters": {
+        "width": 660,
+        "height": 320,
+        "content": "## 10 · Reconciliación de mensajes (borrador)\nEspec: docs/06 fila 10 y docs/07 (Reconciliación). Cada hora pide a Evolution los mensajes de la última hora de cada conversación activa y entrega los que falten.\n\n**Regla dura 1:** n8n no inserta en `wa_messages`. Reenvía cada mensaje al mismo camino que el receptor (`wa_ingest_message`, idempotente por `wa_message_id` UNIQUE), así un mensaje ya guardado no se duplica.\n\n**Falta:**\n- Decidir si se reenvía el evento a la Edge Function `whatsapp-webhook` (con su header `apikey`) o se llama `wa_ingest_message` directo; el borrador usa la Edge Function.\n- Filtrar por la última hora y mapear el formato de `/chat/findMessages` al de `messages.upsert`.\n- Registrar en `audit_log` cuántos rescató.\n- `SUPABASE_URL`, `EVOLUTION_URL`, `EVOLUTION_INSTANCE` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f10-trigger",
+      "name": "Cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      }
+    },
+    {
+      "id": "f10-conversations",
+      "name": "Conversaciones activas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/wa_conversations?select=id,phone&archived=eq.false&last_message_at=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f10-find",
+      "name": "Mensajes en Evolution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/findMessages/{{ $env.EVOLUTION_INSTANCE }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ where: { key: { remoteJid: $json.phone.replace('+', '') + '@s.whatsapp.net' } } }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Evolution API key" }
+      }
+    },
+    {
+      "id": "f10-replay",
+      "name": "Reenviar al receptor (pendiente)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Cada hora": {
+      "main": [
+        [{ "node": "Conversaciones activas", "type": "main", "index": 0 }]
+      ]
+    },
+    "Conversaciones activas": {
+      "main": [
+        [{ "node": "Mensajes en Evolution", "type": "main", "index": 0 }]
+      ]
+    },
+    "Mensajes en Evolution": {
+      "main": [
+        [
+          {
+            "node": "Reenviar al receptor (pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}
