@@ -1,0 +1,37 @@
+# Caddy: HTTPS automático (Let's Encrypt) para los tres servicios del VPS.
+# ENV_NAME y ACME_EMAIL vienen del .env (docker-compose.yml se los pasa).
+# ENV_NAME=staging → evolution.staging.tekfusion.cl, n8n.staging…, status.staging…
+
+{
+	email {$ACME_EMAIL}
+}
+
+(seguridad) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}
+
+evolution.{$ENV_NAME}.tekfusion.cl {
+	import seguridad
+	# El panel /manager de Evolution solo se publica en staging (docs/08).
+	@manager {
+		path /manager /manager/*
+		expression `"{$ENV_NAME}" != "staging"`
+	}
+	respond @manager 404
+	reverse_proxy evolution:8080
+}
+
+n8n.{$ENV_NAME}.tekfusion.cl {
+	import seguridad
+	reverse_proxy n8n:5678
+}
+
+status.{$ENV_NAME}.tekfusion.cl {
+	import seguridad
+	reverse_proxy uptime-kuma:3001
+}
