@@ -538,6 +538,22 @@ Tomar la conversación de otro responde P0002 ("no disponible"), no 42501.
 - **Pendiente:** la pantalla de usuarios no avisa cuántas conversaciones se movieron (solo lee el resultado de la Edge Function); `unread_count` no se toca, así que el suplente hereda los no leídos.
 - **Archivos:** `schemas/11_tekfusion_policies.sql`, migración `20261109230000_offboard_whatsapp.sql` (a mano, copia de la función + grants), pgTAP `28_baja_por_linea` (21 casos, 8 nuevos: con lead, sin lead, archivada, sin suplente, audit).
 
+## 2026-11-09 · Decisiones implícitas de la cola nocturna 2026-11-09 que no quedaron anotadas (T10, T11, T15, T16)
+**Sin revisar.** Anotadas en la revisión de la mañana (`/manana`) leyendo el código de la rama; ninguna está confirmada por Ignacio.
+- **T11 · 🔒 Purga de adjuntos huérfanos (`purge-orphan-attachments`):**
+  - **Una sola lista de referencias:** `_shared/attachmentRefs.ts` la usan `delete_note_attachments` y la purga. Se sumaron `quotes.pdf_path` y `wa_messages.attachment_path`. Cambia `delete_note_attachments`: un archivo cuyo nombre no trae el número `0.<dígitos>` ya no se borra (antes se devolvía como huérfano); no se puede comprobar, así que se conserva.
+  - **Qué se borra:** solo `deals/<id>/0.…` y `contacts/<id>/0.…` con más de 24 h y sin ninguna fila que los nombre. `companies/`, `sales/` y `config/` nunca. Sin cuerpo es simulacro (cuenta y no borra); `{"apply": true}` borra.
+  - **Quién la llama:** `verify_jwt = false`; el handler exige `Authorization: Bearer <service role key>` y nada más.
+  - **Programación:** pg_cron + pg_net, todos los días a las 04:00 UTC. La URL del proyecto y **el service role key quedan guardados en Vault** (`project_url`, `service_role_key`); los crea Ignacio en staging y producción. Sin esos secretos la migración no programa nada (en local solo deja un NOTICE).
+  - **No verificado:** la consulta de referencias no se ejecutó contra la base ni la función con `functions serve`. Antes de crear los secretos en staging: simulacro a mano y un pgTAP o test que ejecute la consulta.
+- **T10 · 🔒 Sentry en Edge Functions:** `scrubEvent` (en `beforeSend`) quita correos, teléfonos (E.164 y chilenos), JWT, `Bearer …` y pares `apikey|token|secret|password = valor`. **No quita RUT ni nombres.** Los errores atrapados se envían con `reportError` y solo contexto técnico (función, paso). `@sentry/deno` fijado en `11.10.0`.
+- **T15 · VPS (`infra/vps/`):**
+  - **Un VPS por ambiente** (`ENV_NAME=staging` o `prod`), con subdominios `evolution.<ambiente>.tekfusion.cl`, `n8n.<ambiente>.tekfusion.cl` y `status.<ambiente>.tekfusion.cl`. El stack de `CLAUDE.md` nombra un solo VPS: **falta que Ignacio confirme** si son dos servidores (costo) y esos nombres de DNS.
+  - **Webhook por instancia, no global:** el receptor exige el header `apikey` y el webhook global de Evolution no permite headers, así que se configura con `/webhook/set/<instancia>` y `WEBHOOK_GLOBAL_ENABLED` queda apagado. Contradice `docs/07` (línea de variables): corregir `docs/07`.
+  - Solo Caddy publica puertos (80/443); `/manager` responde 404 en producción.
+  - Tags de imagen fijados (Evolution v2.3.0, n8n 1.97.1, Uptime Kuma 1.23.16, Caddy 2.10.0, Postgres 16.9, Redis 7.4.2) **sin contrastar con el registro ni levantar**: se prueban en staging.
+- **T16 · Flujos de n8n (`n8n/flows/01`–`11`):** son borradores importables, nunca importados ni ejecutados. Fijan los nombres de las credenciales (lista en `scripts/tekfusion/n8n-check.mjs`) y llaman RPC que **todavía no existen**: `ingest_email_lead`, `ingest_whatsapp_lead`, `claim_due_followups`, `email_reply_received`, `raise_first_contact_alerts`, `archive_stale_deals`, `raise_wa_disconnected_alert`. Usan `$env.SUPABASE_URL`, `EVOLUTION_URL` y `EVOLUTION_INSTANCE`, que `infra/vps/docker-compose.yml` no le pasa a n8n. Las tareas 01–11 de la Fase 5 siguen abiertas.
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
