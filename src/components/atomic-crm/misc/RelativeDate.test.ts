@@ -5,7 +5,7 @@ describe("formatRelativeDate", () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     expect(formatRelativeDate(yesterday, "es")).toMatch(
-      /^ayer a las \d{1,2}:\d{2}$/,
+      /^ayer a las? \d{1,2}:\d{2}$/,
     );
   });
 
