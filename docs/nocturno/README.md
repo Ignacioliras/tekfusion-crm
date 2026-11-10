@@ -54,6 +54,7 @@ Regla de oro: **si no puedes escribir el comando que demuestra que quedó bien, 
 | Claude pide permiso para algo no permitido | Se le niega y se le dice que no insista (`--permission-prompts none`). |
 | Claude se queda dando vueltas | Tope de turnos y de dólares por tarea → `fallida` con el error. |
 | La verificación se cuelga | Tope de `minutos_verificacion` → `fallida`. |
-| Sesión de Claude Code caducada / sin cuota | 3 fallos seguidos → se detiene y lo dice en el reporte. |
+| Límite de uso del modelo (429) | Cuenta como intento fallido y pasa al reintento con `modelo_reintento`; si el reintento también da 429, se detiene. |
+| Sesión de Claude Code caducada / sin red | 3 fallos seguidos al lanzar → se detiene y lo dice en el reporte. |
 | Un hook bloquea un comando | Es a propósito; la tarea sigue o queda bloqueada. |
 | Se corta la luz | Todo lo anterior está commiteado en la rama. Relanzar el mismo comando retoma lo pendiente. |

@@ -472,7 +472,7 @@ let motivoFin = "";
 const porId = Object.fromEntries(estado.tareas.map((t) => [t.id, t]));
 
 // Un intento: corre Claude, verifica, commitea o deshace.
-// Devuelve "hecha" | "fallida" | "bloqueada" | "claude" (Claude no terminó bien).
+// Devuelve "hecha" | "fallida" | "bloqueada" | "limite" (429 del modelo) | "claude" (Claude no terminó bien).
 const intentar = (t) => {
   t.estado = "en_progreso";
   t.intentos = (t.intentos || 0) + 1;
@@ -504,6 +504,15 @@ const intentar = (t) => {
   const ultima = (r.json?.result || "").trim().split("\n").pop() || "";
   t.resumen_claude = ultima.slice(0, 300);
 
+  // 429 del modelo (límite de uso): intento fallido, no fallo de lanzamiento;
+  // el loop pasa al reintento con `modelo_reintento`.
+  if (r.json?.api_error_status === 429) {
+    t.estado = "fallida";
+    t.error = `Límite de uso del modelo ${t.modelo_usado} (429 ${r.json.api_error || ""}): ${r.json.result || ""}`;
+    log(`✖ ${t.id}: límite de uso de ${t.modelo_usado} (429)`);
+    deshacer();
+    return "limite";
+  }
   if (r.status !== 0 || !r.json) {
     t.estado = "fallida";
     t.error = `claude -p terminó con código ${r.status}${r.signal ? ` (${r.signal})` : ""}.\n${cola(25, r.stderr || r.stdout)}`;
@@ -594,12 +603,16 @@ for (const t of estado.tareas) {
     }
     fallosSeguidosDeClaude = 0;
   } while (
-    resultado === "fallida" &&
+    (resultado === "fallida" || resultado === "limite") &&
     t.intentos < estado.limites.intentos &&
     new Date() < HORA_FIN
   );
 
   if (resultado === "hecha") hechasEstaNoche++;
+  if (resultado === "limite" && t.intentos >= estado.limites.intentos) {
+    motivoFin = `límite de uso (429) también en el reintento con ${t.modelo_usado}`;
+    break;
+  }
   if (fallosSeguidosDeClaude >= 3) {
     motivoFin =
       "3 fallos seguidos al lanzar Claude (¿sesión caducada, sin cuota, sin red?)";
