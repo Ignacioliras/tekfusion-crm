@@ -1,0 +1,92 @@
+{
+  "name": "09 · Reporte semanal",
+  "nodes": [
+    {
+      "id": "f09-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -320],
+      "parameters": {
+        "width": 640,
+        "height": 300,
+        "content": "## 09 · Reporte semanal (borrador)\nEspec: docs/06 fila 09 y RF-12. Lunes 08:00 (Santiago): totales de la semana anterior con `weekly_report_data(week_start)` → correo a gerencia.\n\n**Falta:**\n- Leer día/hora y destinatarios de `configuration.reporte_semanal` (aquí van fijos).\n- El HTML: `renderWeeklyReport` vive en `supabase/functions/_shared/weeklyReportHtml.ts`; falta una Edge Function que lo exponga (o portar el render a este Code). El borrador manda texto plano.\n- `weekly_report_data` aún no trae `by_business_line` (aprendizajes T14): cuando lo traiga, pasarlo tal cual.\n- `SUPABASE_URL` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f09-trigger",
+      "name": "Lunes 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 8 * * 1" }]
+        }
+      }
+    },
+    {
+      "id": "f09-data",
+      "name": "Datos de la semana",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/weekly_report_data",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ week_start: $now.setZone('America/Santiago').minus({ weeks: 1 }).startOf('week').toISODate() }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f09-text",
+      "name": "Armar resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [180, 0],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst clp = (n) => '$' + String(n ?? 0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\nconst lines = [\n  'Entraron: ' + row.entries,\n  'Contactados: ' + row.contacted,\n  'Cotizados: ' + row.quoted,\n  'Ganados: ' + row.won + ' (' + clp(row.won_amount) + ')',\n  'Perdidos: ' + row.lost,\n  'Sin atender: ' + row.unattended,\n  'Seguimientos vencidos: ' + row.overdue_followups,\n];\nreturn [{ json: { text: lines.join('\\n') } }];"
+      }
+    },
+    {
+      "id": "f09-mail",
+      "name": "Enviar a gerencia",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [400, 0],
+      "parameters": {
+        "fromEmail": "crm@tekfusion.cl",
+        "toEmail": "gerencia@ejemplo.cl",
+        "subject": "Reporte semanal del CRM",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": { "name": "SMTP TekFusion" }
+      }
+    }
+  ],
+  "connections": {
+    "Lunes 08:00": {
+      "main": [[{ "node": "Datos de la semana", "type": "main", "index": 0 }]]
+    },
+    "Datos de la semana": {
+      "main": [[{ "node": "Armar resumen", "type": "main", "index": 0 }]]
+    },
+    "Armar resumen": {
+      "main": [[{ "node": "Enviar a gerencia", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

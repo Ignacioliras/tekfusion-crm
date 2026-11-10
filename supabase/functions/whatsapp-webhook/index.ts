@@ -1,4 +1,4 @@
-import { withSentry } from "../_shared/sentry.ts";
+import { reportError, withSentry } from "../_shared/sentry.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createHandler } from "./handler.ts";
 
@@ -14,6 +14,7 @@ Deno.serve(
         return { error };
       },
       log: (message, detail) => console.error(message, detail),
+      report: reportError,
     }),
   ),
 );

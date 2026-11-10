@@ -3,8 +3,11 @@
 -- escribe ninguna de las tres; el service role (Edge Function receptora, n8n)
 -- lee y escribe. wa_message_id es único (CLAUDE.md regla 2).
 -- Lo que cada rol ve de conversaciones y mensajes: 35_rls_whatsapp.
+-- Realtime: solo conversaciones y mensajes están publicadas (con su RLS
+-- activa, que es la que Realtime aplica a cada suscriptor); las dos tablas
+-- cerradas no salen por la publicación.
 begin;
-select plan(20);
+select plan(26);
 
 create function pg_temp.login_as(p_email text) returns void language plpgsql as $$
 declare uid uuid;
@@ -58,6 +61,24 @@ select throws_ok($$insert into public.wa_messages (conversation_id, wa_message_i
   select id, 'DEMO-WA-NUEVO', 'entrante', 'texto', 'reintento', now() from public.wa_conversations where phone = '+56900009999'$$,
   '23505', null, 'un wa_message_id repetido (reintento del webhook) no crea otra fila');
 reset role;
+
+-- Realtime ---------------------------------------------------------------------
+create function pg_temp.is_published(p_table text) returns boolean language sql as $$
+  select exists (select 1 from pg_publication_tables
+                  where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = p_table)
+$$;
+select ok(pg_temp.is_published('wa_conversations'), 'wa_conversations está en la publicación supabase_realtime');
+select ok(pg_temp.is_published('wa_messages'), 'wa_messages está en la publicación supabase_realtime');
+select ok(not pg_temp.is_published('wa_message_payloads'), 'wa_message_payloads (cuerpos crudos) NO está en la publicación');
+select ok(not pg_temp.is_published('wa_instance_status'), 'wa_instance_status NO está en la publicación');
+-- Realtime filtra cada fila con la RLS del suscriptor: sin RLS, publicaría todo.
+select ok((select bool_and(relrowsecurity) from pg_class
+            where oid in ('public.wa_conversations'::regclass, 'public.wa_messages'::regclass)),
+  'las dos tablas publicadas tienen RLS activa');
+-- Una tabla wa_* nueva no entra a la publicación sin pasar por este test.
+select is((select count(*) from pg_publication_tables
+            where pubname = 'supabase_realtime' and schemaname = 'public' and tablename like 'wa\_%'),
+  2::bigint, 'ninguna otra tabla wa_* está publicada');
 
 select * from finish();
 rollback;

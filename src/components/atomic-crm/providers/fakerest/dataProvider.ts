@@ -29,7 +29,11 @@ import { getCompanyAvatar } from "../commons/getCompanyAvatar";
 import { getContactAvatar } from "../commons/getContactAvatar";
 import { mergeContacts } from "../commons/mergeContacts";
 import { getSearchResults } from "./search";
-import { ETAPAS_ABIERTAS, type Etapa } from "../../tekfusion/estados";
+import {
+  ETAPAS_ABIERTAS,
+  ETAPAS_CERRADAS,
+  type Etapa,
+} from "../../tekfusion/estados";
 import type { CrmDataProvider } from "../types";
 import {
   authProvider as defaultAuthProvider,
@@ -729,11 +733,23 @@ export const createDataProvider = ({
           return result;
         },
         beforeUpdate: async (params) => {
+          const now = new Date().toISOString();
+          const { stage } = params.data;
+          // Mirrors set_deal_closed_at(): a stage change sets or clears closed_at.
+          const closedAt =
+            stage != null && stage !== params.previousData?.stage
+              ? {
+                  closed_at: ETAPAS_CERRADAS.includes(stage as Etapa)
+                    ? now
+                    : null,
+                }
+              : {};
           return {
             ...params,
             data: {
               ...params.data,
-              updated_at: new Date().toISOString(),
+              ...closedAt,
+              updated_at: now,
             },
           };
         },

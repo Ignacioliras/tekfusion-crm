@@ -1,0 +1,225 @@
+# VPS de TekFusion CRM: Evolution API (+ Postgres + Redis), n8n (+ Postgres),
+# Uptime Kuma y Caddy. Se copia a /opt/tekfusion junto al Caddyfile y el .env
+# (ver README.md). Reglas en docs/08-seguridad-roles.md, sección Servidor:
+# - Solo Caddy publica puertos (80/443). El resto vive en redes de Docker.
+# - Imágenes con versión fija; se actualizan una vez al mes, primero en staging.
+# - Ningún secreto aquí: todo sale del .env (las variables con :? son obligatorias).
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  caddy:
+    image: caddy:2.10.0-alpine
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ENV_NAME: ${ENV_NAME:?falta ENV_NAME (staging o prod)}
+      ACME_EMAIL: ${ACME_EMAIL:?falta ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    depends_on:
+      evolution:
+        condition: service_started
+      n8n:
+        condition: service_started
+      uptime-kuma:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.0
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      TZ: ${TZ:-America/Santiago}
+      SERVER_TYPE: http
+      SERVER_PORT: "8080"
+      SERVER_URL: https://evolution.${ENV_NAME}.tekfusion.cl
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?falta EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "false"
+      DEL_INSTANCE: "false"
+      CONFIG_SESSION_PHONE_CLIENT: TekFusion CRM
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${EVOLUTION_DB_USER:?falta EVOLUTION_DB_USER}:${EVOLUTION_DB_PASSWORD:?falta EVOLUTION_DB_PASSWORD}@evolution-db:5432/${EVOLUTION_DB_NAME:?falta EVOLUTION_DB_NAME}?schema=evolution_api
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_${ENV_NAME}
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://evolution-redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      # El webhook hacia la Edge Function se configura por instancia (README,
+      # paso 6) porque ahí se le puede poner el header apikey. El global queda
+      # apagado salvo que se decida otra cosa.
+      WEBHOOK_GLOBAL_ENABLED: ${EVOLUTION_WEBHOOK_GLOBAL_ENABLED:-false}
+      WEBHOOK_GLOBAL_URL: ${EVOLUTION_WEBHOOK_URL:?falta EVOLUTION_WEBHOOK_URL}
+      WEBHOOK_EVENTS_MESSAGES_UPSERT: "true"
+      WEBHOOK_EVENTS_MESSAGES_UPDATE: "true"
+      WEBHOOK_EVENTS_CONNECTION_UPDATE: "true"
+      WEBHOOK_EVENTS_SEND_MESSAGE: "true"
+      LOG_LEVEL: ERROR,WARN,INFO
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - edge
+      - evolution_internal
+    depends_on:
+      evolution-db:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  evolution-db:
+    image: postgres:16.9-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${EVOLUTION_DB_USER}
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD}
+      POSTGRES_DB: ${EVOLUTION_DB_NAME}
+    volumes:
+      - evolution_db:/var/lib/postgresql/data
+    networks:
+      - evolution_internal
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  evolution-redis:
+    image: redis:7.4.2-alpine
+    restart: unless-stopped
+    logging: *logging
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - evolution_redis:/data
+    networks:
+      - evolution_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:1.97.1
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      TZ: ${TZ:-America/Santiago}
+      GENERIC_TIMEZONE: ${TZ:-America/Santiago}
+      N8N_HOST: n8n.${ENV_NAME}.tekfusion.cl
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      N8N_PROXY_HOPS: "1"
+      WEBHOOK_URL: https://n8n.${ENV_NAME}.tekfusion.cl/
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?falta N8N_ENCRYPTION_KEY}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_RUNNERS_ENABLED: "true"
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-db
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:?falta N8N_DB_NAME}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER:?falta N8N_DB_USER}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:?falta N8N_DB_PASSWORD}
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "336"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - edge
+      - n8n_internal
+    depends_on:
+      n8n-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://127.0.0.1:5678/healthz || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  n8n-db:
+    image: postgres:16.9-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${N8N_DB_USER}
+      POSTGRES_PASSWORD: ${N8N_DB_PASSWORD}
+      POSTGRES_DB: ${N8N_DB_NAME}
+    volumes:
+      - n8n_db:/var/lib/postgresql/data
+    networks:
+      - n8n_internal
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1.23.16
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      TZ: ${TZ:-America/Santiago}
+    volumes:
+      - uptime_kuma:/app/data
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "extra/healthcheck"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 180s
+
+networks:
+  # Caddy y los servicios que publica (también su salida a internet).
+  edge:
+  # Bases de datos y Redis: sin salida a internet ni acceso desde Caddy.
+  evolution_internal:
+    internal: true
+  n8n_internal:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  evolution_instances:
+  evolution_db:
+  evolution_redis:
+  n8n_data:
+  n8n_db:
+  uptime_kuma:

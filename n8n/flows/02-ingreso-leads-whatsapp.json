@@ -1,0 +1,161 @@
+{
+  "name": "02 · Ingreso de leads por WhatsApp",
+  "nodes": [
+    {
+      "id": "f02-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -320],
+      "parameters": {
+        "width": 620,
+        "height": 300,
+        "content": "## 02 · Ingreso de leads por WhatsApp (borrador)\nEspec: docs/06 fila 02. Lo dispara un Database Webhook de Supabase al insertar en `wa_conversations`. n8n no guarda mensajes (regla dura 1): solo lee el primero.\n\n**Falta:**\n- Crear el Database Webhook (insert en `wa_conversations`) con el header de la credencial \"Webhook Supabase → n8n\".\n- RPC `ingest_whatsapp_lead(conversation_id, ai)`: crea el `deal` (canal `whatsapp`), lo asigna, llena `wa_conversations.active_deal_id`/`sales_id` y crea la alerta (el aviso lo manda el flujo 11). No existe todavía.\n- Prompt completo de `n8n/prompts/clasificar-lead.md` en el nodo IA.\n- `SUPABASE_URL` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f02-trigger",
+      "name": "Conversación nueva (webhook Supabase)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-260, 0],
+      "webhookId": "7c1d2a10-0002-4a6e-9b1f-02a1b2c3d402",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tekfusion-02-wa-conversacion",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Webhook Supabase → n8n" }
+      }
+    },
+    {
+      "id": "f02-if",
+      "name": "¿Sin lead activo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-40, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f02-if-cond",
+              "leftValue": "={{ $json.body.record.active_deal_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f02-first",
+      "name": "Primer mensaje",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/wa_messages?select=conversation_id,text,type&conversation_id=eq.{{ $json.body.record.id }}&direction=eq.entrante&order=sent_at.asc&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f02-ai",
+      "name": "Clasificar con IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "anthropic-version", "value": "2023-06-01" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 512, system: 'PEGAR AQUÍ n8n/prompts/clasificar-lead.md', messages: [{ role: 'user', content: String($json.text ?? '(sin texto: ' + $json.type + ')').slice(0, 4096) }] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "anthropicApi": { "name": "Anthropic" }
+      }
+    },
+    {
+      "id": "f02-validate",
+      "name": "Validar salida IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 0],
+      "parameters": {
+        "jsCode": "// The classifier only classifies: anything off-schema becomes 'indeterminada'.\nconst LINES = ['valvulas', 'tuberias', 'geoceldas', 'indeterminada'];\nconst source = $('Primer mensaje').all();\nreturn $input.all().map(({ json }, i) => {\n  let out = null;\n  try { out = JSON.parse(json.content?.[0]?.text ?? ''); } catch {}\n  const valid = out && LINES.includes(out.linea) && typeof out.confianza === 'number' && out.confianza >= 0 && out.confianza <= 1 && typeof out.es_spam === 'boolean';\n  const str = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);\n  const ai = valid\n    ? { linea: out.linea, confianza: out.confianza, es_spam: out.es_spam, empresa: str(out.empresa, 200), nombre: str(out.nombre, 200), correo: str(out.correo, 254), necesidad: str(out.necesidad, 200) }\n    : { linea: 'indeterminada', confianza: 0, es_spam: false, invalid_ai_output: true };\n  return { json: { conversation_id: source[i].json.conversation_id, ai } };\n});"
+      }
+    },
+    {
+      "id": "f02-lead",
+      "name": "Crear lead (RPC ingest_whatsapp_lead, pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/ingest_whatsapp_lead",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ conversation_id: $json.conversation_id, ai: $json.ai }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Conversación nueva (webhook Supabase)": {
+      "main": [[{ "node": "¿Sin lead activo?", "type": "main", "index": 0 }]]
+    },
+    "¿Sin lead activo?": {
+      "main": [[{ "node": "Primer mensaje", "type": "main", "index": 0 }], []]
+    },
+    "Primer mensaje": {
+      "main": [[{ "node": "Clasificar con IA", "type": "main", "index": 0 }]]
+    },
+    "Clasificar con IA": {
+      "main": [[{ "node": "Validar salida IA", "type": "main", "index": 0 }]]
+    },
+    "Validar salida IA": {
+      "main": [
+        [
+          {
+            "node": "Crear lead (RPC ingest_whatsapp_lead, pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

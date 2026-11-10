@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FileText, Import, Info, Settings, User, Users } from "lucide-react";
 import { CanAccess, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
@@ -14,6 +15,7 @@ import { CreditosPage } from "../creditos/CreditosPage";
 import { DealTableList } from "../deals/DealTableList";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
 import { SettingsPage } from "../settings/SettingsPage";
+import { WaConnectionIndicator } from "../whatsapp/WaConnectionIndicator";
 import { WhatsAppPage } from "../whatsapp/WhatsAppPage";
 
 // Paths that highlight a navigation tab ("/" only matches exactly).
@@ -95,7 +97,9 @@ const Header = () => {
                       label={translate("crm.navigation.whatsapp")}
                       to={WhatsAppPage.path}
                       isActive={currentPath === WhatsAppPage.path}
-                    />
+                    >
+                      <WaConnectionIndicator />
+                    </NavigationTab>
                   </CanAccess>
                   <NavigationTab
                     label={translate("crm.navigation.dashboard")}
@@ -146,20 +150,24 @@ const NavigationTab = ({
   label,
   to,
   isActive,
+  children,
 }: {
   label: string;
   to: string;
   isActive: boolean;
+  /** Shown after the label, inside the link (the WhatsApp connection dot). */
+  children?: ReactNode;
 }) => (
   <Link
     to={to}
-    className={`px-4 py-3 text-sm whitespace-nowrap font-medium transition-colors border-b-2 ${
+    className={`flex items-center gap-1.5 px-4 py-3 text-sm whitespace-nowrap font-medium transition-colors border-b-2 ${
       isActive
         ? "text-secondary-foreground border-secondary-foreground"
         : "text-secondary-foreground/70 border-transparent hover:text-secondary-foreground/80"
     }`}
   >
     {label}
+    {children}
   </Link>
 );
 

@@ -1,0 +1,181 @@
+{
+  "name": "01 · Ingreso de leads por correo",
+  "nodes": [
+    {
+      "id": "f01-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -320],
+      "parameters": {
+        "width": 620,
+        "height": 300,
+        "content": "## 01 · Ingreso de leads por correo (borrador)\nEspec: docs/06 fila 01. Lee la casilla de marketing (informacion@, Wix, Chatonbo), clasifica con Claude Haiku y crea el lead.\n\n**Falta:**\n- RPC `ingest_email_lead` (upsert contacto+empresa, dedupe de lead activo, `deals` con `origin_channel`, asignación por `business_lines`, alerta `sin_asignar` a gerencia). No existe todavía.\n- Copiar el prompt completo de `n8n/prompts/clasificar-lead.md` en el system del nodo IA.\n- Variables de entorno de n8n: `SUPABASE_URL` (infra/vps no la define) y `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`.\n- El aviso por WhatsApp al ejecutivo lo manda el flujo 11 al insertarse la alerta.\n- Nodo de error → `audit_log` + aviso a Libux (Error Workflow)."
+      }
+    },
+    {
+      "id": "f01-trigger",
+      "name": "Correo nuevo (Gmail marketing)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [-260, 0],
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "format": "simple",
+        "options": {}
+      },
+      "credentials": {
+        "imap": { "name": "Gmail IMAP marketing" }
+      }
+    },
+    {
+      "id": "f01-origin",
+      "name": "Detectar origen y extraer texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 0],
+      "parameters": {
+        "jsCode": "// Plain text only: external mail is hostile (CLAUDE.md rule 11).\nconst MAX_TEXT = 8000;\nreturn $input.all().map(({ json }) => {\n  const from = String(json.from ?? '').toLowerCase();\n  const subject = String(json.subject ?? '');\n  let origin = 'correo';\n  if (/wix/.test(from) || /wix/i.test(subject)) origin = 'formulario';\n  else if (/chatonbo/.test(from) || /chatonbo/i.test(subject)) origin = 'bot';\n  const text = String(json.textPlain ?? '').slice(0, MAX_TEXT);\n  return { json: { message_id: json.messageId ?? json['message-id'] ?? null, from, subject, origin, text } };\n});"
+      }
+    },
+    {
+      "id": "f01-ai",
+      "name": "Clasificar con IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "anthropic-version", "value": "2023-06-01" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-5-5', max_tokens: 512, system: 'PEGAR AQUÍ n8n/prompts/clasificar-lead.md', messages: [{ role: 'user', content: 'Asunto: ' + $json.subject + '\\n\\n' + $json.text }] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "anthropicApi": { "name": "Anthropic" }
+      }
+    },
+    {
+      "id": "f01-validate",
+      "name": "Validar salida IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "parameters": {
+        "jsCode": "// The classifier only classifies: anything off-schema becomes 'indeterminada'.\nconst LINES = ['valvulas', 'tuberias', 'geoceldas', 'indeterminada'];\nconst source = $('Detectar origen y extraer texto').all();\nreturn $input.all().map(({ json }, i) => {\n  let out = null;\n  try { out = JSON.parse(json.content?.[0]?.text ?? ''); } catch {}\n  const valid = out && LINES.includes(out.linea) && typeof out.confianza === 'number' && out.confianza >= 0 && out.confianza <= 1 && typeof out.es_spam === 'boolean';\n  const str = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);\n  const ai = valid\n    ? { linea: out.linea, confianza: out.confianza, es_spam: out.es_spam, empresa: str(out.empresa, 200), nombre: str(out.nombre, 200), correo: str(out.correo, 254), telefono: str(out.telefono, 20), necesidad: str(out.necesidad, 200) }\n    : { linea: 'indeterminada', confianza: 0, es_spam: false, invalid_ai_output: true };\n  return { json: { ...source[i].json, ai } };\n});"
+      }
+    },
+    {
+      "id": "f01-spam",
+      "name": "¿Spam?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [620, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f01-spam-cond",
+              "leftValue": "={{ $json.ai.es_spam }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f01-audit",
+      "name": "Registrar spam en audit_log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, -120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/audit_log",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'lead.spam_discarded', details: { from: $json.from, subject: $json.subject, origin: $json.origin } }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f01-lead",
+      "name": "Crear lead (RPC ingest_email_lead, pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/ingest_email_lead",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message_id: $json.message_id, origin: $json.origin, sender: $json.from, subject: $json.subject, body: $json.text, ai: $json.ai }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Correo nuevo (Gmail marketing)": {
+      "main": [
+        [
+          {
+            "node": "Detectar origen y extraer texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar origen y extraer texto": {
+      "main": [[{ "node": "Clasificar con IA", "type": "main", "index": 0 }]]
+    },
+    "Clasificar con IA": {
+      "main": [[{ "node": "Validar salida IA", "type": "main", "index": 0 }]]
+    },
+    "Validar salida IA": {
+      "main": [[{ "node": "¿Spam?", "type": "main", "index": 0 }]]
+    },
+    "¿Spam?": {
+      "main": [
+        [{ "node": "Registrar spam en audit_log", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Crear lead (RPC ingest_email_lead, pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

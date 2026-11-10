@@ -1,0 +1,234 @@
+{
+  "name": "03 · Motor de seguimientos",
+  "nodes": [
+    {
+      "id": "f03-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -380],
+      "parameters": {
+        "width": 700,
+        "height": 340,
+        "content": "## 03 · Motor de seguimientos (borrador)\nEspec: docs/06 fila 03 y docs/07 (Envío). Anti-bloqueo (regla dura 4): horario hábil, 45–90 s entre envíos, tope diario, mensajes personalizados.\n\n**Falta:**\n- RPC `claim_due_followups(max)`: toma los `followups` pendientes con `scheduled_at <= now()`, les pone `job_id` en la misma transacción (idempotencia), descuenta el tope diario y devuelve teléfono/correo del contacto, texto ya renderizado con firma y modo. No existe.\n- Leer `horario_habil`, `tope_envios_dia` y `separacion_envios_seg` de `configuration` (aquí van fijos en el código).\n- Guardar el saliente en `wa_messages` con el `wa_message_id` que devuelve Evolution antes del eco del webhook (si no, se duplica; ver aprendizajes T9) y el correo en `emails`.\n- Variables `SUPABASE_URL`, `EVOLUTION_URL`, `EVOLUTION_INSTANCE` en el entorno de n8n.\n- Remitente SMTP por ejecutivo (`sales_mail_accounts`, Fase 5): hoy usa una sola credencial.\n- Ramificar por `channels` del seguimiento: el borrador manda por WhatsApp y correo siempre."
+      }
+    },
+    {
+      "id": "f03-trigger",
+      "name": "Cada 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] }
+      }
+    },
+    {
+      "id": "f03-hours",
+      "name": "Solo en horario hábil",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-40, 0],
+      "parameters": {
+        "jsCode": "// ponytail: fixed Mon–Fri 09:00–18:00 America/Santiago until configuration.horario_habil is read.\nconst now = $now.setZone('America/Santiago');\nconst isBusinessHours = now.weekday <= 5 && now.hour >= 9 && now.hour < 18;\nreturn isBusinessHours ? [{ json: { now: now.toISO() } }] : [];"
+      }
+    },
+    {
+      "id": "f03-claim",
+      "name": "Tomar seguimientos vencidos (RPC pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/claim_due_followups",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ max: 20 }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f03-mode",
+      "name": "¿Automático?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "f03-mode-cond",
+              "leftValue": "={{ $json.mode }}",
+              "rightValue": "automatico",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f03-loop",
+      "name": "Uno por uno",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [620, -120],
+      "parameters": { "batchSize": 1, "options": {} }
+    },
+    {
+      "id": "f03-wait",
+      "name": "Separación 45–90 s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [840, -120],
+      "webhookId": "7c1d2a10-0003-4a6e-9b1f-03a1b2c3d403",
+      "parameters": {
+        "amount": "={{ 45 + Math.floor(Math.random() * 46) }}",
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "f03-wa",
+      "name": "Enviar WhatsApp (Evolution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, -120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.phone, text: $json.whatsapp_text }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Evolution API key" }
+      }
+    },
+    {
+      "id": "f03-mail",
+      "name": "Enviar correo (SMTP)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1280, -120],
+      "parameters": {
+        "fromEmail": "={{ $('Uno por uno').item.json.sales_email }}",
+        "toEmail": "={{ $('Uno por uno').item.json.contact_email }}",
+        "subject": "={{ $('Uno por uno').item.json.email_subject }}",
+        "emailFormat": "text",
+        "text": "={{ $('Uno por uno').item.json.email_text }}",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": { "name": "SMTP TekFusion" }
+      }
+    },
+    {
+      "id": "f03-sent",
+      "name": "Marcar enviado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, -120],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/followups?id=eq.{{ $('Uno por uno').item.json.id }}&status=eq.pendiente",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'enviado', sent_at: $now.toUTC().toISO() }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f03-reminder",
+      "name": "Alerta al ejecutivo (recordatorio)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/alerts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'seguimiento_vencido', recipient_sales_id: $json.sales_id, deal_id: $json.deal_id, message: 'Seguimiento pendiente: ' + $json.deal_name }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Cada 15 min": {
+      "main": [
+        [{ "node": "Solo en horario hábil", "type": "main", "index": 0 }]
+      ]
+    },
+    "Solo en horario hábil": {
+      "main": [
+        [
+          {
+            "node": "Tomar seguimientos vencidos (RPC pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tomar seguimientos vencidos (RPC pendiente)": {
+      "main": [[{ "node": "¿Automático?", "type": "main", "index": 0 }]]
+    },
+    "¿Automático?": {
+      "main": [
+        [{ "node": "Uno por uno", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Alerta al ejecutivo (recordatorio)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uno por uno": {
+      "main": [
+        [],
+        [{ "node": "Separación 45–90 s", "type": "main", "index": 0 }]
+      ]
+    },
+    "Separación 45–90 s": {
+      "main": [
+        [{ "node": "Enviar WhatsApp (Evolution)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enviar WhatsApp (Evolution)": {
+      "main": [[{ "node": "Enviar correo (SMTP)", "type": "main", "index": 0 }]]
+    },
+    "Enviar correo (SMTP)": {
+      "main": [[{ "node": "Marcar enviado", "type": "main", "index": 0 }]]
+    },
+    "Marcar enviado": {
+      "main": [[{ "node": "Uno por uno", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

@@ -1,11 +1,14 @@
 -- send_wa_message(conversation_id, text): escribir desde la bandeja (todavía no
 -- envía nada: deja el mensaje en pendiente y lo encola en send_queue).
--- Ejecutivo solo en sus conversaciones; gerencia con aal2 en cualquiera; lector,
+-- Ejecutivo solo en sus conversaciones; gerencia con aal2 en cualquiera que
+-- tenga dueño (una sin asignar se toma primero: 42501 también para gerencia,
+-- decisión de Ignacio 2026-11-09); lector,
 -- usuario sin sale y gerencia sin verificar (aal1), 42501. Texto vacío o de más
--- de 4096 caracteres, 22023. Conversación inexistente, P0002.
+-- de 4096 caracteres, 22023. Conversación inexistente o archivada, P0002.
+-- Más de 30 mensajes del mismo usuario en un minuto, PT429 (HTTP 429).
 -- Seed: +56900000001 es de Camila, +56900000002 de Diego, +56900000003 sin asignar.
 begin;
-select plan(34);
+select plan(47);
 
 create function pg_temp.login_as(p_email text, p_aal text default 'aal2') returns void language plpgsql as $$
 declare uid uuid;
@@ -26,6 +29,11 @@ end $$;
 -- Una conversación de Camila sin lead activo.
 insert into public.wa_conversations (phone, sales_id)
 select '+56900000093', id from public.sales where email = 'camila.rojas@tekfusion-demo.cl';
+-- Una archivada de Camila y otra de Diego.
+insert into public.wa_conversations (phone, sales_id, archived)
+select v.phone, s.id, true
+  from (values ('+56900000094', 'camila.rojas@tekfusion-demo.cl'), ('+56900000095', 'diego.munoz@tekfusion-demo.cl')) v (phone, email)
+  join public.sales s on s.email = v.email;
 -- La de Diego con su último mensaje en el futuro: escribir no lo retrocede.
 update public.wa_conversations set last_message_at = now() + interval '1 day' where phone = '+56900000002';
 
@@ -65,6 +73,12 @@ select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), '425
 select throws_ok('select public.send_wa_message(-1, ''Hola'')', 'P0002', null,
   'escribir en una conversación inexistente da P0002');
 
+-- Archivada (decisión de Ignacio 2026-11-06, docs/10) ----------------------------
+select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), 'P0002', format('conversation %s is archived', id),
+  'el ejecutivo no escribe en su conversación archivada') from conv where phone = '+56900000094';
+select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), '42501', null,
+  'en la archivada de otro ejecutivo manda el permiso: 42501, no P0002') from conv where phone = '+56900000095';
+
 -- Texto --------------------------------------------------------------------------
 select throws_ok(format('select public.send_wa_message(%s, '''')', id), '22023', null,
   'el texto vacío se rechaza') from conv where phone = '+56900000001';
@@ -76,6 +90,16 @@ select throws_ok(format('select public.send_wa_message(%s, repeat(''a'', 4097))'
   'el texto de 4097 caracteres se rechaza') from conv where phone = '+56900000001';
 reset role;
 
+select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
+select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), 'P0002', null,
+  'gerencia tampoco escribe en una conversación archivada') from conv where phone = '+56900000094';
+-- Sin asignar (decisión de Ignacio 2026-11-09, docs/10): tampoco gerencia.
+select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), '42501',
+  format('conversation %s is unassigned: take it before writing', id),
+  'gerencia no escribe en una conversación sin asignar') from conv where phone = '+56900000003';
+reset role;
+
+-- Ninguno de los rechazos de arriba (permiso, archivada, texto) guardó nada.
 select is((select count(*) from public.wa_messages), (select messages from before),
   'ningún rechazo dejó un mensaje');
 select is((select count(*) from public.send_queue), (select queued from before),
@@ -130,8 +154,10 @@ select is((select t.author_sales_id from conv, public.send_wa_message(conv.id, '
             where conv.phone = '+56900000002'),
   (select id from people where email = 'andrea.soto@tekfusion-demo.cl'),
   'gerencia escribe en la conversación de un ejecutivo y queda como autora');
+select is((select t.sales_id from conv, public.take_wa_conversation(conv.id) t where conv.phone = '+56900000003'),
+  (select id from people where email = 'andrea.soto@tekfusion-demo.cl'), 'gerencia toma la conversación sin asignar');
 select lives_ok(format('select public.send_wa_message(%s, ''Hola'')', id),
-  'gerencia escribe en una conversación sin asignar') from conv where phone = '+56900000003';
+  'y recién entonces escribe en ella') from conv where phone = '+56900000003';
 reset role;
 
 select is((select last_message_at from public.wa_conversations where phone = '+56900000002'), now() + interval '1 day',
@@ -146,6 +172,49 @@ select throws_ok(format('insert into public.send_queue (deal_id, channel) values
   '23514', null, 'una fila de la cola sin cotización ni mensaje se rechaza') from conv where phone = '+56900000001';
 select throws_ok(format('insert into public.send_queue (message_id, channel) values (%s, ''whatsapp'')', (select id from m1)),
   '23505', null, 'un mensaje no se encola dos veces');
+
+-- Tope de 30 mensajes por usuario por minuto ---------------------------------------
+-- Todo lo anterior (seed incluido) sale de la ventana. Queda dentro un
+-- seguimiento a nombre de Camila, que no cuenta: el tope mira solo origen crm.
+update public.wa_messages set created_at = now() - interval '1 hour';
+insert into public.wa_messages (conversation_id, wa_message_id, direction, type, text, origin, author_sales_id, sent_at)
+select c.id, 'test-38-seguimiento', 'saliente', 'texto', 'Seguimiento automático', 'seguimiento', p.id, now()
+  from conv c, people p
+ where c.phone = '+56900000001' and p.email = 'camila.rojas@tekfusion-demo.cl';
+create temp table before_rate as
+  select (select count(*) from public.wa_messages) as messages, (select count(*) from public.send_queue) as queued;
+
+select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
+select is((select count(*) from conv, generate_series(1, 30) g, public.send_wa_message(conv.id, 'Aviso ' || g) t
+            where conv.phone = '+56900000001'),
+  30::bigint, 'gerencia escribe 30 mensajes dentro del mismo minuto');
+reset role;
+
+select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
+select is((select count(*) from conv, generate_series(1, 29) g, public.send_wa_message(conv.id, 'Mensaje ' || g) t
+            where conv.phone = '+56900000001'),
+  29::bigint, 'los 30 de otro usuario y el seguimiento no le cuentan a la ejecutiva: escribe 29');
+select lives_ok(format('select public.send_wa_message(%s, ''Mensaje 30'')', id),
+  'el mensaje 30 del minuto pasa') from conv where phone = '+56900000001';
+select throws_ok(format('select public.send_wa_message(%s, ''Mensaje 31'')', id), 'PT429', 'rate limit: at most 30 messages per minute',
+  'el mensaje 31 del minuto da PT429') from conv where phone = '+56900000001';
+select throws_ok(format('select public.send_wa_message(%s, ''Mensaje 31'')', id), 'PT429', null,
+  'el tope es por usuario, no por conversación') from conv where phone = '+56900000093';
+reset role;
+
+select is((select count(*) from public.wa_messages) - (select messages from before_rate), 60::bigint,
+  'los rechazados por el tope no dejaron mensaje');
+select is((select count(*) from public.send_queue) - (select queued from before_rate), 60::bigint,
+  'ni fila en la cola');
+
+-- Uno de los 30 de Camila cumple el minuto justo: deja de contar.
+update public.wa_messages set created_at = now() - interval '1 minute'
+ where id = (select max(id) from public.wa_messages
+              where author_sales_id = (select id from people where email = 'camila.rojas@tekfusion-demo.cl'));
+select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
+select lives_ok(format('select public.send_wa_message(%s, ''Mensaje 31'')', id),
+  'cuando un mensaje sale de la ventana de un minuto, vuelve a escribir') from conv where phone = '+56900000001';
+reset role;
 
 select * from finish();
 rollback;

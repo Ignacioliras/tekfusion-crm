@@ -1,6 +1,11 @@
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 
-import { WhatsAppInbox } from "./WhatsApp.fixtures";
+import { StoryWrapper } from "@/test/StoryWrapper";
+import Header from "../layout/Header";
+import { canAccess, type AccessRole } from "../providers/commons/canAccess";
+import type { CrmDataProvider } from "../providers/types";
+import { ArchivedChatPanel, WhatsAppInbox } from "./WhatsApp.fixtures";
 
 const openConversation = async (
   role: "admin" | "user",
@@ -17,6 +22,30 @@ const openConversation = async (
   await expect.element(panel).toBeVisible();
   return { screen, panel };
 };
+
+// What wa_connection_status() answers while the number is disconnected.
+const DISCONNECTED = {
+  getWaConnectionStatus: async () => ({
+    connected: false,
+    updated_at: "2026-11-09T12:00:00Z",
+  }),
+};
+
+// The main menu (the test layout has no header), with the real access rules.
+const MainMenu = ({
+  role,
+  dataProvider,
+}: {
+  role: AccessRole;
+  dataProvider?: Partial<CrmDataProvider>;
+}) => (
+  <StoryWrapper
+    authProvider={{ canAccess: async (params) => canAccess(role, params) }}
+    dataProvider={dataProvider}
+  >
+    <Header />
+  </StoryWrapper>
+);
 
 describe("Bandeja de WhatsApp", () => {
   it("shows the executive their chats and the unassigned ones, never another executive's", async () => {
@@ -95,6 +124,29 @@ describe("Bandeja de WhatsApp", () => {
       .toBeVisible();
   });
 
+  it("labels messages typed on the phone and names the executive behind each CRM send", async () => {
+    const { panel } = await openConversation("admin", "Andrés Vega", "Todos");
+
+    await expect
+      .element(panel.getByText("Desde el teléfono · Matías Soto"))
+      .toBeVisible();
+    // The failed photo went out from the CRM: only its author, no phone label.
+    await expect
+      .element(panel.getByText("Matías Soto", { exact: true }))
+      .toBeVisible();
+    expect(panel.getByText(/Desde el teléfono/).elements()).toHaveLength(1);
+  });
+
+  it("names the author of CRM sends but not of incoming messages", async () => {
+    const { panel } = await openConversation("user", "Rosa Pizarro");
+
+    // Two outgoing CRM messages in Rosa's chat, three incoming ones.
+    await expect
+      .poll(() => panel.getByText("Jane Doe", { exact: true }).elements())
+      .toHaveLength(2);
+    expect(panel.getByText(/Desde el teléfono/).elements()).toHaveLength(0);
+  });
+
   it("lets the executive take an unassigned chat, which then shows in 'Mis chats'", async () => {
     const { screen, panel } = await openConversation(
       "user",
@@ -127,8 +179,68 @@ describe("Bandeja de WhatsApp", () => {
       .not.toBeInTheDocument();
   });
 
-  it("keeps the composer disabled until sending is enabled", async () => {
-    const { panel } = await openConversation("admin", "Rosa Pizarro");
+  it("lets the executive send a message to their chat and shows it pending", async () => {
+    const { panel } = await openConversation("user", "Rosa Pizarro");
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("  Le envío la ficha técnica hoy.  ");
+    await panel.getByRole("button", { name: "Enviar" }).click();
+
+    await expect
+      .element(panel.getByText("Le envío la ficha técnica hoy."))
+      .toBeVisible();
+    await expect
+      .element(panel.getByRole("img", { name: "Pendiente" }))
+      .toBeVisible();
+    await expect.element(composer).toHaveValue("");
+  });
+
+  it("sends with Ctrl+Enter", async () => {
+    const { panel } = await openConversation("user", "Rosa Pizarro");
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("¿Le acomoda una visita el jueves?");
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+
+    await expect
+      .element(panel.getByText("¿Le acomoda una visita el jueves?"))
+      .toBeVisible();
+    await expect.element(composer).toHaveValue("");
+  });
+
+  it("disables everything while sending, so a second click sends nothing", async () => {
+    let release = () => {};
+    const sendWaMessage = vi.fn(
+      () =>
+        new Promise<never>((_, reject) => {
+          release = () => reject(new Error("network"));
+        }),
+    );
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={{ sendWaMessage }} />,
+    );
+    await screen.getByRole("button", { name: /^Rosa Pizarro/ }).click();
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("Hola");
+    await panel.getByRole("button", { name: "Enviar" }).click();
+
+    await expect.element(composer).toBeDisabled();
+    await expect
+      .element(panel.getByRole("button", { name: "Enviar" }))
+      .toBeDisabled();
+    release();
+    await expect.element(composer).toBeEnabled();
+    expect(sendWaMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps an unassigned chat read-only until someone takes it", async () => {
+    const { panel } = await openConversation(
+      "admin",
+      "+56900000003",
+      "Sin asignar",
+    );
 
     await expect
       .element(panel.getByRole("textbox", { name: "Escribe un mensaje" }))
@@ -136,5 +248,205 @@ describe("Bandeja de WhatsApp", () => {
     await expect
       .element(panel.getByRole("button", { name: "Enviar" }))
       .toBeDisabled();
+  });
+
+  it("keeps an archived chat read-only, even for its executive", async () => {
+    const screen = await render(<ArchivedChatPanel />);
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+
+    await expect.element(panel.getByText("<b>hola</b><script>")).toBeVisible();
+    await expect
+      .element(panel.getByRole("textbox", { name: "Escribe un mensaje" }))
+      .toBeDisabled();
+    await expect
+      .element(panel.getByRole("button", { name: "Enviar" }))
+      .toBeDisabled();
+  });
+
+  it("lets a manager write in another executive's chat", async () => {
+    const { panel } = await openConversation("admin", "Andrés Vega", "Todos");
+
+    await expect
+      .element(panel.getByRole("textbox", { name: "Escribe un mensaje" }))
+      .toBeEnabled();
+  });
+
+  it("lists only the active quick replies, by title", async () => {
+    const { screen, panel } = await openConversation("user", "Rosa Pizarro");
+
+    await panel.getByRole("button", { name: "Respuestas rápidas" }).click();
+
+    const picker = screen.getByRole("dialog", { name: "Respuestas rápidas" });
+    await expect.element(picker.getByText("Saludo")).toBeVisible();
+    const titles = picker
+      .getByRole("listitem")
+      .elements()
+      .map((item) => item.querySelector("span")?.textContent);
+    expect(titles).toEqual(["Ficha técnica", "Saludo"]);
+    expect(picker.getByText("Despedida antigua").elements()).toHaveLength(0);
+  });
+
+  it("appends a picked quick reply on a new line and returns focus to the composer", async () => {
+    const { screen, panel } = await openConversation("user", "Rosa Pizarro");
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+    await composer.fill("Buenos días.");
+
+    await panel.getByRole("button", { name: "Respuestas rápidas" }).click();
+    await screen.getByRole("button", { name: /^Ficha técnica/ }).click();
+
+    await expect
+      .element(composer)
+      .toHaveValue("Buenos días.\nLe adjunto la ficha técnica del producto.");
+    await expect.element(composer).toHaveFocus();
+    await expect
+      .element(screen.getByRole("dialog", { name: "Respuestas rápidas" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("keeps quick replies disabled where the composer is", async () => {
+    const screen = await render(<ArchivedChatPanel />);
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+
+    await expect
+      .element(panel.getByRole("button", { name: "Respuestas rápidas" }))
+      .toBeDisabled();
+  });
+
+  it("shows a green dot inside the WhatsApp menu item while connected", async () => {
+    const screen = await render(<MainMenu role="user" />);
+
+    await expect
+      .element(
+        screen
+          .getByRole("link", { name: /^WhatsApp/ })
+          .getByRole("img", { name: "WhatsApp conectado" }),
+      )
+      .toBeVisible();
+  });
+
+  it("turns the menu dot red when the number is disconnected", async () => {
+    const screen = await render(
+      <MainMenu role="user" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(
+        screen
+          .getByRole("link", { name: /^WhatsApp/ })
+          .getByRole("img", { name: "WhatsApp desconectado" }),
+      )
+      .toBeVisible();
+  });
+
+  it("turns the menu dot grey when the state can't be read", async () => {
+    const getWaConnectionStatus = async () => {
+      throw new Error("network");
+    };
+    const screen = await render(
+      <MainMenu role="user" dataProvider={{ getWaConnectionStatus }} />,
+    );
+
+    await expect
+      .element(
+        screen.getByRole("img", {
+          name: "No se pudo consultar el estado de WhatsApp",
+        }),
+      )
+      .toBeVisible();
+  });
+
+  it("shows the reader no dot: they have no WhatsApp menu item", async () => {
+    const screen = await render(
+      <MainMenu role="reader" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(screen.getByRole("link", { name: "Dashboard" }))
+      .toBeVisible();
+    expect(
+      screen.getByRole("img", { name: /^WhatsApp/ }).elements(),
+    ).toHaveLength(0);
+  });
+
+  it("shows no banner in the inbox while connected", async () => {
+    const screen = await render(<WhatsAppInbox role="user" />);
+
+    await expect.element(screen.getByText("Rosa Pizarro")).toBeVisible();
+    expect(screen.getByRole("alert").elements()).toHaveLength(0);
+  });
+
+  it("shows the red 'WhatsApp desconectado' banner in the inbox when the number is disconnected", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(screen.getByRole("alert").getByText("WhatsApp desconectado"))
+      .toBeVisible();
+    // The inbox still works: only the notice is added.
+    await expect.element(screen.getByText("Rosa Pizarro")).toBeVisible();
+  });
+
+  it("links the banner to Configuración for managers", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="admin" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(
+        screen
+          .getByRole("alert")
+          .getByRole("link", { name: "Ir a Configuración" }),
+      )
+      .toHaveAttribute("href", "/settings");
+  });
+
+  it("gives the executive the banner without the link to Configuración", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={DISCONNECTED} />,
+    );
+
+    const banner = screen.getByRole("alert");
+    await expect.element(banner).toBeVisible();
+    expect(banner.getByRole("link").elements()).toHaveLength(0);
+  });
+
+  it("shows the reader no banner, only the no-access notice", async () => {
+    const screen = await render(
+      <WhatsAppInbox role="reader" dataProvider={DISCONNECTED} />,
+    );
+
+    await expect
+      .element(
+        screen.getByText(
+          "Tu perfil no tiene acceso a las conversaciones de WhatsApp.",
+        ),
+      )
+      .toBeVisible();
+    expect(screen.getByRole("alert").elements()).toHaveLength(0);
+  });
+
+  it("explains in Spanish when the base refuses the message, and keeps the text", async () => {
+    const sendWaMessage = async () => {
+      throw Object.assign(new Error("rate limit"), { code: "PT429" });
+    };
+    const screen = await render(
+      <WhatsAppInbox role="user" dataProvider={{ sendWaMessage }} />,
+    );
+    await screen.getByRole("button", { name: /^Rosa Pizarro/ }).click();
+    const panel = screen.getByRole("region", { name: "Rosa Pizarro" });
+    const composer = panel.getByRole("textbox", { name: "Escribe un mensaje" });
+
+    await composer.fill("Hola de nuevo");
+    await panel.getByRole("button", { name: "Enviar" }).click();
+
+    await expect
+      .element(
+        screen.getByText(
+          "Enviaste demasiados mensajes seguidos. Espera un minuto y vuelve a intentarlo.",
+        ),
+      )
+      .toBeVisible();
+    await expect.element(composer).toHaveValue("Hola de nuevo");
   });
 });

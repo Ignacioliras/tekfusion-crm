@@ -81,6 +81,93 @@ describe("renderWeeklyReport", () => {
     expect(report.text).toContain("<script>alert(1)</script>");
   });
 
+  it("lists each business line after the totals, leaving the totals as they were", () => {
+    const withLines: WeeklyReportData = {
+      ...busyWeek,
+      by_business_line: [
+        {
+          business_line: "valvulas",
+          entries: 1000,
+          contacted: 10,
+          quoted: 5,
+          won: 2,
+          won_amount: 9_000_000,
+          lost: 3,
+        },
+        {
+          business_line: "geoceldas",
+          entries: 234,
+          contacted: 8,
+          quoted: 4,
+          won: 1,
+          won_amount: 3_500_000,
+          lost: 1,
+        },
+        {
+          business_line: "<b>otra</b>",
+          entries: 0,
+          contacted: 0,
+          quoted: 0,
+          won: 0,
+          won_amount: 0,
+          lost: 0,
+        },
+      ],
+    };
+
+    const plain = renderWeeklyReport(busyWeek, options);
+    const report = renderWeeklyReport(withLines, options);
+
+    for (const [out, before] of [
+      [report.html, plain.html],
+      [report.text, plain.text],
+    ]) {
+      const section = out.indexOf("Por línea de negocio");
+      expect(section).toBeGreaterThan(out.indexOf("Resumen"));
+      expect(section).toBeLessThan(out.indexOf("Perdidos por motivo"));
+      expect(out.slice(section)).toContain("Válvulas");
+      expect(out.slice(section)).toContain("Geoceldas");
+      expect(out.slice(section)).toContain("$9.000.000");
+      expect(out.slice(section)).toContain("$3.500.000");
+      // Everything up to the new section (header and totals) is unchanged.
+      expect(out.slice(0, section)).toBe(before.slice(0, section));
+    }
+    expect(report.html).not.toContain("<b>otra</b>");
+    expect(report.html).toContain("&lt;b&gt;otra&lt;/b&gt;");
+    expect(report.text).toContain(
+      "- Válvulas: entradas 1.000, contactados 10, cotizados 5, ganados 2, monto ganado $9.000.000, perdidos 3",
+    );
+  });
+
+  it("draws no per-line section when the RPC brings no breakdown", () => {
+    const report = renderWeeklyReport(
+      { ...busyWeek, by_business_line: [] },
+      options,
+    );
+
+    expect(report).toEqual(renderWeeklyReport(busyWeek, options));
+    expect(report.html).not.toContain("Por línea de negocio");
+    expect(
+      renderWeeklyReport(
+        {
+          ...emptyWeek,
+          by_business_line: [
+            {
+              business_line: "tuberias",
+              entries: 0,
+              contacted: 0,
+              quoted: 0,
+              won: 0,
+              won_amount: 0,
+              lost: 0,
+            },
+          ],
+        },
+        options,
+      ).html,
+    ).not.toContain("<table");
+  });
+
   it("uses inline styles only, with no stylesheet or external resource", () => {
     const { html } = renderWeeklyReport(busyWeek, options);
 

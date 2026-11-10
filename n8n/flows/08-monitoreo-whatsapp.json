@@ -1,0 +1,115 @@
+{
+  "name": "08 · Monitoreo de WhatsApp",
+  "nodes": [
+    {
+      "id": "f08-note",
+      "name": "Nota: qué falta",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, -340],
+      "parameters": {
+        "width": 660,
+        "height": 320,
+        "content": "## 08 · Monitoreo de WhatsApp (borrador)\nEspec: docs/06 fila 08 y docs/07 (Reconexión). El evento `connection.update` ya lo guarda el receptor (`whatsapp-webhook` → `wa_upsert_instance_status`), así que aquí solo queda el sondeo cada 5 min a `/instance/connectionState`.\n\n**Falta:**\n- `wa_upsert_instance_status` pisa `updated_at` en cada sondeo: para saber desde cuándo está caído falta guardar el momento del último cambio de `connected` (columna nueva o dentro de la RPC de abajo).\n- RPC `raise_wa_disconnected_alert()`: si `wa_instance_status.connected = false` hace más de 5 min y no hay alerta abierta, crea `whatsapp_desconectado` a gerencia; al reconectar, la cierra (`read_at`). No existe.\n- Aviso a Libux (correo) y al WhatsApp del gerente: el segundo no sirve con el número caído → por correo.\n- `SUPABASE_URL`, `EVOLUTION_URL`, `EVOLUTION_INSTANCE` en el entorno de n8n."
+      }
+    },
+    {
+      "id": "f08-trigger",
+      "name": "Cada 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      }
+    },
+    {
+      "id": "f08-state",
+      "name": "Estado de la instancia (Evolution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-40, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.EVOLUTION_URL }}/instance/connectionState/{{ $env.EVOLUTION_INSTANCE }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Evolution API key" }
+      }
+    },
+    {
+      "id": "f08-upsert",
+      "name": "Guardar estado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/wa_upsert_instance_status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_instance: $env.EVOLUTION_INSTANCE, p_connected: $json.instance?.state === 'open', p_event: { source: 'n8n-08', state: $json.instance?.state ?? 'unreachable' } }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    },
+    {
+      "id": "f08-alert",
+      "name": "Alerta si lleva > 5 min caído (RPC pendiente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/raise_wa_disconnected_alert",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}",
+        "options": {}
+      },
+      "credentials": {
+        "supabaseApi": { "name": "Supabase service role" }
+      }
+    }
+  ],
+  "connections": {
+    "Cada 5 min": {
+      "main": [
+        [
+          {
+            "node": "Estado de la instancia (Evolution)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estado de la instancia (Evolution)": {
+      "main": [[{ "node": "Guardar estado", "type": "main", "index": 0 }]]
+    },
+    "Guardar estado": {
+      "main": [
+        [
+          {
+            "node": "Alerta si lleva > 5 min caído (RPC pendiente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "America/Santiago" },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

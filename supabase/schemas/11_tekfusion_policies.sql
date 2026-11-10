@@ -150,11 +150,19 @@ $$;
 -- through the API. Replaces the personal data of a contact and stamps
 -- anonymized_at (how an anonymized contact is recognized); empties its notes
 -- and tasks and, for the leads that only have this contact, their notes,
--- raw_source, follow-up texts and alert messages. Returns the Storage paths
--- (bucket attachments) of the files those notes held. A contact already
--- anonymized is left as it is ('{}'). A lead shared with another contact is
--- not touched (Ignacio, 2026-11-05). Amounts, stages and dates stay: the
--- metrics survive.
+-- raw_source, follow-up texts and alert messages; the pending follow-ups of
+-- those leads are cancelled ('anonimizado'), so nothing more is sent. Returns
+-- the Storage paths (bucket attachments) of the files those notes held. A
+-- contact already anonymized is left as it is ('{}'). A lead shared with
+-- another contact is not touched (Ignacio, 2026-11-05). Amounts, stages and
+-- dates stay: the metrics survive.
+-- WhatsApp (14_): the conversations linked to the contact lose the number
+-- (phone = 'anon-<conversation id>', allowed by wa_conversations_phone_e164)
+-- and are archived, so nobody writes to them again (send_wa_message rejects
+-- an archived conversation; Ignacio, 2026-11-09); their messages lose the
+-- text and the raw webhook bodies are deleted; rows, dates and statuses stay.
+-- A new message from the real number opens another conversation, not linked
+-- to the contact (docs/10, 2026-11-09).
 -- Left untouched on purpose: deals.name, deals.description and quotes with
 -- their PDF. Pending decision of TekFusion (docs/10, 2026-11-05).
 CREATE OR REPLACE FUNCTION "public"."anonymize_contact_data"("target_id" bigint, "actor_id" bigint) RETURNS "text"[]
@@ -209,8 +217,18 @@ begin
                 || case when m.key = 'correo' then jsonb_build_object('subject', placeholder) else '{}'::jsonb end)
          from jsonb_each(f.messages) m)
    where f.deal_id = any (sole_deals) and f.messages <> '{}'::jsonb;
+  update public.followups set status = 'cancelado', cancel_reason = 'anonimizado'
+   where deal_id = any (sole_deals) and status = 'pendiente';
   -- alerts only point to a lead (they have no contact column).
   update public.alerts set message = placeholder where deal_id = any (sole_deals);
+
+  delete from public.wa_message_payloads p
+   using public.wa_messages m, public.wa_conversations w
+   where m.id = p.message_id and w.id = m.conversation_id and w.contact_id = target_id;
+  update public.wa_messages m set text = null
+    from public.wa_conversations w
+   where w.id = m.conversation_id and w.contact_id = target_id and m.text is not null;
+  update public.wa_conversations set phone = 'anon-' || id, archived = true where contact_id = target_id;
 
   insert into public.audit_log (actor_sales_id, action, details)
   values (actor_id, 'contact.anonymized',
@@ -237,10 +255,12 @@ $$;
 -- and that shows no activity for configuration.config.dataRetentionMonths
 -- months (24 by default, 0 = off). Any activity since the cutoff keeps the
 -- contact out (Ignacio, 2026-11-05): last_activity_at of one of its leads, a
--- note of the contact or of one of its leads (notes only have "date"), or a
--- task of the contact (tasks only have created_at).
--- TODO Fases 4 and 5: wa_messages and emails count as activity too; add them
--- here when those tables exist.
+-- note of the contact or of one of its leads (notes only have "date"), a
+-- task of the contact created or completed (created_at, done_date), or a
+-- WhatsApp message (sent_at) in a conversation of the contact or on one of its
+-- leads.
+-- TODO Fase 5: emails count as activity too; add them here when that table
+-- exists.
 -- Contacts without leads are left alone. Run daily by pg_cron; never by an API
 -- session (same auth.role() rule as offboard_sale).
 CREATE OR REPLACE FUNCTION "public"."anonymize_expired_contacts"() RETURNS integer
@@ -278,7 +298,16 @@ begin
            join public.deals d on d.id = n.deal_id
           where d.contact_ids @> array[c.id] and n.date >= cutoff)
        and not exists (
-         select 1 from public.tasks t where t.contact_id = c.id and t.created_at >= cutoff)
+         select 1 from public.tasks t
+          where t.contact_id = c.id and (t.created_at >= cutoff or t.done_date >= cutoff))
+       and not exists (
+         select 1 from public.wa_messages m
+           join public.wa_conversations w on w.id = m.conversation_id
+          where w.contact_id = c.id and m.sent_at >= cutoff)
+       and not exists (
+         select 1 from public.wa_messages m
+           join public.deals d on d.id = m.deal_id
+          where d.contact_ids @> array[c.id] and m.sent_at >= cutoff)
   loop
     perform public.anonymize_contact_data(expired.id, null);
     total := total + 1;
@@ -294,9 +323,10 @@ $$;
 -- the manager doing it as actor_id. Disables the user, hands each open lead and
 -- each business line to the substitute of its line (docs/10, 2026-11-03), the
 -- contacts and pending tasks along with their leads (or leaves them unassigned),
--- closes every session and writes the audit trail. Reactivation: Atomic's
--- "disabled" switch, also through the Edge Function.
--- Not here yet: SMTP/IMAP keys (Fase 5) and WhatsApp conversations (Fase 4).
+-- the open WhatsApp conversations to the substitute of their active lead's line
+-- (docs/10, 2026-11-09), closes every session and writes the audit trail.
+-- Reactivation: Atomic's "disabled" switch, also through the Edge Function.
+-- Not here yet: SMTP/IMAP keys (Fase 5).
 CREATE OR REPLACE FUNCTION "public"."offboard_sale"("sale_id" bigint, "actor_id" bigint) RETURNS "public"."audit_log"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -307,6 +337,7 @@ declare
   moved_deals jsonb;
   moved_contacts bigint[];
   moved_tasks bigint[];
+  moved_conversations jsonb;
   entry public.audit_log;
 begin
   -- auth.role(), not current_user: inside a security definer function
@@ -396,6 +427,29 @@ begin
   )
   select coalesce(array_agg(id order by id), '{}') into moved_tasks from moved;
 
+  -- (d) Open WhatsApp conversations go to the substitute of their active
+  -- lead's line (same rule as the lead, whatever its stage), or to the default
+  -- one when they have no lead; archived ones keep their owner (history).
+  with targets as (
+    select w.id,
+           coalesce((select l.substitute_sales_id
+                       from public.deals d
+                       join public.business_lines l on l.code = d.business_line
+                       join public.sales s on s.id = l.substitute_sales_id
+                      where d.id = w.active_deal_id and not s.disabled
+                        and s.role <> 'reader' and s.id <> target.id),
+                    default_substitute) as new_owner
+      from public.wa_conversations w
+     where w.sales_id = target.id and not w.archived
+  ), moved as (
+    update public.wa_conversations w set sales_id = t.new_owner
+      from targets t
+     where w.id = t.id
+    returning w.id, w.sales_id
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'to', sales_id) order by id), '[]')
+    into moved_conversations from moved;
+
   -- Each line the user owned goes to its own substitute, or the default one.
   update public.business_lines l
      set owner_sales_id = coalesce(
@@ -423,7 +477,8 @@ begin
             'reassigned_deal_ids', (select coalesce(jsonb_agg(m.id order by m.id), '[]')
                                       from jsonb_to_recordset(moved_deals) as m(id bigint)),
             'reassigned_contact_ids', to_jsonb(moved_contacts),
-            'reassigned_task_ids', to_jsonb(moved_tasks)))
+            'reassigned_task_ids', to_jsonb(moved_tasks),
+            'reassigned_wa_conversations', moved_conversations))
   returning * into entry;
   return entry;
 end;

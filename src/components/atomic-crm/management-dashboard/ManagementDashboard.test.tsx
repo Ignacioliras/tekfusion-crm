@@ -1,7 +1,10 @@
 import { render } from "vitest-browser-react";
 import { page } from "vitest/browser";
 
+import { StoryWrapper } from "@/test/StoryWrapper";
+import { ManagementDashboard } from "./ManagementDashboard";
 import {
+  buildRow,
   DashboardWithoutData,
   DashboardWithTwoMonths,
   EARLIER,
@@ -41,9 +44,46 @@ describe("Dashboard de gerencia: métricas con rango de fechas", () => {
       .element(
         screen
           .getByRole("group", { name: "Monto cotizado" })
-          .getByText("$6.000.000"),
+          .getByRole("button", { name: "$6.000.000" }),
       )
+      .toHaveTextContent("$6 M");
+  });
+
+  it("shows a large amount compact and keeps the exact figure accessible", async () => {
+    const screen = await render(
+      <StoryWrapper
+        data={{
+          dashboard_daily: [
+            buildRow({ leads: 1, won: 1, won_amount: 1_234_567_890 }),
+          ],
+        }}
+      >
+        <ManagementDashboard />
+      </StoryWrapper>,
+    );
+
+    const amount = screen
+      .getByRole("group", { name: "Monto ganado" })
+      .getByRole("button", { name: "$1.234.567.890" });
+    await expect.element(amount).toHaveTextContent("$1234,6 M");
+
+    await amount.hover();
+    await expect
+      .element(screen.getByText("$1.234.567.890", { exact: true }))
       .toBeVisible();
+  });
+
+  it("the last 12 months shortcut takes in the earlier period", async () => {
+    const screen = await render(<DashboardWithTwoMonths />);
+    const leads = screen.getByRole("group", { name: "Leads" });
+    await expect.element(leads.getByText("6", { exact: true })).toBeVisible();
+
+    await screen.getByRole("button", { name: "Últimos 12 meses" }).click();
+
+    await expect
+      .element(screen.getByRole("button", { name: "Últimos 12 meses" }))
+      .toHaveAttribute("aria-pressed", "true");
+    await expect.element(leads.getByText("9", { exact: true })).toBeVisible();
   });
 
   it("recomputes the numbers when the range changes", async () => {

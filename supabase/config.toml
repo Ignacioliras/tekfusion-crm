@@ -180,3 +180,6 @@ verify_jwt = false
 # Evolution calls it with the `apikey` header, not a Supabase JWT.
 [functions.whatsapp-webhook]
 verify_jwt = false
+# pg_cron calls it with the service role key; the handler checks it itself.
+[functions.purge-orphan-attachments]
+verify_jwt = false

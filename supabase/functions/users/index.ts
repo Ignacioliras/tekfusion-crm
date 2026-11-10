@@ -3,7 +3,7 @@ import type { User } from "jsr:@supabase/supabase-js@2";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import { withSentry } from "../_shared/sentry.ts";
+import { reportError, withSentry } from "../_shared/sentry.ts";
 import {
   AuthMiddleware,
   getJwtClaims,
@@ -256,13 +256,13 @@ async function inviteUser(req: Request, currentUserSale: any) {
         },
       );
     } catch (error) {
-      return createErrorResponse(
-        (error as any).status ?? 500,
-        (error as Error).message,
-        {
-          code: (error as any).code,
-        },
-      );
+      const status = (error as any).status ?? 500;
+      if (status >= 500) {
+        await reportError(error, { function: "users", step: "invite" });
+      }
+      return createErrorResponse(status, (error as Error).message, {
+        code: (error as any).code,
+      });
     }
   } else {
     if (userError) {
@@ -303,6 +303,7 @@ async function inviteUser(req: Request, currentUserSale: any) {
     );
   } catch (e) {
     console.error("Error patching sale:", e);
+    await reportError(e, { function: "users", step: "invite" });
     return createErrorResponse(500, "Internal Server Error");
   }
 }
@@ -432,6 +433,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     }
   } catch (e) {
     console.error("Error patching sale:", e);
+    await reportError(e, { function: "users", step: "patch" });
     return createErrorResponse(500, "Internal Server Error");
   }
 
@@ -482,6 +484,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     );
   } catch (e) {
     console.error("Error patching sale:", e);
+    await reportError(e, { function: "users", step: "patch" });
     return createErrorResponse(500, "Internal Server Error");
   }
 }
@@ -603,6 +606,7 @@ Deno.serve(
             }
           } catch (e) {
             console.error("Unhandled error in the users function:", e);
+            await reportError(e, { function: "users", step: req.method });
             return createErrorResponse(500, "Internal Server Error");
           }
 

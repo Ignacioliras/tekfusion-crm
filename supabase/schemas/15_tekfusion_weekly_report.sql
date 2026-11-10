@@ -1,8 +1,10 @@
 --
--- Closing date of a lead: when it reached ganado or perdido. The weekly report
--- counts won and lost leads by it. Null while the lead is open or archived, and
--- for leads inserted already closed without one (RF-15 imports: the real date
--- is unknown, so they belong to no week).
+-- Closing date of a lead: when it reached ganado, perdido or archivado (Ignacio,
+-- 2026-11-06). The weekly report counts won and lost leads by it (it filters
+-- ganado / perdido itself); the kanban hides leads closed more than 30 days
+-- ago. Null while the lead is open, and for leads inserted already closed
+-- without one (RF-15 imports: the real date is unknown, so they belong to no
+-- week).
 --
 alter table public.deals add column closed_at timestamp with time zone;
 
@@ -11,7 +13,7 @@ CREATE OR REPLACE FUNCTION "public"."set_deal_closed_at"() RETURNS "trigger"
     SET "search_path" TO ''
     AS $$
 begin
-  if new.stage not in ('ganado', 'perdido') then
+  if new.stage not in ('ganado', 'perdido', 'archivado') then
     new.closed_at := null;
   elsif tg_op = 'UPDATE' then
     if new.stage is distinct from old.stage then

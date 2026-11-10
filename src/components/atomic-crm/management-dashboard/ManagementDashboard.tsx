@@ -14,6 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CANALES_ORIGEN, labelOf } from "../tekfusion/canales";
 import { ETAPAS } from "../tekfusion/estados";
 import { LINEAS_NEGOCIO } from "../tekfusion/lineas";
@@ -232,9 +237,23 @@ const DayInput = ({
   </div>
 );
 
+// Amounts: compact on the card ("$1234,6 M"), the exact figure in the tooltip
+// and the accessible name.
+const amountKpi = (key: string, value: number, previous: number) => ({
+  key,
+  value: formatAmount(value, CURRENCY, { compact: true }),
+  full: formatAmount(value, CURRENCY),
+  previous: formatAmount(previous, CURRENCY, { compact: true }),
+});
+
 const Kpis = ({ current, before }: { current: Totals; before: Totals }) => {
   const translate = useTranslate();
-  const kpis: Array<{ key: string; value: string; previous: string }> = [
+  const kpis: Array<{
+    key: string;
+    value: string;
+    full?: string;
+    previous: string;
+  }> = [
     {
       key: "leads",
       value: String(current.leads),
@@ -255,16 +274,8 @@ const Kpis = ({ current, before }: { current: Totals; before: Totals }) => {
       value: formatPercent(closeRate(current)),
       previous: formatPercent(closeRate(before)),
     },
-    {
-      key: "quoted_amount",
-      value: formatAmount(current.quotedAmount, CURRENCY),
-      previous: formatAmount(before.quotedAmount, CURRENCY),
-    },
-    {
-      key: "won_amount",
-      value: formatAmount(current.wonAmount, CURRENCY),
-      previous: formatAmount(before.wonAmount, CURRENCY),
-    },
+    amountKpi("quoted_amount", current.quotedAmount, before.quotedAmount),
+    amountKpi("won_amount", current.wonAmount, before.wonAmount),
   ];
   return (
     // auto-rows-fr: every card as tall as the tallest one.
@@ -276,13 +287,27 @@ const Kpis = ({ current, before }: { current: Totals; before: Totals }) => {
             key={kpi.key}
             role="group"
             aria-label={title}
-            className="flex flex-col justify-between gap-1 rounded-md border p-3"
+            className="flex min-w-0 flex-col justify-between gap-1 rounded-md border p-3"
           >
-            <div className="text-muted-foreground text-xs">{title}</div>
-            <div className="text-2xl font-semibold tabular-nums">
-              {kpi.value}
+            <div className="text-muted-foreground truncate text-xs">
+              {title}
             </div>
-            <div className="text-muted-foreground text-xs">
+            {kpi.full ? (
+              <Tooltip>
+                <TooltipTrigger
+                  aria-label={kpi.full}
+                  className="truncate text-left text-2xl font-semibold tabular-nums"
+                >
+                  {kpi.value}
+                </TooltipTrigger>
+                <TooltipContent>{kpi.full}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="truncate text-2xl font-semibold tabular-nums">
+                {kpi.value}
+              </div>
+            )}
+            <div className="text-muted-foreground truncate text-xs">
               {translate("tekfusion.dashboard.previous", {
                 value: kpi.previous,
               })}

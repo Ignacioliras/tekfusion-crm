@@ -8,6 +8,12 @@ declare const Deno: {
   serve(handler: (req: Request) => Response | Promise<Response>): unknown;
 };
 
+// Vite's `?raw` import (file contents as a string). Tests only: Deno has none.
+declare module "*?raw" {
+  const text: string;
+  export default text;
+}
+
 // Side-effect import that only adds Supabase's runtime globals in Deno.
 declare module "jsr:@supabase/functions-js/edge-runtime.d.ts" {}
 
@@ -84,8 +90,11 @@ declare module "https://deno.land/x/postgres@v0.17.0/mod.ts" {
   }
 }
 
-declare module "npm:@sentry/deno" {
+declare module "npm:@sentry/deno@11.10.0" {
   export function init(options: Record<string, unknown>): void;
-  export function captureException(error: unknown): string;
+  export function captureException(
+    error: unknown,
+    hint?: { extra?: Record<string, unknown> },
+  ): string;
   export function flush(timeout?: number): Promise<boolean>;
 }

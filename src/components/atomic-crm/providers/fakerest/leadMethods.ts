@@ -20,6 +20,7 @@ import {
 } from "../../management-dashboard/summary";
 import { ETAPAS_ABIERTAS, type Etapa } from "../../tekfusion/estados";
 import { quotePdfPath, validateQuoteFile } from "../commons/quoteFile";
+import type { WaConnectionStatus } from "../supabase/dataProvider";
 
 const ALL = {
   pagination: { page: 1, perPage: 1000 },
@@ -32,6 +33,8 @@ const EVERY_DAY = {
   sort: { field: "day", order: "ASC" as const },
 };
 const DEFAULT_CADENCE_DAYS = [2, 5, 10];
+// Longest text WhatsApp accepts in one message (send_wa_message).
+const MAX_WA_TEXT_LENGTH = 4096;
 
 /** Follow-up dates of a cadence: 10:00 local time, moved off weekends. */
 export const cadenceDates = (from: Date, days: number[]): Date[] =>
@@ -84,7 +87,12 @@ export const createLeadMethods = (
     _filters: Record<string, unknown>,
   ): Promise<void> => undefined,
 
-  /** In-memory mirror of anonymize_contact() (RF-17); no files to remove here. */
+  /**
+   * In-memory mirror of anonymize_contact() (RF-17); no files to remove here.
+   * Also cancels the pending follow-ups of the leads that only have this
+   * contact and strips and archives its WhatsApp conversations (phone
+   * anon-<id>, texts).
+   */
   anonymizeContact: async (
     contactId: Identifier,
   ): Promise<{ filesRemoved: boolean }> => {
@@ -97,6 +105,7 @@ export const createLeadMethods = (
     const { data: contact } = await dataProvider.getOne("contacts", {
       id: contactId,
     });
+    if (contact.anonymized_at) return { filesRemoved: true };
     await dataProvider.update("contacts", {
       id: contactId,
       data: {
@@ -108,6 +117,7 @@ export const createLeadMethods = (
         title: null,
         background: null,
         linkedin_url: null,
+        anonymized_at: new Date().toISOString(),
       },
       previousData: contact,
     });
@@ -131,6 +141,27 @@ export const createLeadMethods = (
       ...everything,
       filter: {},
     });
+    const { data: followups } = await dataProvider.getList<Followup>(
+      "followups",
+      { ...everything, filter: {} },
+    );
+    const { data: conversations } = await dataProvider.getList<WaConversation>(
+      "wa_conversations",
+      {
+        ...everything,
+        filter: { contact_id: contactId },
+      },
+    );
+    const messages = (
+      await Promise.all(
+        conversations.map((c) =>
+          dataProvider.getList<WaMessage>("wa_messages", {
+            ...everything,
+            filter: { conversation_id: c.id },
+          }),
+        ),
+      )
+    ).flatMap((r) => r.data);
     await Promise.all([
       ...contactNotes.map((note) =>
         dataProvider.update("contact_notes", {
@@ -148,6 +179,31 @@ export const createLeadMethods = (
             previousData: note,
           }),
         ),
+      ...followups
+        .filter(
+          (f) => soleDealIds.includes(f.deal_id) && f.status === "pendiente",
+        )
+        .map((f) =>
+          dataProvider.update("followups", {
+            id: f.id,
+            data: { status: "cancelado", cancel_reason: "anonimizado" },
+            previousData: f,
+          }),
+        ),
+      ...conversations.map((c) =>
+        dataProvider.update("wa_conversations", {
+          id: c.id,
+          data: { phone: `anon-${c.id}`, archived: true },
+          previousData: c,
+        }),
+      ),
+      ...messages.map((m) =>
+        dataProvider.update("wa_messages", {
+          id: m.id,
+          data: { text: null },
+          previousData: m,
+        }),
+      ),
     ]);
     return { filesRemoved: true };
   },
@@ -223,6 +279,71 @@ export const createLeadMethods = (
     });
     return unread.length;
   },
+
+  /**
+   * In-memory mirror of send_wa_message(): owner or manager, assigned (an
+   * unassigned chat is taken first, managers too), not archived, 1..4096
+   * characters. ponytail: no 30-per-minute cap and no send_queue row,
+   * the demo never sends anything.
+   */
+  sendWaMessage: async (
+    conversationId: Identifier,
+    text: string,
+  ): Promise<WaMessage> => {
+    const dataProvider = getDataProvider();
+    const fail = (message: string, code: string) =>
+      Object.assign(new Error(message), { code });
+    const me = await getIdentity();
+    const { data: conversation } = await dataProvider
+      .getOne<WaConversation>("wa_conversations", { id: conversationId })
+      .catch(() => {
+        throw fail("conversation does not exist", "P0002");
+      });
+    const isManager = await canAccess({
+      resource: "wa_conversations",
+      action: "list_all",
+    });
+    if (conversation.sales_id == null)
+      throw fail("conversation is unassigned: take it before writing", "42501");
+    if (!isManager && conversation.sales_id !== me?.id)
+      throw fail("conversation is not assigned to you", "42501");
+    if (conversation.archived) throw fail("conversation is archived", "P0002");
+    const body = text.trim();
+    if (body === "" || body.length > MAX_WA_TEXT_LENGTH)
+      throw fail("the message text is empty or too long", "22023");
+
+    const now = new Date().toISOString();
+    const jobId = `crm-${crypto.randomUUID()}`;
+    const { data } = await dataProvider.create<WaMessage>("wa_messages", {
+      data: {
+        conversation_id: conversationId,
+        deal_id: conversation.active_deal_id ?? null,
+        wa_message_id: `pending:${jobId}`,
+        direction: "saliente",
+        type: "texto",
+        text: body,
+        status: "pendiente",
+        from_me_phone: false,
+        origin: "crm",
+        author_sales_id: me?.id ?? null,
+        job_id: jobId,
+        sent_at: now,
+        created_at: now,
+      },
+    });
+    await dataProvider.update("wa_conversations", {
+      id: conversationId,
+      data: { last_message_at: now },
+      previousData: conversation,
+    });
+    return data;
+  },
+
+  /** wa_connection_status() in the demo: there is no instance, always connected. */
+  getWaConnectionStatus: async (): Promise<WaConnectionStatus> => ({
+    connected: true,
+    updated_at: new Date().toISOString(),
+  }),
 
   sendQuote: async (
     quoteId: Identifier,
