@@ -87,7 +87,21 @@ jobs:
             - name: 📥 Download deps
               run: npm ci
 
+            # Navegadores de Playwright en caché, con clave por la versión de @playwright/test
+            # del package-lock: solo se descargan cuando cambia la versión.
+            - name: 🎭 Playwright version
+              id: playwright
+              run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+
+            - name: 🎭 Cache Playwright browsers
+              id: playwright-cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
             - name: 🎭 Install Playwright browsers
+              if: steps.playwright-cache.outputs.cache-hit != 'true'
               run: npx playwright install chromium-headless-shell 1>/dev/null
 
             - name: 🔎 Unit Tests on App
@@ -115,8 +129,26 @@ jobs:
             - name: 📥 Download deps
               run: npm ci
 
+            - name: 🎭 Playwright version
+              id: playwright
+              run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+
+            - name: 🎭 Cache Playwright browsers
+              id: playwright-cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
             - name: 🎭 Install Playwright browsers
+              if: steps.playwright-cache.outputs.cache-hit != 'true'
               run: npx playwright install --with-deps chromium-headless-shell 1>/dev/null
+
+            # Con acierto de caché los navegadores ya están, pero las dependencias del sistema
+            # (apt) no se guardan en ~/.cache/ms-playwright: se instalan igual.
+            - name: 🎭 Install Playwright system deps
+              if: steps.playwright-cache.outputs.cache-hit == 'true'
+              run: npx playwright install-deps chromium-headless-shell 1>/dev/null
 
             # supabase/functions/.env está en .gitignore. Se genera con los valores locales no
             # secretos de su .env.example (la función `users`, que guarda el Perfil, lo necesita).

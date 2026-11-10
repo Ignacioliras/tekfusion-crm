@@ -480,11 +480,12 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "pendiente",
-      "intentos": 0,
+      "estado": "en_progreso",
+      "intentos": 1,
       "commit": null,
       "costo_usd": 0.8728704,
-      "error": null
+      "error": null,
+      "inicio": "2026-11-10 01:15:26"
     }
   ],
   "corridas": [
@@ -494,6 +495,11 @@
       "simulado": false,
       "fin": "2026-11-09 20:55:00",
       "motivo": "cola terminada"
+    },
+    {
+      "inicio": "2026-11-10 01:15:26",
+      "modelo": "opus",
+      "simulado": false
     }
   ]
 }
