@@ -585,6 +585,16 @@ Decididas por Ignacio el 2026-11-09 y aplicadas en la misma rama, junto con las 
   - `docs/07` todavía nombra `infra/docker-compose.yml` (línea de "Docker en el VPS"): es `infra/vps/docker-compose.yml`.
 - **Archivos:** `purge-orphan-attachments/{handler,index}.ts` y su test, migración `20261109235000_purge_orphan_cron.sql` (editada), `schemas/11_tekfusion_policies.sql`, `schemas/14_tekfusion_whatsapp.sql`, migración `20261110023114_decisiones_2026_11_09.sql` (`db diff` limpiado de los fantasmas de siempre), pgTAP `31_anonimizar` (46 casos), `38_send_wa_message` (47) y `40_attachment_refs` (12, nuevo), vitest `_shared/attachmentRefs.test.ts` (mantiene la copia de la consulta del pgTAP igual a la real), `fakerest/leadMethods.ts`, e2e `purga-adjuntos`, `whatsapp-indicador`, `whatsapp-realtime` y `whatsapp-tope` con `fixtures/supabase.ts` (clientes de la API con la sesión de cada usuario), `check.yml` (el secreto de prueba de la purga en el `.env` de funciones del CI), `docs/07`.
 
+## 2026-11-10 · Decisiones de Ignacio para la cola 2026-11-10
+Cierran puntos que quedaron abiertos en "Decisiones de Ignacio tras probar la cola 2026-11-09". Se implementan en la cola nocturna 2026-11-10 (`docs/nocturno/2026-11-10.json`).
+1. **Anonimizar borra los adjuntos de WhatsApp y cancela los mensajes en cola.** `anonymize_contact_data` devuelve también los `wa_messages.attachment_path` del contacto (para borrarlos del bucket) y los deja en `null`, y cancela las filas pendientes de `send_queue` de esos mensajes.
+2. **Las conversaciones se enlazan solas al contacto.** `wa_ingest_message` pone `contact_id` cuando el teléfono normalizado calza con exactamente un contacto (ninguno o varios: `null`). El ejecutivo dueño o gerencia con aal2 la enlazan a mano con la RPC `link_wa_conversation_contact`.
+3. **Sentry quita RUT e IP y nunca envía el texto de un mensaje ni el `pushName`.** Un solo filtro, compartido entre las Edge Functions y el navegador.
+4. **Errores de la bandeja en 4xx.** En `send_wa_message`, `take_wa_conversation` y `mark_wa_conversation_read`: conversación archivada o ya tomada `PT409`; inexistente `PT404` (antes `P0002`, que PostgREST devolvía como HTTP 500).
+5. **Un reintento en `_shared/db.ts`** ante un error de conexión (conexión cortada por un reinicio de la base), nunca ante un error de SQL.
+6. **El reintento de cada tarea nocturna va con el modelo de la cola** (`modelo_reintento`), aunque la tarea fije otro para el primer intento: `scripts/tekfusion/nocturno.mjs` y `docs/nocturno/README.md`. Motivo: la cuota semanal de Fable está al 90 %; las 🔒 corren con Fable el primer intento y con Opus el reintento.
+- **Sigue abierta:** ¿uno o dos VPS?
+
 ## Plantilla para nuevas decisiones
 ```
 ## AAAA-MM-DD · Título
