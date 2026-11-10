@@ -14,7 +14,7 @@ describe("scrubEvent", () => {
     ["a WhatsApp jid", "jid 56912345678@s.whatsapp.net", "[email]"],
     ["a Bearer token", "auth Bearer abc.DEF-123_xyz", "Bearer [token]"],
     ["a JWT", `jwt ${JWT} end`, "[token]"],
-    ["an apikey pair", "apikey=secreto-123 fin", "apikey=[token]"],
+    ["an apikey pair", "apikey=secreto-123 fin", "apikey=[token]"], // gitleaks:allow
     ["a json apikey", '{"apikey": "secreto-123"}', '{"apikey": "[token]"}'],
   ])("removes %s from the message", (_, message, expected) => {
     const event = scrubEvent({ message });
