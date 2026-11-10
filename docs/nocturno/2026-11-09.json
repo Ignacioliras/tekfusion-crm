@@ -480,12 +480,16 @@
       "necesita_supabase": false,
       "modelo": "opus",
       "esfuerzo": "high",
-      "estado": "en_progreso",
+      "estado": "hecha",
       "intentos": 1,
-      "commit": null,
-      "costo_usd": 0.8728704,
+      "commit": "fc83ed9170dc6c626cb320078260d36ca5e4ab02",
+      "costo_usd": 3.154685,
       "error": null,
-      "inicio": "2026-11-10 01:15:26"
+      "inicio": "2026-11-10 01:15:26",
+      "modelo_usado": "opus/high",
+      "session_id": "b95fce74-ae9e-447d-9094-0eacfb2905e6",
+      "resumen_claude": "HECHA: borrador de docs/manual-gerencia.md con lo pendiente marcado y navegadores de Playwright en caché (clave por versión del package-lock) en los dos jobs de check.yml; prettier sin diferencias.",
+      "fin": "2026-11-10 01:18:26"
     }
   ],
   "corridas": [
