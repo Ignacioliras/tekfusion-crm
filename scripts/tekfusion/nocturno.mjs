@@ -362,13 +362,14 @@ const PROHIBIDAS = [
   "Bash(npx supabase functions deploy *)",
 ].join(",");
 
-// Modelo por intento: la tarea puede fijar el suyo; en el reintento se sube de modelo si la cola lo define.
+// Modelo por intento: la tarea fija el del primer intento; el reintento usa el
+// de la cola (`modelo_reintento`) si está definido, aunque la tarea fije otro.
 const modeloPara = (t) => {
   const reintento = (t.intentos || 1) > 1;
   const modelo =
-    t.modelo || (reintento && estado.limites.modelo_reintento) || MODELO;
+    (reintento && estado.limites.modelo_reintento) || t.modelo || MODELO;
   const esfuerzo =
-    t.esfuerzo || (reintento && estado.limites.esfuerzo_reintento) || ESFUERZO;
+    (reintento && estado.limites.esfuerzo_reintento) || t.esfuerzo || ESFUERZO;
   return { modelo, esfuerzo };
 };
 
