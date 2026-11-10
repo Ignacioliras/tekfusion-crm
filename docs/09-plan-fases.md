@@ -11,7 +11,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 ## Fase 1 · Infraestructura (3 días)
 - [ ] Cuentas a nombre de TekFusion: GitHub (repo privado, `main` protegida), Supabase (`tekfusion-staging` y `tekfusion-prod`, Pro en prod), Cloudflare (Pages + DNS + R2 `tekfusion-backups`), Hostinger VPS 8 GB, Anthropic API (con tope de gasto). *Si TekFusion aún no entrega tarjeta/accesos: crear en cuenta de Libux y transferir (registrar en `10-decisiones.md`).*
 - [ ] 🔒 2FA en todas las cuentas; bóveda Bitwarden "TekFusion CRM" con códigos de recuperación.
-- [ ] VPS: Docker + Compose, `ufw` (solo 22/80/443), SSH solo con llave y sin root, `fail2ban`, `unattended-upgrades`, Caddy con HTTPS, `infra/docker-compose.yml` con Evolution, n8n y Uptime Kuma **sin puertos públicos**, imágenes fijadas a versión. Documentar en `infra/README.md`.
+- [ ] VPS: Docker + Compose, `ufw` (solo 22/80/443), SSH solo con llave y sin root, `fail2ban`, `unattended-upgrades`, Caddy con HTTPS, `infra/docker-compose.yml` con Evolution, n8n y Uptime Kuma **sin puertos públicos**, imágenes fijadas a versión. Documentar en `infra/README.md`. *Avance (2026-11-09, nocturno T15): `infra/vps/` con compose, Caddyfile y guía, **sin levantar** (tags de imagen sin contrastar). Abierta: ¿uno o dos VPS? (Ignacio, `docs/10`).*
 - [ ] Evolution staging conectada a un número de prueba de Libux; webhook apuntando a la Edge Function de staging; `/manager` solo en staging.
 - [ ] n8n con auth propia y credenciales de staging; Uptime Kuma con los 5 checks y 🔒 avisos a Telegram/WhatsApp de Libux.
 - [x] Repo creado sobre Atomic CRM con el kit fusionado (2026-11-03): `.env.example`, `.gitignore`, `.gitattributes`, `README.md`, hooks de Claude Code (`.claude/settings.json`), pre-commit husky + gitleaks, CI (`check.yml` + `seguridad.yml`), Dependabot, plantilla de PR.
@@ -82,23 +82,53 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Edge Function `whatsapp-webhook` con validación `apikey`, zod, idempotencia, adjuntos a Storage, creación de conversación y disparo del flujo 02. Tests escritos antes (TDD). *Avance (2026-11-06, cola 2026-11-06-c T2–T4): apikey, zod, idempotencia, conversación por teléfono, acuses y conexión. Faltan adjuntos a Storage, el disparo del flujo 02 y probar remitentes `@lid` en staging.*
 - [x] Validar con zod la entrada de la Edge Function `users` (POST, PATCH, DELETE), con el mismo `_shared` que use `whatsapp-webhook` (hallazgo B6 de la revisión de seguridad, `docs/10`). *Hecho (2026-11-06, cola 2026-11-06-c T1).*
 - [ ] Edge Function `whatsapp-send` (texto, adjunto, cotización, firma) con reglas anti-bloqueo. *🔒 por la revisión de T9 (`docs/10`): la RPC no pone tope, así que el tope diario, el espaciado y el horario hábil van aquí, y tiene que reemplazar el `wa_message_id` provisional (reconciliar por `job_id`) antes del eco del webhook.*
-- [ ] No se escribe en conversaciones archivadas: `send_wa_message` responde error si la conversación está archivada (decisión de Ignacio, 2026-11-06, `docs/10`).
-- [ ] El kanban oculta los leads ganados, perdidos y archivados de más de 30 días (decisión de Ignacio, 2026-11-06, `docs/10`).
-- [ ] Bandeja: lista (Mis chats / Sin asignar / Todos), conversación en tiempo real, estados, adjuntos, audio, respuestas rápidas, "Tomar" conversación. *Avance (2026-11-09, rama `fase-4/bandeja`): lista por pestaña, conversación, estados, adjuntos y audio sobre Supabase; "Tomar" (`take_wa_conversation`) y leído al abrir (`mark_wa_conversation_read`); el lector ve "Tu perfil no tiene acceso" y no tiene ítem en el menú. Faltan tiempo real, respuestas rápidas y el cuadro de escribir (deshabilitado).*
-- [ ] Indicador de conexión + pantalla de reconexión por QR (Configuración → WhatsApp).
-- [ ] Atribución de mensajes `fromMe` escritos desde el teléfono.
+- [x] No se escribe en conversaciones archivadas: `send_wa_message` responde error si la conversación está archivada (decisión de Ignacio, 2026-11-06, `docs/10`). *Hecho (2026-11-09, nocturno T1, con tope de 30 por minuto). Por decisión de Ignacio del 2026-11-09 también rechaza las sin asignar para gerencia y anonimizar archiva las conversaciones del contacto.*
+- [x] El kanban oculta los leads ganados, perdidos y archivados de más de 30 días (decisión de Ignacio, 2026-11-06, `docs/10`). *Hecho (2026-11-09, nocturno T3). Con texto en el buscador vuelven a salir: queda así (Ignacio, 2026-11-09).*
+- [ ] Bandeja: lista (Mis chats / Sin asignar / Todos), conversación en tiempo real, estados, adjuntos, audio, respuestas rápidas, "Tomar" conversación. *Avance (2026-11-09, rama `fase-4/bandeja`): lista por pestaña, conversación, estados, adjuntos y audio sobre Supabase; "Tomar" (`take_wa_conversation`) y leído al abrir (`mark_wa_conversation_read`); el lector ve "Tu perfil no tiene acceso" y no tiene ítem en el menú. Faltan tiempo real, respuestas rápidas y el cuadro de escribir (deshabilitado).* *Avance (2026-11-09, nocturno T4–T6 y T12, probado de día): cuadro de escribir con `send_wa_message`, respuestas rápidas y tiempo real por Realtime. Faltan los dos pendientes de la revisión de abajo (Realtime de gerencia y conversación abierta como copia).*
+- [ ] Indicador de conexión + pantalla de reconexión por QR (Configuración → WhatsApp). *Avance (2026-11-09, nocturno T7, probado de día): punto verde/rojo en el menú y banner en la bandeja (`wa_connection_status`). Falta la pantalla de reconexión por QR.*
+- [x] Atribución de mensajes `fromMe` escritos desde el teléfono. *Hecho: la base los atribuye al ejecutivo de la conversación (`wa_ingest_message`, cola 2026-11-06-c T3) y la burbuja los muestra como "desde el teléfono" con el autor de los enviados desde el CRM (2026-11-09, nocturno T2). Se prueba con Evolution real en la lista de `docs/07`.*
 - [ ] Pruebas de la lista de `07-whatsapp-evolution.md`.
+
+### Cola nocturna 2026-11-09 (mergeada a `main` el 2026-11-10, PR 17; probada de día, decisiones y hallazgos en `docs/10`)
+- [x] T1 🔒 (2026-11-09): `send_wa_message` rechaza archivadas (P0002) y tope de 30 mensajes por minuto por usuario (PT429, HTTP 429). Probado con 40 llamadas simultáneas: pasan 30.
+- [x] T2 (2026-11-09): burbuja de los mensajes escritos desde el teléfono y autor de los enviados desde el CRM.
+- [x] T3 (2026-11-09): `closed_at` también al archivar; el kanban oculta los cerrados de más de 30 días.
+- [x] T4 (2026-11-09): cuadro de escribir de la bandeja con `send_wa_message`.
+- [x] T5 (2026-11-09): respuestas rápidas en el cuadro de escribir.
+- [x] T6 🔒 (2026-11-09): tiempo real en la bandeja (Realtime avisa, la API entrega). Probado con sesiones reales: cada ejecutivo recibe solo lo suyo; lector y gerencia sin TOTP, nada.
+- [x] T7 🔒 (2026-11-09): indicador de conexión (`wa_connection_status`, sin `last_event`). Probado en pantalla como Camila y Andrea.
+- [x] T8 🔒 (2026-11-09): anonimizar cancela los seguimientos pendientes y limpia el WhatsApp del contacto; por decisión de Ignacio del 2026-11-09 también archiva sus conversaciones.
+- [x] T9 🔒 (2026-11-09): `offboard_sale` reasigna las conversaciones de WhatsApp al suplente de la línea.
+- [x] T10 🔒 (2026-11-09): Sentry en las Edge Functions con `scrubEvent` (correos, teléfonos y tokens; no RUT, nombres ni IP).
+- [x] T11 🔒 (2026-11-09): Edge Function `purge-orphan-attachments` y job de pg_cron. Por decisión de Ignacio del 2026-11-09 valida `PURGE_CRON_SECRET`; el service role key no va a Vault. Consulta de referencias probada contra la base (pgTAP `40_attachment_refs`) y simulacro con `functions serve`.
+- [x] T12 (2026-11-09): e2e de enviar desde la bandeja (`whatsapp-enviar.spec.ts`).
+- [x] T13 (2026-11-09): dashboard con montos compactos y atajo "Últimos 12 meses".
+- [x] T14 (2026-11-09): correo semanal con tabla por línea de negocio (solo el render; ver la Fase 5).
+- [x] T15 (2026-11-09): `infra/vps/` listo para copiar, sin levantar (ver la Fase 1).
+- [x] T16 (2026-11-09): borradores importables de los flujos 01–11 en `n8n/flows/` y `scripts/tekfusion/n8n-check.mjs` (ver la Fase 5).
+- [x] T17 (2026-11-09): borrador de `docs/manual-gerencia.md` y caché de Playwright en el CI (restaura en el segundo run).
+
+### Pendientes de la revisión de la cola 2026-11-09 (`docs/10`, "Decisiones de Ignacio tras probar la cola 2026-11-09")
+- [ ] Realtime de gerencia: recién verificado el TOTP, el canal queda con el token aal1 y no recibe nada hasta recargar. Llamar a `realtime.setAuth()` con el token nuevo al verificar el código y quitar el `fixme` de `e2e/tekfusion/whatsapp-realtime.spec.ts`.
+- [ ] La conversación abierta en la bandeja es una copia: no se marca leída sola cuando llega un mensaje ni sigue a la fila si otro la toma o la archiva.
+- [ ] Escribir en una conversación archivada (y tomar una no disponible) responde HTTP 500: PostgREST no mapea `P0002`. Elegir un código que dé 4xx.
+- [ ] Una Edge Function ya despierta responde 500 una vez después de un corte de la base (conexión de `_shared/db.ts`); para `delete_note_attachments` deja un archivo huérfano hasta la purga.
+- [ ] Anonimizar y WhatsApp: borrar del bucket los adjuntos (`wa_messages.attachment_path`) y descartar los mensajes que quedaron encolados en `send_queue`. Decisión de Ignacio.
+- [ ] Sentry: decidir si `scrubEvent` quita también RUT, nombres e IP, y si el Sentry del navegador (`src/lib/sentry.ts`) usa el mismo filtro (hoy no filtra los textos).
+- [ ] La pantalla de usuarios no avisa cuántas conversaciones movió la baja; el suplente hereda los no leídos.
+- [ ] Purga en staging y producción (Ignacio): `PURGE_CRON_SECRET` en `supabase secrets` y en Vault (`purge_cron_secret`), `project_url`, simulacro a mano y recién entonces el bloque `do` de la migración `20261109235000`.
+- [ ] `docs/07` todavía nombra `infra/docker-compose.yml`: es `infra/vps/docker-compose.yml`.
 
 ## Fase 5 · Flujos de n8n (5 días)
 - [ ] 01 Ingreso por correo (IMAP Gmail + IA + asignación + aviso). 🔒 Salida de Haiku validada contra esquema; nunca ejecuta acciones.
-- [ ] 02 Ingreso por WhatsApp.
+- [ ] 02 Ingreso por WhatsApp. *Pendiente de la revisión del 2026-11-09: tiene que enlazar `wa_conversations.contact_id`; hoy nadie lo pone, así que anonimizar un contacto no limpia ningún WhatsApp real.*
 - [ ] 03 Motor de seguimientos (con reglas anti-bloqueo y límite por hora de VíaRed).
 - [ ] 04 Detector de respuestas por correo (IMAP VíaRed por ejecutivo).
 - [ ] 05 Alertas 24/48 h. 06 Archivado. 07 Ganado → facturación.
 - [ ] 08 Monitoreo WhatsApp. 09 Reporte semanal. 10 Reconciliación. 11 Avisos al ejecutivo.
-- [ ] Correo semanal con desglose por línea de negocio: `weekly_report_data` (o una RPC más) devuelve filas por línea y `renderWeeklyReport` arma la tabla (decisión de Ignacio, 2026-11-06, `docs/10`).
+- [ ] Correo semanal con desglose por línea de negocio: `weekly_report_data` (o una RPC más) devuelve filas por línea y `renderWeeklyReport` arma la tabla (decisión de Ignacio, 2026-11-06, `docs/10`). *Avance (2026-11-09, nocturno T14): `renderWeeklyReport` ya dibuja la tabla si recibe `by_business_line`. Falta que `weekly_report_data` lo devuelva (+ pgTAP).*
 - [ ] 🔒 12 Respaldos: `pg_dump` semanal y Storage a R2; `rclone` diario del VPS a R2. *Avance (2026-11-06, nocturno T11): `scripts/tekfusion/respaldo.mjs` cubre **solo la parte local**: `pg_dump` del Supabase local y, con `--probar`, restauración en una base temporal con comparación de conteos (11,9 s). No toca staging ni producción, no sube a R2 (bloque comentado con TODO), no respalda Storage ni el VPS, no restaura `pg_cron` y no rota `backups/`. Sigue abierto.*
-- [ ] Exportar todos los flujos a `n8n/flows/`. Prueba de reejecución sin duplicados.
+- [ ] Exportar todos los flujos a `n8n/flows/`. Prueba de reejecución sin duplicados. *Avance (2026-11-09, nocturno T16): borradores importables de 01–11, nunca importados ni ejecutados. Pendientes de la revisión: llaman 7 RPC que no existen (`ingest_email_lead`, `ingest_whatsapp_lead`, `claim_due_followups`, `email_reply_received`, `raise_first_contact_alerts`, `archive_stale_deals`, `raise_wa_disconnected_alert`) y usan `$env.SUPABASE_URL`, `EVOLUTION_URL` y `EVOLUTION_INSTANCE`, que `infra/vps/docker-compose.yml` no le pasa a n8n.*
 - [ ] 🔒 **Prueba de restauración con reloj** en staging (base + Storage + n8n + Evolution). Anotar tiempos en `10-decisiones.md`.
 - [ ] Medir precisión del clasificador con los 50 correos etiquetados por TekFusion (objetivo ≥ 90 % en línea correcta; si no, ajustar prompt/palabras clave).
 
@@ -114,7 +144,7 @@ Kickoff: 28 de octubre de 2026. Plazo comprometido: **7 semanas** (salida a prod
 - [ ] Producción: proyecto Supabase prod, Evolution prod con el número corporativo (QR escaneado por TekFusion), n8n prod, DNS `crm.tekfusion.cl`. 🔒 SPF/DKIM/DMARC verificados en mxtoolbox.
 - [ ] Ensayo de migración en staging con el CSV real → TekFusion valida que los números cuadran. Luego migración real (con TekFusion presente).
 - [ ] **Marcha blanca 1 semana** en paralelo con su sistema actual. Calentamiento del número: volumen bajo, seguimientos automáticos apagados los primeros 10 días.
-- [ ] Manual de usuario (ejecutivo y gerencia), guía de reconexión de WhatsApp, 4 videos de 3 minutos.
+- [ ] Manual de usuario (ejecutivo y gerencia), guía de reconexión de WhatsApp, 4 videos de 3 minutos. *Avance: borradores de `docs/manual-ejecutivo.md` (2026-11-06) y `docs/manual-gerencia.md` (2026-11-09, nocturno T17).*
 - [ ] Capacitación (2 sesiones: ejecutivos y gerencia). Acta de entrega firmada. Factura del segundo 50 %.
 - [ ] Entrega de accesos y documentación a TekFusion; checklist de traspaso en `13-acuerdo-comercial.md`.
 
