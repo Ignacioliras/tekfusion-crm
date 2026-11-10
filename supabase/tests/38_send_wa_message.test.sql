@@ -1,12 +1,14 @@
 -- send_wa_message(conversation_id, text): escribir desde la bandeja (todavía no
 -- envía nada: deja el mensaje en pendiente y lo encola en send_queue).
--- Ejecutivo solo en sus conversaciones; gerencia con aal2 en cualquiera; lector,
+-- Ejecutivo solo en sus conversaciones; gerencia con aal2 en cualquiera que
+-- tenga dueño (una sin asignar se toma primero: 42501 también para gerencia,
+-- decisión de Ignacio 2026-11-09); lector,
 -- usuario sin sale y gerencia sin verificar (aal1), 42501. Texto vacío o de más
 -- de 4096 caracteres, 22023. Conversación inexistente o archivada, P0002.
 -- Más de 30 mensajes del mismo usuario en un minuto, PT429 (HTTP 429).
 -- Seed: +56900000001 es de Camila, +56900000002 de Diego, +56900000003 sin asignar.
 begin;
-select plan(45);
+select plan(47);
 
 create function pg_temp.login_as(p_email text, p_aal text default 'aal2') returns void language plpgsql as $$
 declare uid uuid;
@@ -91,6 +93,10 @@ reset role;
 select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
 select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), 'P0002', null,
   'gerencia tampoco escribe en una conversación archivada') from conv where phone = '+56900000094';
+-- Sin asignar (decisión de Ignacio 2026-11-09, docs/10): tampoco gerencia.
+select throws_ok(format('select public.send_wa_message(%s, ''Hola'')', id), '42501',
+  format('conversation %s is unassigned: take it before writing', id),
+  'gerencia no escribe en una conversación sin asignar') from conv where phone = '+56900000003';
 reset role;
 
 -- Ninguno de los rechazos de arriba (permiso, archivada, texto) guardó nada.
@@ -148,8 +154,10 @@ select is((select t.author_sales_id from conv, public.send_wa_message(conv.id, '
             where conv.phone = '+56900000002'),
   (select id from people where email = 'andrea.soto@tekfusion-demo.cl'),
   'gerencia escribe en la conversación de un ejecutivo y queda como autora');
+select is((select t.sales_id from conv, public.take_wa_conversation(conv.id) t where conv.phone = '+56900000003'),
+  (select id from people where email = 'andrea.soto@tekfusion-demo.cl'), 'gerencia toma la conversación sin asignar');
 select lives_ok(format('select public.send_wa_message(%s, ''Hola'')', id),
-  'gerencia escribe en una conversación sin asignar') from conv where phone = '+56900000003';
+  'y recién entonces escribe en ella') from conv where phone = '+56900000003';
 reset role;
 
 select is((select last_message_at from public.wa_conversations where phone = '+56900000002'), now() + interval '1 day',

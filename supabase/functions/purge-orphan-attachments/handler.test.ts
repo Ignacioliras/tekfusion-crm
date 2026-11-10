@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createHandler, MIN_AGE_MS } from "./handler";
 
-const SERVICE_ROLE_KEY = "clave-service-role-de-prueba"; // gitleaks:allow (dato de prueba, no es un secreto)
+const CRON_SECRET = "secreto-de-la-purga-de-prueba"; // gitleaks:allow (dato de prueba, no es un secreto)
 const NOW = new Date("2026-11-09T12:00:00Z");
 const hoursAgo = (hours: number): Date =>
   new Date(NOW.getTime() - hours * 60 * 60 * 1000);
@@ -24,7 +24,7 @@ const setup = ({
   const removed: string[][] = [];
   const logs: unknown[][] = [];
   const handler = createHandler({
-    serviceRoleKey: SERVICE_ROLE_KEY,
+    cronSecret: CRON_SECRET,
     listObjectsOlderThan: async (cutoff) =>
       files.filter((f) => f.createdAt < cutoff).map((f) => f.name),
     getUnreferencedNames: async (names) =>
@@ -41,7 +41,7 @@ const setup = ({
 
 const post = (
   body: unknown = undefined,
-  authorization: string | null = `Bearer ${SERVICE_ROLE_KEY}`,
+  authorization: string | null = `Bearer ${CRON_SECRET}`,
 ): Request =>
   new Request("http://localhost/purge-orphan-attachments", {
     method: "POST",
@@ -58,16 +58,39 @@ const OLD_ORPHAN = "deals/12/0.8262106278726917.pdf";
 const OLD_REFERENCED = "contacts/7/0.111.png";
 
 describe("purge-orphan-attachments handler", () => {
-  it("answers 401 without the service role key", async () => {
+  it("answers 401 without the purge secret", async () => {
     const { handler, removed } = setup({
       files: [{ name: OLD_ORPHAN, createdAt: hoursAgo(48) }],
     });
 
     const missing = await handler(post({ apply: true }, null));
-    const anonKey = await handler(post({ apply: true }, "Bearer otra-clave"));
+    const otherKey = await handler(post({ apply: true }, "Bearer otra-clave"));
     const empty = await handler(post({ apply: true }, "Bearer "));
 
-    expect([missing.status, anonKey.status, empty.status]).toEqual([
+    expect([missing.status, otherKey.status, empty.status]).toEqual([
+      401, 401, 401,
+    ]);
+    expect(removed).toHaveLength(0);
+  });
+
+  it("answers 401 to everything while PURGE_CRON_SECRET is not configured", async () => {
+    const removed: string[][] = [];
+    const handler = createHandler({
+      cronSecret: "",
+      listObjectsOlderThan: async () => [OLD_ORPHAN],
+      getUnreferencedNames: async (names) => names,
+      removeObjects: async (names) => {
+        removed.push(names);
+      },
+      log: () => {},
+      now: () => NOW,
+    });
+
+    const noHeader = await handler(post({ apply: true }, null));
+    const emptyBearer = await handler(post({ apply: true }, "Bearer "));
+    const anyValue = await handler(post({ apply: true }, "Bearer undefined"));
+
+    expect([noHeader.status, emptyBearer.status, anyValue.status]).toEqual([
       401, 401, 401,
     ]);
     expect(removed).toHaveLength(0);
@@ -79,7 +102,7 @@ describe("purge-orphan-attachments handler", () => {
     const get = await handler(
       new Request("http://localhost/", {
         method: "GET",
-        headers: { authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+        headers: { authorization: `Bearer ${CRON_SECRET}` },
       }),
     );
     const extraKey = await handler(post({ apply: true, bucket: "quotes" }));
@@ -161,7 +184,7 @@ describe("purge-orphan-attachments handler", () => {
   it("ignores names the reference check returns but never asked for", async () => {
     const removed: string[][] = [];
     const handler = createHandler({
-      serviceRoleKey: SERVICE_ROLE_KEY,
+      cronSecret: CRON_SECRET,
       listObjectsOlderThan: async () => [OLD_ORPHAN],
       getUnreferencedNames: async () => [OLD_ORPHAN, "sales/0.444.png"],
       removeObjects: async (names) => {
@@ -184,7 +207,7 @@ describe("purge-orphan-attachments handler", () => {
       removeError: new Error("storage down"),
     });
     const reporting = createHandler({
-      serviceRoleKey: SERVICE_ROLE_KEY,
+      cronSecret: CRON_SECRET,
       listObjectsOlderThan: async () => [OLD_ORPHAN],
       getUnreferencedNames: async (names) => names,
       removeObjects: async () => {

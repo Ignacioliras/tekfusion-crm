@@ -8,6 +8,12 @@ declare const Deno: {
   serve(handler: (req: Request) => Response | Promise<Response>): unknown;
 };
 
+// Vite's `?raw` import (file contents as a string). Tests only: Deno has none.
+declare module "*?raw" {
+  const text: string;
+  export default text;
+}
+
 // Side-effect import that only adds Supabase's runtime globals in Deno.
 declare module "jsr:@supabase/functions-js/edge-runtime.d.ts" {}
 

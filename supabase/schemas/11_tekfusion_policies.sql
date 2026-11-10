@@ -157,10 +157,12 @@ $$;
 -- another contact is not touched (Ignacio, 2026-11-05). Amounts, stages and
 -- dates stay: the metrics survive.
 -- WhatsApp (14_): the conversations linked to the contact lose the number
--- (phone = 'anon-<conversation id>', allowed by wa_conversations_phone_e164),
--- their messages lose the text and the raw webhook bodies are deleted; rows,
--- dates and statuses stay. A new message from the real number opens another
--- conversation, not linked to the contact (docs/10, 2026-11-09).
+-- (phone = 'anon-<conversation id>', allowed by wa_conversations_phone_e164)
+-- and are archived, so nobody writes to them again (send_wa_message rejects
+-- an archived conversation; Ignacio, 2026-11-09); their messages lose the
+-- text and the raw webhook bodies are deleted; rows, dates and statuses stay.
+-- A new message from the real number opens another conversation, not linked
+-- to the contact (docs/10, 2026-11-09).
 -- Left untouched on purpose: deals.name, deals.description and quotes with
 -- their PDF. Pending decision of TekFusion (docs/10, 2026-11-05).
 CREATE OR REPLACE FUNCTION "public"."anonymize_contact_data"("target_id" bigint, "actor_id" bigint) RETURNS "text"[]
@@ -226,7 +228,7 @@ begin
   update public.wa_messages m set text = null
     from public.wa_conversations w
    where w.id = m.conversation_id and w.contact_id = target_id and m.text is not null;
-  update public.wa_conversations set phone = 'anon-' || id where contact_id = target_id;
+  update public.wa_conversations set phone = 'anon-' || id, archived = true where contact_id = target_id;
 
   insert into public.audit_log (actor_sales_id, action, details)
   values (actor_id, 'contact.anonymized',

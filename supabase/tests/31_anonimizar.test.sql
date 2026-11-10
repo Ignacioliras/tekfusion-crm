@@ -3,7 +3,7 @@
 -- y sus montos quedan. Un lead compartido con otro contacto no se toca y la
 -- actividad reciente frena la retención (Ignacio, 2026-11-05).
 begin;
-select plan(43);
+select plan(46);
 
 create function pg_temp.login_as(p_email text, p_aal text default 'aal2') returns void language plpgsql as $$
 declare uid uuid;
@@ -92,8 +92,11 @@ select d.id, 2, now() - interval '1 day', '{whatsapp}', 'enviado', now() - inter
   from public.deals d where d.name = 'Lead solo de A';
 -- WhatsApp: A, B, C e I tienen conversación propia; J no (la suya no tiene
 -- contacto, pero su mensaje apunta a su lead). Cada mensaje trae cuerpo crudo.
-insert into public.wa_conversations (phone, contact_id)
-select v.phone, v.contact_id from fx, lateral (values
+-- La de A tiene dueña (Camila): sirve para probar que después nadie escribe en ella.
+insert into public.wa_conversations (phone, contact_id, sales_id)
+select v.phone, v.contact_id,
+       case when v.contact_id = a then (select id from public.sales where email = 'camila.rojas@tekfusion-demo.cl') end
+  from fx, lateral (values
   ('+56900003101', a), ('+56900003102', b), ('+56900003103', c), ('+56900003104', i), ('+56900003105', null::bigint)
 ) as v(phone, contact_id);
 insert into public.wa_messages (conversation_id, deal_id, wa_message_id, direction, type, text, sent_at)
@@ -162,9 +165,22 @@ select is((select array[count(*), count(m.text)] from public.wa_messages m join 
   array[2, 0]::bigint[], 'sus mensajes quedan, sin texto');
 select is((select count(*) from public.wa_message_payloads p join public.wa_messages m on m.id = p.message_id join public.wa_conversations w on w.id = m.conversation_id, fx where w.contact_id = fx.a),
   0::bigint, 'los cuerpos crudos de sus mensajes se borran');
-select is((select jsonb_build_array(w.phone, m.text, (select count(*) from public.wa_message_payloads p where p.message_id = m.id))
+select is((select jsonb_build_array(w.phone, m.text, (select count(*) from public.wa_message_payloads p where p.message_id = m.id), w.archived)
              from public.wa_conversations w join public.wa_messages m on m.conversation_id = w.id, fx where w.contact_id = fx.b),
-  '["+56900003102", "Hola, soy Beto", 1]'::jsonb, 'la conversación de otro contacto no se toca');
+  '["+56900003102", "Hola, soy Beto", 1, false]'::jsonb, 'la conversación de otro contacto no se toca ni se archiva');
+-- Archivada (decisión de Ignacio 2026-11-09, docs/10): nadie vuelve a escribir en ella.
+select ok((select w.archived and w.sales_id is not null from public.wa_conversations w, fx where w.contact_id = fx.a),
+  'su conversación queda archivada y conserva a su dueña');
+create temp table anon_conv as select w.id from public.wa_conversations w, fx where w.contact_id = fx.a;
+grant select on anon_conv to authenticated;
+select pg_temp.login_as('camila.rojas@tekfusion-demo.cl');
+select throws_ok($$select public.send_wa_message((select id from anon_conv), 'Hola')$$, 'P0002',
+  format('conversation %s is archived', (select id from anon_conv)), 'su dueña ya no puede escribir en la conversación anonimizada');
+reset role;
+select pg_temp.login_as('andrea.soto@tekfusion-demo.cl');
+select throws_ok($$select public.send_wa_message((select id from anon_conv), 'Hola')$$, 'P0002', null,
+  'gerencia tampoco');
+reset role;
 select throws_ok($$insert into public.wa_conversations (phone) values ('anon-abc')$$, '23514', null,
   'el check del número solo acepta E.164 o anon-<número>');
 -- El número real sigue existiendo: un mensaje nuevo abre otra conversación, sin contacto.
@@ -224,8 +240,8 @@ select is((select first_name from public.contacts, fx where id = fx.g), 'Gema', 
 select is((select first_name from public.contacts, fx where id = fx.h), 'Hugo', 'un contacto con una tarea antigua completada ayer no se anonimiza');
 select is((select first_name from public.contacts, fx where id = fx.i), 'Ines', 'un contacto con un WhatsApp de ayer en su conversación no se anonimiza');
 select is((select first_name from public.contacts, fx where id = fx.j), 'Joel', 'un contacto con un WhatsApp de ayer en su lead no se anonimiza');
-select is((select jsonb_build_array(w.phone = 'anon-' || w.id, m.text) from public.wa_conversations w join public.wa_messages m on m.conversation_id = w.id, fx where w.contact_id = fx.c),
-  '[true, null]'::jsonb, 'el WhatsApp antiguo del vencido no lo frena y la retención también lo limpia');
+select is((select jsonb_build_array(w.phone = 'anon-' || w.id, m.text, w.archived) from public.wa_conversations w join public.wa_messages m on m.conversation_id = w.id, fx where w.contact_id = fx.c),
+  '[true, null, true]'::jsonb, 'el WhatsApp antiguo del vencido no lo frena y la retención también lo limpia y lo archiva');
 select is((select l.details from public.audit_log l where l.action = 'retention.run'),
   '{"contacts": 1, "months": 24}'::jsonb, 'la corrida queda en audit_log con su cantidad');
 

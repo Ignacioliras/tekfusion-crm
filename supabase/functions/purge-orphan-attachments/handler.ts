@@ -11,8 +11,12 @@ export type Report = (
 ) => Promise<void>;
 
 export interface PurgeDeps {
-  /** SUPABASE_SERVICE_ROLE_KEY. Empty: every request is rejected (401). */
-  serviceRoleKey: string;
+  /**
+   * PURGE_CRON_SECRET: a secret of this function alone, the only thing the
+   * cron job keeps in Vault (docs/10, 2026-11-09). Never the service role
+   * key. Empty: every request is rejected (401).
+   */
+  cronSecret: string;
   /** Names of the bucket objects created before `cutoff`. */
   listObjectsOlderThan: (cutoff: Date) => Promise<string[]>;
   /** Among `names`, the ones no row references (_shared/attachmentRefs.ts). */
@@ -62,21 +66,21 @@ const timingSafeEqual = (a: string, b: string): boolean => {
   return diff === 0;
 };
 
-/** `Authorization: Bearer <service role key>` and nothing else. */
-const isServiceRole = (headers: Headers, serviceRoleKey: string): boolean => {
+/** `Authorization: Bearer <PURGE_CRON_SECRET>` and nothing else. */
+const hasCronSecret = (headers: Headers, cronSecret: string): boolean => {
   const provided = headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!serviceRoleKey || !provided) return false;
-  return timingSafeEqual(provided, serviceRoleKey);
+  if (!cronSecret || !provided) return false;
+  return timingSafeEqual(provided, cronSecret);
 };
 
 /**
- * POST with the service role key. Dry run by default: counts the orphans
+ * POST with the purge secret. Dry run by default: counts the orphans
  * (older than 24 h, under deals/ or contacts/, referenced by no row) without
  * deleting. `{"apply": true}` deletes them. Answers {candidatos, borrados}.
  */
 export const createHandler =
   ({
-    serviceRoleKey,
+    cronSecret,
     listObjectsOlderThan,
     getUnreferencedNames,
     removeObjects,
@@ -88,7 +92,7 @@ export const createHandler =
     if (req.method !== "POST") {
       return json({ error: "method_not_allowed" }, 405);
     }
-    if (!isServiceRole(req.headers, serviceRoleKey)) {
+    if (!hasCronSecret(req.headers, cronSecret)) {
       return json({ error: "unauthorized" }, 401);
     }
     const body = bodySchema.safeParse(await readBody(req));

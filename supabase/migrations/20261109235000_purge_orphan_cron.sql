@@ -5,19 +5,27 @@
 -- referencia (lista única en supabase/functions/_shared/attachmentRefs.ts).
 -- Escrita a mano: db diff no ve cron jobs ni secretos de Vault.
 --
--- El job solo se programa si Vault tiene los dos secretos que necesita. Los
--- crea Ignacio en cada proyecto (staging y producción), nunca van en el repo:
+-- El service role key NO va en Vault (decisión de Ignacio, 2026-11-09, docs/10):
+-- la función valida un secreto propio, PURGE_CRON_SECRET, que solo sirve para
+-- llamar a la purga. Ignacio lo genera en cada proyecto (staging y producción),
+-- nunca va en el repo, y lo deja en los dos lados con el mismo valor:
 --
+--   npx supabase secrets set PURGE_CRON_SECRET=<valor aleatorio largo>
+--   select vault.create_secret('<el mismo valor>', 'purge_cron_secret');
 --   select vault.create_secret('https://<ref>.supabase.co', 'project_url');
---   select vault.create_secret('<service role key>', 'service_role_key');
 --
--- Si faltan (como en local), el bloque de abajo solo deja un NOTICE y no
--- programa nada. Para programar el job después de crear los secretos, correr
+-- project_url no es un secreto (es la URL pública del proyecto): está en Vault
+-- solo porque el job necesita leerla de algún lado en cada ambiente.
+--
+-- Si falta alguno de los dos (como en local), el bloque de abajo solo deja un
+-- NOTICE y no programa nada. Para programar el job después de crearlos, correr
 -- este mismo bloque `do` desde el SQL editor: es idempotente (desprograma el
 -- job anterior con el mismo nombre antes de crearlo). Para quitarlo:
 --   select cron.unschedule('purge-orphan-attachments');
 -- Para probar la función a mano sin borrar nada, llamarla sin cuerpo (dry run)
--- con el service role key en Authorization: devuelve {candidatos, borrados}.
+-- con `Authorization: Bearer <PURGE_CRON_SECRET>`: devuelve {candidatos, borrados}.
+-- Rotar el secreto: cambiarlo en `supabase secrets` y en Vault
+-- (vault.update_secret); el job lo lee de Vault en cada corrida.
 create extension if not exists pg_cron;
 create extension if not exists pg_net with schema extensions;
 
@@ -31,10 +39,10 @@ begin
   end if;
   execute $sql$
     select count(*) from vault.decrypted_secrets
-    where name in ('project_url', 'service_role_key')
+    where name in ('project_url', 'purge_cron_secret')
   $sql$ into secrets;
   if secrets < 2 then
-    raise notice 'purge-orphan-attachments: faltan los secretos project_url y service_role_key en Vault, job no programado (ver migración 20261109235000)';
+    raise notice 'purge-orphan-attachments: faltan project_url y purge_cron_secret en Vault, job no programado (ver migración 20261109235000)';
     return;
   end if;
 
@@ -48,7 +56,7 @@ begin
                || '/functions/v1/purge-orphan-attachments',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key')
+          'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'purge_cron_secret')
         ),
         body := '{"apply": true}'::jsonb,
         timeout_milliseconds := 60000

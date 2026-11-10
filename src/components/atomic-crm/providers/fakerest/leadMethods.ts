@@ -90,7 +90,8 @@ export const createLeadMethods = (
   /**
    * In-memory mirror of anonymize_contact() (RF-17); no files to remove here.
    * Also cancels the pending follow-ups of the leads that only have this
-   * contact and strips its WhatsApp conversations (phone anon-<id>, texts).
+   * contact and strips and archives its WhatsApp conversations (phone
+   * anon-<id>, texts).
    */
   anonymizeContact: async (
     contactId: Identifier,
@@ -192,7 +193,7 @@ export const createLeadMethods = (
       ...conversations.map((c) =>
         dataProvider.update("wa_conversations", {
           id: c.id,
-          data: { phone: `anon-${c.id}` },
+          data: { phone: `anon-${c.id}`, archived: true },
           previousData: c,
         }),
       ),
@@ -280,8 +281,9 @@ export const createLeadMethods = (
   },
 
   /**
-   * In-memory mirror of send_wa_message(): owner or manager, not archived,
-   * 1..4096 characters. ponytail: no 30-per-minute cap and no send_queue row,
+   * In-memory mirror of send_wa_message(): owner or manager, assigned (an
+   * unassigned chat is taken first, managers too), not archived, 1..4096
+   * characters. ponytail: no 30-per-minute cap and no send_queue row,
    * the demo never sends anything.
    */
   sendWaMessage: async (
@@ -301,6 +303,8 @@ export const createLeadMethods = (
       resource: "wa_conversations",
       action: "list_all",
     });
+    if (conversation.sales_id == null)
+      throw fail("conversation is unassigned: take it before writing", "42501");
     if (!isManager && conversation.sales_id !== me?.id)
       throw fail("conversation is not assigned to you", "42501");
     if (conversation.archived) throw fail("conversation is archived", "P0002");

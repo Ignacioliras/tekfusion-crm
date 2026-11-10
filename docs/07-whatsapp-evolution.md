@@ -8,7 +8,7 @@
 ## Instancia
 - Docker en el VPS (`infra/docker-compose.yml`): `evolution-api` + su Postgres + Redis. Volúmenes respaldados a diario.
 - Una instancia por ambiente: `tekfusion-prod` (número corporativo) y `tekfusion-staging` (número de prueba de Libux).
-- Variables: `AUTHENTICATION_API_KEY`, `WEBHOOK_GLOBAL_URL` = URL de la Edge Function, `WEBHOOK_GLOBAL_ENABLED=true`, eventos `MESSAGES_UPSERT`, `MESSAGES_UPDATE`, `CONNECTION_UPDATE`, `SEND_MESSAGE`.
+- Variables: `AUTHENTICATION_API_KEY` y `WEBHOOK_GLOBAL_ENABLED=false`. El webhook va **por instancia**, no global (`docs/10`, 2026-11-09): el receptor exige el header `apikey` y el webhook global de Evolution no permite headers. Se configura una vez por instancia con `POST /webhook/set/<instancia>`: URL de la Edge Function, header `apikey` = `EVOLUTION_WEBHOOK_SECRET` y eventos `MESSAGES_UPSERT`, `MESSAGES_UPDATE`, `CONNECTION_UPDATE`, `SEND_MESSAGE` (comando en `infra/vps/README.md`, paso 6).
 - Condición de licencia (Apache 2.0 con condiciones): el panel de administración muestra en **Créditos** que el sistema usa Evolution API.
 
 ## Receptor (`supabase/functions/whatsapp-webhook`)

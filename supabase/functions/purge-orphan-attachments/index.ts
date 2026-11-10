@@ -11,11 +11,13 @@ const ATTACHMENTS_BUCKET =
 const REMOVE_BATCH = 100;
 
 // Called daily by pg_cron through pg_net (migration purge_orphan_cron) with
-// the service role key; the handler checks it, verify_jwt is off (config.toml).
+// PURGE_CRON_SECRET, a secret of this function alone; the handler checks it,
+// verify_jwt is off (config.toml). The service role key is not accepted: it
+// only lives in this runtime (supabaseAdmin), never in Vault (docs/10).
 Deno.serve(
   withSentry(
     createHandler({
-      serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      cronSecret: Deno.env.get("PURGE_CRON_SECRET") ?? "",
       // storage.objects straight from the database: the Storage list API is
       // not recursive and the function already holds a connection.
       listObjectsOlderThan: async (cutoff) => {

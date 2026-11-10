@@ -151,7 +151,8 @@ jobs:
               run: npx playwright install-deps chromium-headless-shell 1>/dev/null
 
             # supabase/functions/.env está en .gitignore. Se genera con los valores locales no
-            # secretos de su .env.example (la función `users`, que guarda el Perfil, lo necesita).
+            # secretos de su .env.example (la función `users`, que guarda el Perfil, lo necesita;
+            # PURGE_CRON_SECRET es el valor de prueba que usa e2e/tekfusion/purga-adjuntos.spec.ts).
             # La clave publicable sale de `supabase status`, y el edge runtime lee el archivo al
             # crearse: por eso se levanta, se escribe el .env y se reinicia.
             - name: 🗄️ Start Supabase + supabase/functions/.env
@@ -162,7 +163,8 @@ jobs:
                   printf '%s\n' \
                       "SB_JWT_ISSUER=http://127.0.0.1:54321/auth/v1" \
                       "SB_PUBLISHABLE_KEY=$KEY" \
-                      "CRM_BASE_URL=http://localhost:5180" > supabase/functions/.env
+                      "CRM_BASE_URL=http://localhost:5180" \
+                      "PURGE_CRON_SECRET=solo-para-e2e-local" > supabase/functions/.env
                   npx supabase stop
                   npx supabase start -x studio,imgproxy,logflare,vector
 

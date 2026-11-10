@@ -44,8 +44,8 @@ const withLeadsAndChats: Partial<Db> = {
   ],
   followups: [followup(1, 1), followup(2, 2)],
   wa_conversations: [
-    { id: 1, phone: "+56900003101", contact_id: 1 },
-    { id: 2, phone: "+56900003102", contact_id: 2 },
+    { id: 1, phone: "+56900003101", contact_id: 1, archived: false },
+    { id: 2, phone: "+56900003102", contact_id: 2, archived: false },
   ] as WaConversation[],
   wa_messages: [
     { id: 1, conversation_id: 1, text: "Hola, soy Ana Prueba" },
@@ -102,7 +102,7 @@ describe("Anonimizar contacto (RF-17)", () => {
       .not.toBeInTheDocument();
   });
 
-  it("cancels the pending follow-ups of its own leads and strips its WhatsApp chat", async () => {
+  it("cancels the pending follow-ups of its own leads and strips and archives its WhatsApp chat", async () => {
     let dataProvider: DataProvider | undefined;
     const screen = await renderContact(undefined, withLeadsAndChats, (dp) => {
       dataProvider = dp;
@@ -135,7 +135,11 @@ describe("Anonimizar contacto (RF-17)", () => {
         filter: {},
       },
     );
-    expect(chats.map((c) => c.phone)).toEqual(["anon-1", "+56900003102"]);
+    // Archived too: nobody writes to an anonymized chat again (docs/10).
+    expect(chats.map((c) => [c.phone, c.archived])).toEqual([
+      ["anon-1", true],
+      ["+56900003102", false],
+    ]);
     const { data: messages } = await dataProvider!.getList<WaMessage>(
       "wa_messages",
       {
